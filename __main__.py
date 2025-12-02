@@ -10,6 +10,10 @@
     * I drew a line using pygame.draw.line()
 * [x] Replace pygame.color.Color() with named colors:
     * Create a library of named colors: Colors.name1, Colors.name2, etc.
+* [x] Render some text
+* [x] Render mouse position
+    [x] Create shortcut ;kpg to open local copy of pygame docs in browser
+* [x] Render FPS and milliseconds per frame
 * [ ] Replace pixel coordinates with world space coordinates
     * Create a transform to map from world space to pixel space
 """
@@ -23,6 +27,7 @@ from lib.game import Game
 def shutdown(file: str, log) -> None:
     """Safe shutdown on exit, such as sys.exit()."""
     log.debug("Shutdown %s", Path(file).name)
+    pygame.font.quit()
     pygame.quit()
     log.debug("Shutdown finished.")
 

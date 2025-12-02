@@ -8,3 +8,4 @@ class Colors:
     """Color names"""
     background = Color(30, 60, 90)
     line = Color(120, 90, 30)
+    text = Color(255, 255, 255)
