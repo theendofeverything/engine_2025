@@ -2,7 +2,7 @@
 import sys                  # Exit with sys.exit()
 import pygame
 from lib.colors import Colors
-from lib.mjg_math import Vec2D, gcs_to_pcs
+from lib.mjg_math import Vec2D, gcs_to_pcs, pcs_to_gcs
 
 
 class Game:
@@ -55,21 +55,17 @@ class Game:
         def debug_window_size() -> str:
             # Display window size
             window_size = (30*16, 30*9)
-            return f"Window size: {window_size}\n"
+            center = (window_size[0]/2, window_size[1]/2)
+            return f"Window size: {window_size}, Center: {center} PCS\n"
         text += debug_window_size()
 
         def debug_mouse_position() -> str:
             # Display mouse position in pixel coordinates
             mouse_position = pygame.mouse.get_pos()
-            return f"Mouse: {mouse_position}\n"
+            mouse_g = pcs_to_gcs(Vec2D(x=mouse_position[0], y=mouse_position[1]))
+            mouse_p = gcs_to_pcs(mouse_g)
+            return f"Mouse: {(mouse_g)} GCS, {mouse_p} PCS\n"
         text += debug_mouse_position()
-
-        def debug_gcs_to_pcs() -> str:
-            # LEFT OFF HERE
-            origin_g = Vec2D(x=0, y=0)
-            origin_p = gcs_to_pcs(origin_g)
-            return f"Origin: {origin_g} GCS, {origin_p} PCS\n"
-        text += debug_gcs_to_pcs()
 
         def debug_fps() -> str:
             # Display frame duration in milliseconds and rate in FPS

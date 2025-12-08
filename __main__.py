@@ -18,7 +18,10 @@
     * [ ] Handle window resize events
     * [ ] Capture new window size
 * [ ] Replace pixel coordinates with world space coordinates
-    * Create a transform to map from world space to pixel space
+    * [x] Create high-school algebra transforms to map from world space to
+          pixel space
+    * [ ] Eliminate hard-coded values in the transforms
+    * [ ] Create matrix algebra transforms
 """
 import atexit               # Register a function to run on exit
 from pathlib import Path    # Get file paths
