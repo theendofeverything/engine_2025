@@ -14,6 +14,9 @@
 * [x] Render mouse position
     [x] Create shortcut ;kpg to open local copy of pygame docs in browser
 * [x] Render FPS and milliseconds per frame
+* [ ] Track window size
+    * [ ] Handle window resize events
+    * [ ] Capture new window size
 * [ ] Replace pixel coordinates with world space coordinates
     * Create a transform to map from world space to pixel space
 """
