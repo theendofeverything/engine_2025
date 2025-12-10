@@ -1,5 +1,14 @@
 # Pygame Docs
 
+* `;kpg` opens the local copy of the pygame docs in your browser (must activate
+  the virtual environment where `pygame` is installed before launching Vim)
+* `;KPG` opens the on-line copy of the pygame docs
+* `;kpy` opens the local copy of the Python docs in your browser (must download
+  the HTML Python docs manually, see my notes in `:h python.txt`)
+* `;KPY` opens the on-line copy of the Python docs
+
+## Details on opening pygame docs
+
 Open `pygame/docs/generated/index.html` in your browser:
 
 ```vim
