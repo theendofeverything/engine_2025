@@ -45,9 +45,48 @@ $ pydoc3 pygame.display.set_mode
 
 # Python linters
 
+## pylint - too few public methods
+
 If a Class has "too few public methods", add this above the Class definition to
 disable the warning:
 
 ```python
 # pylint: disable=too-few-public-methods
 ```
+
+## Use try/except to find modules inside lib
+
+When running a file on its own inside `lib` for testing purposes, this import
+statement does not work because we are already inside `lib`:
+
+```python
+from lib.mjg_math import Point2D
+```
+
+The solution is to use `try/except` clause like this:
+
+```python
+try:
+    from .mjg_math import Point2D
+except ModuleNotFoundError:
+    from lib.mjg_math import Point2D
+```
+
+Unfortunately, to run a `lib/thing.py` as a script, the import has to be absolute:
+
+```python
+    # Note no leading dot in front of mjg_math
+    from mjg_math import Point2D
+```
+
+The `doctest` module is fine with this and most of the linters are fine with
+this. The one exception is `mypy`. Now it complains about missing imports.
+
+This is just a nuisance warning. Silence it by creating a `mypy.ini` file in the project root:
+
+```
+[mypy]
+disable_error_code = import-not-found
+```
+
+Or do not put an executable `__main__` section in lib code and create a top-level `tests.py` instead.

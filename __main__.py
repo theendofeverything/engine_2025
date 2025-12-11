@@ -17,7 +17,7 @@
 * [x] Track window size
     * [x] Handle window resize events
     * [x] Capture new window size
-* [ ] Track mouse zoom
+* [x] Track mouse zoom
 * [ ] Track mouse pan
 * [ ] Replace pixel coordinates with world space coordinates
     * [x] Create high-school algebra transforms to map from world space to
@@ -31,12 +31,13 @@
 """
 import atexit               # Register a function to run on exit
 from pathlib import Path    # Get file paths
+import logging
 import pygame
 from lib.log import setup_logging
 from lib.game import Game
 
 
-def shutdown(file: str, log) -> None:
+def shutdown(file: str, log: logging.Logger) -> None:
     """Safe shutdown on exit, such as sys.exit()."""
     log.debug("Shutdown %s", Path(file).name)
     pygame.font.quit()

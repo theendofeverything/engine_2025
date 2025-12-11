@@ -1,5 +1,6 @@
 """Top-level game code."""
 import sys                  # Exit with sys.exit()
+import logging
 import pygame
 from lib.colors import Colors
 from lib.mjg_math import Point2D, Vec2D
@@ -13,9 +14,9 @@ class Game:
     window_size:            Vec2D
     gcs_width:              float
     window_surface:         pygame.Surface
-    shapes:                 dict
+    shapes:                 dict[str, list[Line2D]]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.setup()
 
     def setup(self) -> None:
@@ -29,7 +30,7 @@ class Game:
                 )
         self.clock = pygame.time.Clock()
 
-    def run(self, log) -> None:
+    def run(self, log: logging.Logger) -> None:
         """Run the game."""
         self.milliseconds_per_frame = 16                # Initial value for debug HUD
         self.gcs_width = 2                              # GCS -1:1 fills screen width
@@ -37,12 +38,10 @@ class Game:
         while True:
             self.loop(log)
 
-    def loop(self, log) -> None:
+    def loop(self, log: logging.Logger) -> None:
         """Loop until the user quits."""
         self.handle_events(log)
-
         self.draw_shapes()
-
         # Render
         self.window_surface.fill(Colors.background)
         self.render_shapes()
@@ -51,7 +50,7 @@ class Game:
         # Delay to keep game at 60 FPS.
         self.milliseconds_per_frame = self.clock.tick(60)
 
-    def handle_events(self, log) -> None:
+    def handle_events(self, log: logging.Logger) -> None:
         """Handle events."""
         for event in pygame.event.get():
             match event.type:
@@ -63,13 +62,6 @@ class Game:
                     # Update window size
                     self.window_size = Vec2D(x=event.x, y=event.y)
                     log.debug(f"Event WINDOWSIZECHANGED, new size: ({event.x}, {event.y})")
-                #############
-                # OTHER CASES
-                #############
-                case pygame.MOUSEBUTTONDOWN:
-                    log.debug(f"Event MOUSEBUTTONDOWN, pos: {event.pos}, button: {event.button}")
-                case pygame.MOUSEBUTTONUP:
-                    log.debug(f"Event MOUSEBUTTONUP, pos: {event.pos}, button: {event.button}")
                 case pygame.MOUSEWHEEL:
                     match event.y:
                         case -1:
@@ -83,13 +75,23 @@ class Game:
                     log.debug(f"Event MOUSEWHEEL, flipped: {event.flipped}, "
                               f"x:{event.x}, y:{event.y}, "
                               f"precise_x:{event.precise_x}, precise_y:{event.precise_y}")
-                case pygame.VIDEORESIZE:
-                    # Do we need this?
-                    log.debug(f"Event VIDEORESIZE, new size: ({event.w}, {event.h})")
-                case pygame.WINDOWRESIZED:
-                    # Do we need this?
-                    log.debug(f"Event WINDOWRESIZED, new size: ({event.x}, {event.y})")
-                case _: log.debug(event)
+                case _:
+                    self.log_unused_events(event, log)
+
+    def log_unused_events(self, event: pygame.event.Event, log: logging.Logger) -> None:
+        """Log events that I have not found a use for yet."""
+        match event.type:
+            case pygame.MOUSEBUTTONDOWN:
+                log.debug(f"Event MOUSEBUTTONDOWN, pos: {event.pos}, button: {event.button}")
+            case pygame.MOUSEBUTTONUP:
+                log.debug(f"Event MOUSEBUTTONUP, pos: {event.pos}, button: {event.button}")
+            case pygame.VIDEORESIZE:
+                # Do we need this?
+                log.debug(f"Event VIDEORESIZE, new size: ({event.w}, {event.h})")
+            case pygame.WINDOWRESIZED:
+                # Do we need this?
+                log.debug(f"Event WINDOWRESIZED, new size: ({event.x}, {event.y})")
+            case _: log.debug(event)
 
     def draw_shapes(self) -> None:
         """Draw shapes in GCS."""
@@ -145,8 +147,9 @@ class Game:
         """Render GCS shapes to the screen."""
         for line_g in self.shapes['lines']:
             # Convert GCS to PCS
-            line_p = Line2D(start=self.gcs_to_pcs(line_g.start),
-                            end=self.gcs_to_pcs(line_g.end))
+            line_p = Line2D(start=self.gcs_to_pcs(line_g.start.as_vec()).as_point(),
+                            end=self.gcs_to_pcs(line_g.end.as_vec()).as_point()
+                            )
             # Render to screen
             pygame.draw.line(self.window_surface,
                              Colors.line,
