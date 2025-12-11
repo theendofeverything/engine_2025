@@ -42,3 +42,12 @@ $ pydoc3 pygame.display.set_mode
 - `;tp`
     - Make tags (must be at project root level)
     - Note: Vim omni completion does **not** use the tags file
+
+# Python linters
+
+If a Class has "too few public methods", add this above the Class definition to
+disable the warning:
+
+```python
+# pylint: disable=too-few-public-methods
+```
