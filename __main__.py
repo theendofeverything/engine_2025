@@ -14,13 +14,19 @@
 * [x] Render mouse position
     [x] Create shortcut ;kpg to open local copy of pygame docs in browser
 * [x] Render FPS and milliseconds per frame
-* [ ] Track window size
-    * [ ] Handle window resize events
-    * [ ] Capture new window size
+* [x] Track window size
+    * [x] Handle window resize events
+    * [x] Capture new window size
+* [ ] Track mouse zoom
+* [ ] Track mouse pan
 * [ ] Replace pixel coordinates with world space coordinates
     * [x] Create high-school algebra transforms to map from world space to
           pixel space
+    * [x] Draw in GCS then render in PCS
     * [ ] Eliminate hard-coded values in the transforms
+        * [x] Hard-coded scaling factor screen_width/2 becomes screen_width/gcs_width
+              where gcs_width is adjusted on mouse zoom
+        * [ ] Hard-coded translation screen_xy/2 must get updated on zoom and on pan
     * [ ] Create matrix algebra transforms
 """
 import atexit               # Register a function to run on exit
