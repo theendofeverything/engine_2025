@@ -15,6 +15,7 @@ class Game:
     gcs_width:              float
     window_surface:         pygame.Surface
     shapes:                 dict[str, list[Line2D]]
+    mouse_button_1:         bool
 
     def __init__(self) -> None:
         self.setup()
@@ -35,6 +36,7 @@ class Game:
         self.milliseconds_per_frame = 16                # Initial value for debug HUD
         self.gcs_width = 2                              # GCS -1:1 fills screen width
         self.shapes = {}                                # Shape primitives
+        self.mouse_button_1 = False                     # Track mouse button 1 down/up
         while True:
             self.loop(log)
 
@@ -62,21 +64,57 @@ class Game:
                     # Update window size
                     self.window_size = Vec2D(x=event.x, y=event.y)
                     log.debug(f"Event WINDOWSIZECHANGED, new size: ({event.x}, {event.y})")
+                case pygame.MOUSEBUTTONDOWN:
+                    self.handle_mousebutton_down_events(event, log)
+                case pygame.MOUSEBUTTONUP:
+                    self.handle_mousebutton_up_events(event, log)
                 case pygame.MOUSEWHEEL:
-                    match event.y:
-                        case -1:
-                            log.debug("ZOOM OUT")
-                            self.gcs_width *= 1.1
-                        case 1:
-                            log.debug("ZOOM IN")
-                            self.gcs_width *= 0.9
-                        case _:
-                            log.debug("Unexpected y-value")
-                    log.debug(f"Event MOUSEWHEEL, flipped: {event.flipped}, "
-                              f"x:{event.x}, y:{event.y}, "
-                              f"precise_x:{event.precise_x}, precise_y:{event.precise_y}")
+                    self.handle_mousewheel_events(event, log)
                 case _:
                     self.log_unused_events(event, log)
+
+    def handle_mousewheel_events(self,
+                                 event: pygame.event.Event,
+                                 log: logging.Logger) -> None:
+        """Handle mousewheel events."""
+        match event.y:
+            case -1:
+                log.debug("ZOOM OUT")
+                self.gcs_width *= 1.1
+            case 1:
+                log.debug("ZOOM IN")
+                self.gcs_width *= 0.9
+            case _:
+                log.debug("Unexpected y-value")
+        log.debug(f"Event MOUSEWHEEL, flipped: {event.flipped}, "
+                  f"x:{event.x}, y:{event.y}, "
+                  f"precise_x:{event.precise_x}, precise_y:{event.precise_y}")
+
+    def handle_mousebutton_down_events(self,
+                                       event: pygame.event.Event,
+                                       log: logging.Logger) -> None:
+        """Handle event mouse button down."""
+        log.debug("Event MOUSEBUTTONDOWN, "
+                  f"pos: {event.pos}, "
+                  f"button: {event.button}")
+        match event.button:
+            case 1:
+                self.mouse_button_1 = True
+            case _:
+                pass
+
+    def handle_mousebutton_up_events(self,
+                                     event: pygame.event.Event,
+                                     log: logging.Logger) -> None:
+        """Handle event mouse button up."""
+        log.debug("Event MOUSEBUTTONUP, "
+                  f"pos: {event.pos}, "
+                  f"button: {event.button}")
+        match event.button:
+            case 1:
+                self.mouse_button_1 = False
+            case _:
+                pass
 
     def log_unused_events(self, event: pygame.event.Event, log: logging.Logger) -> None:
         """Log events that I have not found a use for yet."""
@@ -184,6 +222,13 @@ class Game:
                     f"({mouse_p.x:0.1f}, {mouse_p.y:0.1f}) PCS\n"
                     )
         text += debug_mouse_position()
+
+        def debug_mouse_button() -> str:
+            """Return string with mouse button state."""
+            return ("Mouse buttons: "
+                    f"1: {self.mouse_button_1}\n"
+                    )
+        text += debug_mouse_button()
 
         def debug_fps() -> str:
             # Display frame duration in milliseconds and rate in FPS

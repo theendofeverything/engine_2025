@@ -19,6 +19,8 @@
     * [x] Capture new window size
 * [x] Track mouse zoom
 * [ ] Track mouse pan
+    * [x] Catch events for mouse button press and release
+    * [x] Track whether mouse button 1 is up/down
 * [ ] Replace pixel coordinates with world space coordinates
     * [x] Create high-school algebra transforms to map from world space to
           pixel space
