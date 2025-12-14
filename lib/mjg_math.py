@@ -1,4 +1,6 @@
 """Coordinate transform math.
+TODO: rename this to geometry_types.py
+TODO: move coordinate transforms to geometry_operators.py
 """
 from __future__ import annotations
 from dataclasses import dataclass
@@ -48,6 +50,11 @@ class Vec2D:
     def as_tuple(self) -> tuple[float, float]:
         """Return vector as tuple (x, y)."""
         return (self.x, self.y)
+
+    @classmethod
+    def from_points(cls, start: Point2D, end: Point2D) -> Vec2D:
+        return cls(x=end.x-start.x,
+                   y=end.y-start.y)
 
 
 if __name__ == '__main__':

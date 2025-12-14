@@ -16,6 +16,9 @@ class Game:
     window_surface:         pygame.Surface
     shapes:                 dict[str, list[Line2D]]
     mouse_button_1:         bool
+    origin:                 Point2D
+    pan_start:              Point2D
+    pan_end:                Point2D
 
     def __init__(self) -> None:
         self.setup()
@@ -24,7 +27,7 @@ class Game:
         """Create the game window."""
         pygame.init()
         pygame.font.init()
-        self.window_size = Vec2D(x=30*16, y=30*9)
+        self.window_size = Vec2D(x=60*16, y=60*9)
         self.window_surface = pygame.display.set_mode(
                 size=self.window_size.as_tuple(),
                 flags=pygame.RESIZABLE
@@ -37,12 +40,20 @@ class Game:
         self.gcs_width = 2                              # GCS -1:1 fills screen width
         self.shapes = {}                                # Shape primitives
         self.mouse_button_1 = False                     # Track mouse button 1 down/up
+        self.origin = self.window_center                # Origin is initially the screen center
+        self.pan_end = Point2D(0, 0)                    # Dummy initial value
+        self.pan_start = self.pan_end                   # Zero-out the panning vector
         while True:
             self.loop(log)
 
     def loop(self, log: logging.Logger) -> None:
         """Loop until the user quits."""
         self.handle_events(log)
+        # Physics
+        if self.mouse_button_1:
+            # Update point where we have panned to
+            mouse_pos = pygame.mouse.get_pos()
+            self.pan_end = Point2D(x=mouse_pos[0], y=mouse_pos[1])
         self.draw_shapes()
         # Render
         self.window_surface.fill(Colors.background)
@@ -100,6 +111,7 @@ class Game:
         match event.button:
             case 1:
                 self.mouse_button_1 = True
+                self.pan_start = Point2D(x=event.pos[0], y=event.pos[1])
             case _:
                 pass
 
@@ -112,7 +124,9 @@ class Game:
                   f"button: {event.button}")
         match event.button:
             case 1:
-                self.mouse_button_1 = False
+                self.mouse_button_1 = False             # Finished panning
+                self.origin = self.translation.as_point()  # Set the new origin
+                self.pan_start = self.pan_end           # Zero-out the panning vector
             case _:
                 pass
 
@@ -146,6 +160,21 @@ class Game:
         # Update shapes dict
         self.shapes['lines'] = lines
 
+    @property
+    def window_center(self) -> Point2D:
+        """Return the center of the window in pixel coordinates."""
+        return Point2D(self.window_size.x/2, self.window_size.y/2)
+
+    @property
+    def panning(self) -> Vec2D:
+        """Return the panning vector: describes amount of mouse pan."""
+        return Vec2D.from_points(start=self.pan_start, end=self.pan_end)
+
+    @property
+    def translation(self) -> Vec2D:
+        """Return the translation vector: adds mouse pan to origin offset."""
+        return Vec2D(x=self.origin.x + self.panning.x, y=self.origin.y + self.panning.y)
+
     def gcs_to_pcs(self, v: Vec2D) -> Vec2D:
         """Transform vector from game coord sys to pixel coord sys."""
         # Return this
@@ -161,9 +190,9 @@ class Game:
         # I need to know:
         # - the window size, (w,h), which is updated on window resize events
         # - the GCS origin, (origin_g), which is updated on zoom and pan
-        translation = Vec2D(self.window_size.x/2, self.window_size.y/2)
-        v_p.x += translation.x
-        v_p.y += translation.y
+        # translation = Vec2D(self.window_size.x/2, self.window_size.y/2)
+        v_p.x += self.translation.x
+        v_p.y += self.translation.y
         return v_p
 
     def pcs_to_gcs(self, v: Vec2D) -> Vec2D:
@@ -171,9 +200,9 @@ class Game:
         # Return this
         v_g = Vec2D(x=v.x, y=v.y)
         # Translate pixel coordinate so that screen center maps to screen topleft
-        translation = Vec2D(self.window_size.x/2, self.window_size.y/2)
-        v_g.x -= translation.x
-        v_g.y -= translation.y
+        # translation = Vec2D(self.window_size.x/2, self.window_size.y/2)
+        v_g.x -= self.translation.x
+        v_g.y -= self.translation.y
         # Scale
         v_g.x *= 1/(self.window_size.x/self.gcs_width)
         v_g.y *= 1/(self.window_size.x/self.gcs_width)
@@ -229,6 +258,15 @@ class Game:
                     f"1: {self.mouse_button_1}\n"
                     )
         text += debug_mouse_button()
+
+        def debug_pan() -> str:
+            """Return string with pan values."""
+            return (f"origin: {self.origin}, "
+                    f"pan_start: {self.pan_start}, "
+                    f"pan_end: {self.pan_end}, "
+                    f"translation: {self.translation}\n"
+                    )
+        text += debug_pan()
 
         def debug_fps() -> str:
             # Display frame duration in milliseconds and rate in FPS

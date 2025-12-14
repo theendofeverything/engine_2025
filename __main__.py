@@ -21,6 +21,11 @@
 * [ ] Track mouse pan
     * [x] Catch events for mouse button press and release
     * [x] Track whether mouse button 1 is up/down
+    * [x] Track where pan starts and ends
+    * [x] Calculate the panning vector
+    * [x] Define translation and panning vectors as properties (values returned by function)
+    * [x] Update the origin when panning ends
+    * [ ] Update the origin when screen is resized
 * [ ] Replace pixel coordinates with world space coordinates
     * [x] Create high-school algebra transforms to map from world space to
           pixel space
