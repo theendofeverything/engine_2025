@@ -2,7 +2,7 @@
 """
 
 from __future__ import annotations
-from lib.geometry_types import Vec2D
+from .geometry_types import Vec2D
 
 
 class CoordinateTransform:

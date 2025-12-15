@@ -1,11 +1,7 @@
 """Shape primitives.
 """
 from dataclasses import dataclass
-try:
-    # from .geometry_types import Point2D
-    from geometry_types import Point2D
-except ModuleNotFoundError:
-    from lib.geometry_types import Point2D
+from .geometry_types import Point2D
 
 
 @dataclass

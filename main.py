@@ -40,8 +40,8 @@ import atexit               # Register a function to run on exit
 from pathlib import Path    # Get file paths
 import logging
 import pygame
-from lib.log import setup_logging
-from lib.game import Game
+from engine.log import setup_logging
+from engine.game import Game
 
 
 def shutdown(file: str, log: logging.Logger) -> None:

@@ -2,10 +2,10 @@
 import sys                  # Exit with sys.exit()
 import logging
 import pygame
-from lib.colors import Colors
-from lib.geometry_types import Point2D, Vec2D
-from lib.geometry_operators import CoordinateTransform
-from lib.drawing_shapes import Line2D
+from .colors import Colors
+from .geometry_types import Point2D, Vec2D
+from .geometry_operators import CoordinateTransform
+from .drawing_shapes import Line2D
 
 
 # pylint: disable=too-many-instance-attributes
