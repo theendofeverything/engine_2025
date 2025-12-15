@@ -1,5 +1,4 @@
-"""Coordinate transform math.
-TODO: rename this to geometry_types.py
+"""Geometry data types: points and vectors.
 TODO: move coordinate transforms to geometry_operators.py
 """
 from __future__ import annotations
@@ -53,6 +52,7 @@ class Vec2D:
 
     @classmethod
     def from_points(cls, start: Point2D, end: Point2D) -> Vec2D:
+        """Create a vector from two points: vector = end - start."""
         return cls(x=end.x-start.x,
                    y=end.y-start.y)
 

@@ -3,10 +3,12 @@ import sys                  # Exit with sys.exit()
 import logging
 import pygame
 from lib.colors import Colors
-from lib.mjg_math import Point2D, Vec2D
-from lib.shapes import Line2D
+from lib.geometry_types import Point2D, Vec2D
+from lib.geometry_operators import CoordinateTransform
+from lib.drawing_shapes import Line2D
 
 
+# pylint: disable=too-many-instance-attributes
 class Game:
     """Game data is shared by all the code"""
     clock:                  pygame.time.Clock
@@ -22,6 +24,7 @@ class Game:
 
     def __init__(self) -> None:
         self.setup()
+        self.xfm = CoordinateTransform(self)
 
     def setup(self) -> None:
         """Create the game window."""
@@ -84,6 +87,22 @@ class Game:
                 case _:
                     self.log_unused_events(event, log)
 
+    def zoom_out(self) -> None:
+        """Zoom out.
+
+        TODO: zoom about a point.
+        Use mouse position to create an offset then add that to the origin. This is all in pixel
+        coordinates.
+        """
+        self.gcs_width *= 1.1
+
+    def zoom_in(self) -> None:
+        """Zoom in.
+
+        TODO: zoom about a point.
+        """
+        self.gcs_width *= 0.9
+
     def handle_mousewheel_events(self,
                                  event: pygame.event.Event,
                                  log: logging.Logger) -> None:
@@ -91,10 +110,10 @@ class Game:
         match event.y:
             case -1:
                 log.debug("ZOOM OUT")
-                self.gcs_width *= 1.1
+                self.zoom_out()
             case 1:
                 log.debug("ZOOM IN")
-                self.gcs_width *= 0.9
+                self.zoom_in()
             case _:
                 log.debug("Unexpected y-value")
         log.debug(f"Event MOUSEWHEEL, flipped: {event.flipped}, "
@@ -175,47 +194,12 @@ class Game:
         """Return the translation vector: adds mouse pan to origin offset."""
         return Vec2D(x=self.origin.x + self.panning.x, y=self.origin.y + self.panning.y)
 
-    def gcs_to_pcs(self, v: Vec2D) -> Vec2D:
-        """Transform vector from game coord sys to pixel coord sys."""
-        # Return this
-        v_p = Vec2D(x=v.x, y=v.y)
-        # Flip y
-        v_p.y *= -1
-        # Scale based on the visible width of GCS at this zoom level
-        v_p.x *= self.window_size.x/self.gcs_width
-        v_p.y *= self.window_size.x/self.gcs_width
-        # Translate pixel coordinate so that screen topleft maps to screen center
-        # TODO: how do I want to talk about the Translation vector (pan) that
-        # locates the GCS origin?
-        # I need to know:
-        # - the window size, (w,h), which is updated on window resize events
-        # - the GCS origin, (origin_g), which is updated on zoom and pan
-        # translation = Vec2D(self.window_size.x/2, self.window_size.y/2)
-        v_p.x += self.translation.x
-        v_p.y += self.translation.y
-        return v_p
-
-    def pcs_to_gcs(self, v: Vec2D) -> Vec2D:
-        """Transform vector from pixel coord sys to game coord sys."""
-        # Return this
-        v_g = Vec2D(x=v.x, y=v.y)
-        # Translate pixel coordinate so that screen center maps to screen topleft
-        # translation = Vec2D(self.window_size.x/2, self.window_size.y/2)
-        v_g.x -= self.translation.x
-        v_g.y -= self.translation.y
-        # Scale
-        v_g.x *= 1/(self.window_size.x/self.gcs_width)
-        v_g.y *= 1/(self.window_size.x/self.gcs_width)
-        # Flip y
-        v_g.y *= -1
-        return v_g
-
     def render_shapes(self) -> None:
         """Render GCS shapes to the screen."""
         for line_g in self.shapes['lines']:
             # Convert GCS to PCS
-            line_p = Line2D(start=self.gcs_to_pcs(line_g.start.as_vec()).as_point(),
-                            end=self.gcs_to_pcs(line_g.end.as_vec()).as_point()
+            line_p = Line2D(start=self.xfm.gcs_to_pcs(line_g.start.as_vec()).as_point(),
+                            end=self.xfm.gcs_to_pcs(line_g.end.as_vec()).as_point()
                             )
             # Render to screen
             pygame.draw.line(self.window_surface,
@@ -243,9 +227,9 @@ class Game:
             mouse_position = Vec2D(x=mouse_position_tuple[0],
                                    y=mouse_position_tuple[1])
             # Get mouse position in game coordinates
-            mouse_g = self.pcs_to_gcs(mouse_position)
+            mouse_g = self.xfm.pcs_to_gcs(mouse_position)
             # Test transform by converting back to pixel coordinates
-            mouse_p = self.gcs_to_pcs(mouse_g)
+            mouse_p = self.xfm.gcs_to_pcs(mouse_g)
             return ("Mouse: "
                     f"({mouse_g.x:0.1f}, {mouse_g.y:0.1f}) GCS, "
                     f"({mouse_p.x:0.1f}, {mouse_p.y:0.1f}) PCS\n"
@@ -262,9 +246,9 @@ class Game:
         def debug_pan() -> str:
             """Return string with pan values."""
             return (f"origin: {self.origin}, "
-                    f"pan_start: {self.pan_start}, "
-                    f"pan_end: {self.pan_end}, "
                     f"translation: {self.translation}\n"
+                    f"pan_start: {self.pan_start}, "
+                    f"pan_end: {self.pan_end}\n"
                     )
         text += debug_pan()
 

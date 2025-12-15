@@ -1,12 +1,11 @@
 """Shape primitives.
-TODO: rename this to draw_shapes.py
 """
 from dataclasses import dataclass
 try:
-    # from .mjg_math import Point2D
-    from mjg_math import Point2D
+    # from .geometry_types import Point2D
+    from geometry_types import Point2D
 except ModuleNotFoundError:
-    from lib.mjg_math import Point2D
+    from lib.geometry_types import Point2D
 
 
 @dataclass
