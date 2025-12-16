@@ -11,13 +11,15 @@ class Point2D:
 
     A point is like a vector from the origin, but is not a vector.
     A vector can be translated, a point cannot.
+
+    Create a point from x and y values:
     >>> point = Point2D(x=0, y=1)
     >>> point
     Point2D(x=0, y=1)
     >>> point.as_tuple()
     (0, 1)
 
-    It is often convenient to create a point from a tuple:
+    It is often convenient to create a point from a tuple (pygame event positions are tuples):
     >>> point = Point2D.from_tuple((0,1))
     >>> point
     Point2D(x=0, y=1)
@@ -34,9 +36,10 @@ class Point2D:
         return (self.x, self.y)
 
     @classmethod
-    def from_tuple(cls, position: tuple) -> Point2D:
+    def from_tuple(cls, position: tuple[float, float]) -> Point2D:
         """Create a point from a pygame event position (x, y)."""
         return cls(x=position[0], y=position[1])
+
 
 @dataclass
 class Vec2D:
