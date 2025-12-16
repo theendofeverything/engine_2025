@@ -16,6 +16,11 @@ class Point2D:
     Point2D(x=0, y=1)
     >>> point.as_tuple()
     (0, 1)
+
+    It is often convenient to create a point from a tuple:
+    >>> point = Point2D.from_tuple((0,1))
+    >>> point
+    Point2D(x=0, y=1)
     """
     x: float
     y: float
@@ -28,6 +33,10 @@ class Point2D:
         """Return point as (x, y)."""
         return (self.x, self.y)
 
+    @classmethod
+    def from_tuple(cls, position: tuple) -> Point2D:
+        """Create a point from a pygame event position (x, y)."""
+        return cls(x=position[0], y=position[1])
 
 @dataclass
 class Vec2D:

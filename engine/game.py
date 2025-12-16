@@ -50,10 +50,10 @@ class Game:
         """Loop until the user quits."""
         self.handle_events(log)
         # Physics
-        if self.mouse_button_1:
+        if self.panning.is_active:
             # Update point where we have panned to
             mouse_pos = pygame.mouse.get_pos()
-            self.panning.end = Point2D(x=mouse_pos[0], y=mouse_pos[1])
+            self.panning.end = Point2D.from_tuple(mouse_pos)
         self.draw_shapes()
         # Render
         self.window_surface.fill(Colors.background)
@@ -92,7 +92,7 @@ class Game:
         coordinates.
         """
         # mouse_pos = pygame.mouse.get_pos()
-        # mouse_p = Point2D(x=mouse_pos[0], y=mouse_pos[1])
+        # mouse_p = Point2D.from_tuple(mouse_pos)
         # mouse_g = self.xfm.pcs_to_gcs(mouse_p.as_vec())
         # origin_g = self.xfm.pcs_to_gcs(self.coord_sys.origin_p.as_vec())
         # translation = self.Vec2D.from_points(start=origin_g, end=mouse_g)
@@ -131,8 +131,9 @@ class Game:
                   f"button: {event.button}")
         match event.button:
             case 1:
-                self.mouse_button_1 = True
-                self.panning.start = Point2D(x=event.pos[0], y=event.pos[1])
+                self.mouse_button_1 = True              # Left mouse button pressed
+                self.panning.is_active = True           # Start panning
+                self.panning.start = Point2D.from_tuple(event.pos)
             case _:
                 pass
 
@@ -145,7 +146,8 @@ class Game:
                   f"button: {event.button}")
         match event.button:
             case 1:
-                self.mouse_button_1 = False             # Finished panning
+                self.mouse_button_1 = False             # Left mouse button released
+                self.panning.is_active = False          # Stop panning
                 self.coord_sys.origin_p = self.translation.as_point()  # Set the new origin
                 self.panning.start = self.panning.end  # Zero-out the panning vector
             case _:
