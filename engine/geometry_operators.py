@@ -1,7 +1,6 @@
 """Geometry operators: coordinate transforms.
 """
 
-from __future__ import annotations
 from .geometry_types import Vec2D
 
 

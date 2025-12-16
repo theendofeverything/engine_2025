@@ -8,30 +8,36 @@ from .geometry_operators import CoordinateTransform
 from .drawing_shapes import Line2D
 from .timing import Timing
 from .coord_sys import CoordinateSystem
+from .panning import Panning
 
 
 class Game:
     """Game data is shared by all the code"""
-    timing:                 Timing
     coord_sys:              CoordinateSystem
     window_surface:         pygame.Surface
+    timing:                 Timing
+    xfm:                    CoordinateTransform
+    panning:                Panning
     shapes:                 dict[str, list[Line2D]]
     mouse_button_1:         bool
 
     def __init__(self) -> None:
-        self.setup()
-        self.xfm = CoordinateTransform(self)
-
-    def setup(self) -> None:
-        """Create the game window."""
+        # Load pygame
         pygame.init()
         pygame.font.init()
+        # Set the window size and center the GCS origin in the window.
         self.coord_sys = CoordinateSystem(window_size=Vec2D(x=60*16, y=60*9))
+        # Get a window from the OS
         self.window_surface = pygame.display.set_mode(
                 size=self.coord_sys.window_size.as_tuple(),
                 flags=pygame.RESIZABLE
                 )
-        self.timing = Timing(clock=pygame.time.Clock())
+        # Set up a clock to set frame rate and measure frame period
+        self.timing = Timing()
+        # Create 'xfm' for transforming between coordinate systems
+        self.xfm = CoordinateTransform(self)
+        # Track panning state
+        self.panning = Panning()
 
     def run(self, log: logging.Logger) -> None:
         """Run the game."""
@@ -47,7 +53,7 @@ class Game:
         if self.mouse_button_1:
             # Update point where we have panned to
             mouse_pos = pygame.mouse.get_pos()
-            self.coord_sys.pan_end = Point2D(x=mouse_pos[0], y=mouse_pos[1])
+            self.panning.end = Point2D(x=mouse_pos[0], y=mouse_pos[1])
         self.draw_shapes()
         # Render
         self.window_surface.fill(Colors.background)
@@ -55,7 +61,7 @@ class Game:
         self.render_debug_hud()
         pygame.display.flip()
         # Delay to keep game at 60 FPS.
-        self.timing.milliseconds_per_frame = self.timing.clock.tick(60)
+        self.timing.ms_per_frame = self.timing.clock.tick(60)
 
     def handle_events(self, log: logging.Logger) -> None:
         """Handle events."""
@@ -126,7 +132,7 @@ class Game:
         match event.button:
             case 1:
                 self.mouse_button_1 = True
-                self.coord_sys.pan_start = Point2D(x=event.pos[0], y=event.pos[1])
+                self.panning.start = Point2D(x=event.pos[0], y=event.pos[1])
             case _:
                 pass
 
@@ -141,7 +147,7 @@ class Game:
             case 1:
                 self.mouse_button_1 = False             # Finished panning
                 self.coord_sys.origin_p = self.translation.as_point()  # Set the new origin
-                self.coord_sys.pan_start = self.coord_sys.pan_end  # Zero-out the panning vector
+                self.panning.start = self.panning.end  # Zero-out the panning vector
             case _:
                 pass
 
@@ -176,15 +182,10 @@ class Game:
         self.shapes['lines'] = lines
 
     @property
-    def panning(self) -> Vec2D:
-        """Return the panning vector: describes amount of mouse pan."""
-        return Vec2D.from_points(start=self.coord_sys.pan_start, end=self.coord_sys.pan_end)
-
-    @property
     def translation(self) -> Vec2D:
         """Return the translation vector: adds mouse pan to origin offset."""
-        return Vec2D(x=self.coord_sys.origin_p.x + self.panning.x,
-                     y=self.coord_sys.origin_p.y + self.panning.y)
+        return Vec2D(x=self.coord_sys.origin_p.x + self.panning.vector.x,
+                     y=self.coord_sys.origin_p.y + self.panning.vector.y)
 
     def render_shapes(self) -> None:
         """Render GCS shapes to the screen."""
@@ -239,18 +240,18 @@ class Game:
             """Return string with pan values."""
             return (f"origin: {self.coord_sys.origin_p}, "
                     f"translation: {self.translation}\n"
-                    f"pan_start: {self.coord_sys.pan_start}, "
-                    f"pan_end: {self.coord_sys.pan_end}\n"
+                    f"pan_start: {self.panning.start}, "
+                    f"pan_end: {self.panning.end}\n"
                     )
         text += debug_pan()
 
         def debug_fps() -> str:
             # Display frame duration in milliseconds and rate in FPS
             # # TODO: update fps every N frames instead of every frame
-            # fps = 1000 / self.timing.milliseconds_per_frame
+            # fps = 1000 / self.timing.ms_per_frame
             # # Use get_fps() for now -- it averages every 10 frames
             fps = self.timing.clock.get_fps()
-            return f"frame: {self.timing.milliseconds_per_frame:d}ms ({fps:0.1f}FPS)"
+            return f"frame: {self.timing.ms_per_frame:d}ms ({fps:0.1f}FPS)"
         text += debug_fps()
 
         for i, line in enumerate(text.split('\n')):
