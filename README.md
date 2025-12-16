@@ -110,13 +110,14 @@ class Vec2D:
 
 ## pylint - too many instance attributes
 
-If a Class has "too-many-instance-attributes", add this above the Class definition to disable the warning:
+If a Class has "too many instance attributes", add this above the Class definition to disable the warning:
 
 ```python
 # pylint: disable=too-many-instance-attributes
 ```
 
-*Rationale*: It is early days in the codebase and you know you will refactor many of these attributes into their own class
+*Rationale*: It is early days in the codebase and you know you will refactor
+many of these attributes into their own class
 
 ## Use try/except to find modules inside lib
 

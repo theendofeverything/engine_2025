@@ -18,8 +18,8 @@ class CoordinateTransform:
         # Flip y
         v_p.y *= -1
         # Scale based on the visible width of GCS at this zoom level
-        v_p.x *= game.window_size.x/game.gcs_width
-        v_p.y *= game.window_size.x/game.gcs_width
+        v_p.x *= game.coord_sys.window_size.x/game.coord_sys.gcs_width
+        v_p.y *= game.coord_sys.window_size.x/game.coord_sys.gcs_width
         # Translate pixel coordinate so that screen (0,0) (topleft corner) maps to location of game
         # (0,0) (initially the screen center)
         v_p.x += game.translation.x
@@ -36,8 +36,8 @@ class CoordinateTransform:
         v_g.x -= game.translation.x
         v_g.y -= game.translation.y
         # Scale
-        v_g.x *= 1/(game.window_size.x/game.gcs_width)
-        v_g.y *= 1/(game.window_size.x/game.gcs_width)
+        v_g.x *= 1/(game.coord_sys.window_size.x/game.coord_sys.gcs_width)
+        v_g.y *= 1/(game.coord_sys.window_size.x/game.coord_sys.gcs_width)
         # Flip y
         v_g.y *= -1
         return v_g

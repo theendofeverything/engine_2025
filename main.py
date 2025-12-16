@@ -18,6 +18,11 @@
     * [x] Handle window resize events
     * [x] Capture new window size
 * [x] Track mouse zoom
+    * [ ] Zoom at a point: calculate a translation vector based on the location of the zoom. Get the
+    mouse location, convert to GCS, then after the zoom increment, convert the mouse coordinate to
+    GCS again. Use the two GCS points to get a vector. Convert that vector to pixel coordinates,
+    then translate by the vector so that the screen pans just the right amount to keep that mouse
+    position at the center.
 * [ ] Track mouse pan
     * [x] Catch events for mouse button press and release
     * [x] Track whether mouse button 1 is up/down
