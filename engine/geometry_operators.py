@@ -21,8 +21,8 @@ class CoordinateTransform:
         v_p.y *= game.coord_sys.window_size.x/game.coord_sys.gcs_width
         # Translate pixel coordinate so that screen (0,0) (topleft corner) maps to location of game
         # (0,0) (initially the screen center)
-        v_p.x += game.translation.x
-        v_p.y += game.translation.y
+        v_p.x += game.coord_sys.translation.x
+        v_p.y += game.coord_sys.translation.y
         return v_p
 
     def pcs_to_gcs(self, v: Vec2D) -> Vec2D:
@@ -32,8 +32,8 @@ class CoordinateTransform:
         v_g = Vec2D(x=v.x, y=v.y)
         # Translate pixel coordinate so that location of game (0,0) (initially the screen center)
         # maps to screen (0,0) (topleft corner)
-        v_g.x -= game.translation.x
-        v_g.y -= game.translation.y
+        v_g.x -= game.coord_sys.translation.x
+        v_g.y -= game.coord_sys.translation.y
         # Scale
         v_g.x *= 1/(game.coord_sys.window_size.x/game.coord_sys.gcs_width)
         v_g.y *= 1/(game.coord_sys.window_size.x/game.coord_sys.gcs_width)

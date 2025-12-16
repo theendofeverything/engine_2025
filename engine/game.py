@@ -26,7 +26,7 @@ class Game:
         pygame.init()
         pygame.font.init()
         # Set the window size and center the GCS origin in the window.
-        self.coord_sys = CoordinateSystem(window_size=Vec2D(x=60*16, y=60*9))
+        self.coord_sys = CoordinateSystem(game=self, window_size=Vec2D(x=60*16, y=60*9))
         # Get a window from the OS
         self.window_surface = pygame.display.set_mode(
                 size=self.coord_sys.window_size.as_tuple(),
@@ -148,7 +148,7 @@ class Game:
             case 1:
                 self.mouse_button_1 = False             # Left mouse button released
                 self.panning.is_active = False          # Stop panning
-                self.coord_sys.origin_p = self.translation.as_point()  # Set the new origin
+                self.coord_sys.origin_p = self.coord_sys.translation.as_point()  # Set new origin
                 self.panning.start = self.panning.end  # Zero-out the panning vector
             case _:
                 pass
@@ -182,12 +182,6 @@ class Game:
                        ))
         # Update shapes dict
         self.shapes['lines'] = lines
-
-    @property
-    def translation(self) -> Vec2D:
-        """Return the translation vector: adds mouse pan to origin offset."""
-        return Vec2D(x=self.coord_sys.origin_p.x + self.panning.vector.x,
-                     y=self.coord_sys.origin_p.y + self.panning.vector.y)
 
     def render_shapes(self) -> None:
         """Render GCS shapes to the screen."""
@@ -241,7 +235,7 @@ class Game:
         def debug_pan() -> str:
             """Return string with pan values."""
             return (f"origin: {self.coord_sys.origin_p}, "
-                    f"translation: {self.translation}\n"
+                    f"translation: {self.coord_sys.translation}\n"
                     f"pan_start: {self.panning.start}, "
                     f"pan_end: {self.panning.end}\n"
                     )
