@@ -9,7 +9,7 @@ import logging
 import pygame
 from .geometry_types import Point2D, Vec2D
 from .geometry_operators import CoordinateTransform
-from .drawing_shapes import Line2D
+from .drawing_shapes import Line2D, Cross45
 from .timing import Timing
 from .coord_sys import CoordinateSystem
 from .renderer import Renderer
@@ -65,14 +65,14 @@ class Game:
     def draw_shapes(self) -> None:
         """Draw shapes in GCS."""
         lines: list[Line2D] = []
+        # Create artwork that uses lines
+        crosses = [
+            Cross45(origin=Point2D(0, 0), size=0.1),
+            Cross45(origin=Point2D(0.5, 0.5), size=0.1)
+            ]
         # Append line artwork to lines
-        lines.append(
-                Line2D(start=Point2D(-0.2, -0.2),
-                       end=Point2D(0.2, 0.2)
-                       ))
-        lines.append(
-                Line2D(start=Point2D(0.2, -0.2),
-                       end=Point2D(-0.2, 0.2)
-                       ))
-        # Update shapes dict
+        for cross in crosses:
+            for line in cross.lines:
+                lines.append(line)
+            # Update shapes dict
         self.shapes['lines'] = lines
