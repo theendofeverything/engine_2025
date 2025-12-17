@@ -12,31 +12,34 @@ from .geometry_operators import CoordinateTransform
 from .drawing_shapes import Line2D
 from .timing import Timing
 from .coord_sys import CoordinateSystem
-from .panning import Panning
 from .renderer import Renderer
 from .ui import UI
 
 
 class Game:
     """Game data is shared by all the code"""
-    coord_sys:              CoordinateSystem
-    timing:                 Timing
-    xfm:                    CoordinateTransform
-    panning:                Panning
-    renderer:               Renderer
     ui:                     UI
+    timing:                 Timing
+    coord_sys:              CoordinateSystem
+    xfm:                    CoordinateTransform
+    renderer:               Renderer
+
     shapes:                 dict[str, list[Line2D]]
 
     def __init__(self) -> None:
         # Load pygame
         pygame.init()
         pygame.font.init()
+        # Handle all user interface events in ui.py
+        self.ui = UI(game=self)
         # Set up a clock to set frame rate and measure frame period
         self.timing = Timing()
-        # Track panning state
-        self.panning = Panning()
         # Set the window size and center the GCS origin in the window.
-        self.coord_sys = CoordinateSystem(panning=self.panning, window_size=Vec2D(x=60*16, y=60*9))
+        self.coord_sys = CoordinateSystem(
+                panning=self.ui.panning,
+                window_size=Vec2D(x=60*16, y=60*9))
+        # Create 'xfm' for transforming between coordinate systems
+        self.xfm = CoordinateTransform(coord_sys=self.coord_sys)
         # Handle rendering in renderer.py
         self.renderer = Renderer(
                 game=self,
@@ -44,10 +47,6 @@ class Game:
                     size=self.coord_sys.window_size.as_tuple(),
                     flags=pygame.RESIZABLE
                     ))
-        # Create 'xfm' for transforming between coordinate systems
-        self.xfm = CoordinateTransform(coord_sys=self.coord_sys)
-        # Handle all user interface events in ui.py
-        self.ui = UI(game=self)
 
     def run(self, log: logging.Logger) -> None:
         """Run the game."""

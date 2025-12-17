@@ -4,12 +4,14 @@ import logging
 from dataclasses import dataclass
 import pygame
 from .geometry_types import Vec2D, Point2D
+from .panning import Panning
 
 
 @dataclass
 class UI:
     """Handle user interface events."""
     game:                   'Game'
+    panning:                Panning = Panning()  # Track panning state
     mouse_button_1:         bool = False  # Track mouse button 1 down/up
 
     def handle_events(self, log: logging.Logger) -> None:
@@ -27,10 +29,9 @@ class UI:
                 - read "<--" as "thing-on-left uses thing-on-right"
                 - panning.vector = panning.end - panning.start
         """
-        game = self.game
-        if game.panning.is_active:
+        if self.panning.is_active:
             mouse_pos = pygame.mouse.get_pos()
-            game.panning.end = Point2D.from_tuple(mouse_pos)
+            self.panning.end = Point2D.from_tuple(mouse_pos)
 
     def consume_event_queue(self, log: logging.Logger) -> None:
         """Consume all events on the event queue.
@@ -101,15 +102,14 @@ class UI:
                                        event: pygame.event.Event,
                                        log: logging.Logger) -> None:
         """Handle event mouse button down."""
-        game = self.game
         log.debug("Event MOUSEBUTTONDOWN, "
                   f"pos: {event.pos}, "
                   f"button: {event.button}")
         match event.button:
             case 1:
                 self.mouse_button_1 = True              # Left mouse button pressed
-                game.panning.is_active = True           # Start panning
-                game.panning.start = Point2D.from_tuple(event.pos)
+                self.panning.is_active = True           # Start panning
+                self.panning.start = Point2D.from_tuple(event.pos)
             case _:
                 pass
 
@@ -124,9 +124,9 @@ class UI:
         match event.button:
             case 1:
                 self.mouse_button_1 = False             # Left mouse button released
-                game.panning.is_active = False          # Stop panning
+                self.panning.is_active = False          # Stop panning
                 game.coord_sys.pcs_origin = game.coord_sys.translation.as_point()  # Set new origin
-                game.panning.start = game.panning.end  # Zero-out the panning vector
+                self.panning.start = self.panning.end  # Zero-out the panning vector
             case _:
                 pass
 

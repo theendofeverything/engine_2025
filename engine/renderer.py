@@ -76,8 +76,8 @@ class Renderer:
             """Return string with pan values."""
             return (f"origin: {game.coord_sys.pcs_origin}, "
                     f"translation: {game.coord_sys.translation}\n"
-                    f"pan_start: {game.panning.start}, "
-                    f"pan_end: {game.panning.end}\n"
+                    f"pan_start: {game.ui.panning.start}, "
+                    f"pan_end: {game.ui.panning.end}\n"
                     )
         text += debug_pan()
 
