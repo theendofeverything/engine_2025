@@ -111,13 +111,18 @@ Then I have a cyclic import:
 engine/panning.py|1| R0401: Cyclic import (engine.game -> engine.geometry_operators) (cyclic-import)
 ```
 
-It's not really a circular dependency since I only need the type for type
-checking. (Python's run time is all duck-typed: it does not actually need to
-know the type that module B is acting on.)
+It's not really a circular dependency (cyclic import) since I only need the
+import for type checking. (Python's run time is all duck-typed: it does not
+actually need to know the type that module B is acting on.)
 
 The only way to eliminate the cyclic import is to put these classes in the same
-file. Instead, put the type name in quotes. This works just
-fine except that `flake8` complains "undefined name":
+file.
+
+To leave these classes in separate files, do not import. Instead, put the type
+name in quotes. This is called `forward references`. See
+https://peps.python.org/pep-0484/#forward-references.
+
+This works just fine except that `flake8` complains "undefined name":
 
 ```
 lib/geometry_operators.py|10 col 30| F821 undefined name 'Game'
@@ -134,41 +139,4 @@ And I add this to `g:ale_python_flake8_options` in my `vimrc`:
 ```vim
 let g:ale_python_flake8_options = '--max-line-length 100 --extend-ignore F821'
 ```
-
-## Use try/except to find modules inside lib
-
-When running a file on its own inside `lib` for testing purposes, this import
-statement does not work because we are already inside `lib`:
-
-```python
-from lib.geometry_types import Point2D
-```
-
-The solution is to use `try/except` clause like this:
-
-```python
-try:
-    from .geometry_types import Point2D
-except ModuleNotFoundError:
-    from lib.geometry_types import Point2D
-```
-
-Unfortunately, to run a `lib/thing.py` as a script, the import has to be absolute:
-
-```python
-    # Note no leading dot in front of geometry_types
-    from geometry_types import Point2D
-```
-
-The `doctest` module is fine with this and most of the linters are fine with
-this. The one exception is `mypy`. Now it complains about missing imports.
-
-This is just a nuisance warning. Silence it by creating a `mypy.ini` file in the project root:
-
-```
-[mypy]
-disable_error_code = import-not-found
-```
-
-Or do not put an executable `__main__` section in lib code and create a top-level `tests.py` instead.
 
