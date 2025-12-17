@@ -15,15 +15,16 @@ from .drawing_shapes import Line2D
 from .timing import Timing
 from .coord_sys import CoordinateSystem
 from .panning import Panning
+from .renderer import Renderer
 
 
 class Game:
     """Game data is shared by all the code"""
     coord_sys:              CoordinateSystem
-    window_surface:         pygame.Surface
     timing:                 Timing
     xfm:                    CoordinateTransform
     panning:                Panning
+    renderer:               Renderer
     shapes:                 dict[str, list[Line2D]]
     mouse_button_1:         bool
 
@@ -37,11 +38,13 @@ class Game:
         self.panning = Panning()
         # Set the window size and center the GCS origin in the window.
         self.coord_sys = CoordinateSystem(panning=self.panning, window_size=Vec2D(x=60*16, y=60*9))
-        # Get a window from the OS
-        self.window_surface = pygame.display.set_mode(
-                size=self.coord_sys.window_size.as_tuple(),
-                flags=pygame.RESIZABLE
-                )
+        # Handle rendering in renderer.py
+        self.renderer = Renderer(
+                game=self,
+                window_surface=pygame.display.set_mode(  # Get a window from the OS
+                    size=self.coord_sys.window_size.as_tuple(),
+                    flags=pygame.RESIZABLE
+                    ))
         # Create 'xfm' for transforming between coordinate systems
         self.xfm = CoordinateTransform(coord_sys=self.coord_sys)
 
@@ -59,9 +62,9 @@ class Game:
         self.draw_shapes()
         # Render
         self.update_panning()
-        self.window_surface.fill(Colors.background)
-        self.render_shapes()
-        self.render_debug_hud()
+        self.renderer.window_surface.fill(Colors.background)
+        self.renderer.render_shapes()
+        self.renderer.render_debug_hud()
         pygame.display.flip()
         # Delay to keep game at 60 FPS.
         self.timing.ms_per_frame = self.timing.clock.tick(60)
@@ -199,78 +202,3 @@ class Game:
         if self.panning.is_active:
             mouse_pos = pygame.mouse.get_pos()
             self.panning.end = Point2D.from_tuple(mouse_pos)
-
-    def render_shapes(self) -> None:
-        """Render GCS shapes to the screen."""
-        # Convert all lines from GCS to PCS and draw lines to the screen.
-        for line_g in self.shapes['lines']:
-            # Convert GCS to PCS
-            line_p = Line2D(start=self.xfm.gcs_to_pcs(line_g.start.as_vec()).as_point(),
-                            end=self.xfm.gcs_to_pcs(line_g.end.as_vec()).as_point()
-                            )
-            # Render to screen
-            pygame.draw.line(self.window_surface,
-                             Colors.line,
-                             line_p.start.as_tuple(),
-                             line_p.end.as_tuple()
-                             )
-
-    def render_debug_hud(self) -> None:
-        """Display values in the Debug HUD."""
-        font = pygame.font.SysFont("RobotoMono", 15, bold=False)
-        pos = (0, 0)
-        text = ""
-
-        def debug_window_size() -> str:
-            # Display window size
-            center = (self.coord_sys.window_size.x/2, self.coord_sys.window_size.y/2)
-            return f"Window size: {self.coord_sys.window_size}, Center: {center} PCS\n"
-        text += debug_window_size()
-
-        def debug_mouse_position() -> str:
-            """Return string with mouse position in game and pixel coordiantes."""
-            # Get mouse position in pixel coordinates
-            mouse_position_tuple = pygame.mouse.get_pos()
-            mouse_position = Vec2D(x=mouse_position_tuple[0],
-                                   y=mouse_position_tuple[1])
-            # Get mouse position in game coordinates
-            mouse_g = self.xfm.pcs_to_gcs(mouse_position)
-            # Test transform by converting back to pixel coordinates
-            mouse_p = self.xfm.gcs_to_pcs(mouse_g)
-            return ("Mouse: "
-                    f"({mouse_g.x:0.1f}, {mouse_g.y:0.1f}) GCS, "
-                    f"({mouse_p.x:0.1f}, {mouse_p.y:0.1f}) PCS\n"
-                    )
-        text += debug_mouse_position()
-
-        def debug_mouse_button() -> str:
-            """Return string with mouse button state."""
-            return ("Mouse buttons: "
-                    f"1: {self.mouse_button_1}\n"
-                    )
-        text += debug_mouse_button()
-
-        def debug_pan() -> str:
-            """Return string with pan values."""
-            return (f"origin: {self.coord_sys.pcs_origin}, "
-                    f"translation: {self.coord_sys.translation}\n"
-                    f"pan_start: {self.panning.start}, "
-                    f"pan_end: {self.panning.end}\n"
-                    )
-        text += debug_pan()
-
-        def debug_fps() -> str:
-            # Display frame duration in milliseconds and rate in FPS
-            # # TODO: update fps every N frames instead of every frame
-            # fps = 1000 / self.timing.ms_per_frame
-            # # Use get_fps() for now -- it averages every 10 frames
-            fps = self.timing.clock.get_fps()
-            return f"frame: {self.timing.ms_per_frame:d}ms ({fps:0.1f}FPS)"
-        text += debug_fps()
-
-        for i, line in enumerate(text.split('\n')):
-            text_surface = font.render(line, True, Colors.text)
-            self.window_surface.blit(
-                    text_surface,
-                    (pos[0], pos[1] + font.get_linesize()*i)
-                    )
