@@ -1,31 +1,56 @@
-"""CoordinateSystem is a helper struct to organize Game. It contains all things relating to the
-coordinate systems: window_size, GCS width, GCS origin, ...
+"""CoordinateSystem is a helper struct to organize Game attributes for the coordinate systems.
+
+There are two coordinate systems:
+    PCS: Pixel Coordinate System
+    GCS: Game Coordinate System
 """
 from dataclasses import dataclass
 from .geometry_types import Vec2D, Point2D
+from .panning import Panning
 
 
 @dataclass
 class CoordinateSystem:
-    """All coordinate-system-related game instance attributes."""
-    game:                   'Game'
+    """Game attributes for the coordinate systems.
+
+    Attributes:
+        window_size (Vec2D):
+            The size of the OS window in pixels.
+        gcs_width (float):
+            The visible width of the game in the game coordinate system.
+        pcs_origin (Point2D):
+            The game coordinate system origin in pixel coordinates.
+
+    Read-only attributes:
+        window_center (Point2D):
+            Center of the window in pixel coordinates.
+        translation (Vec2D):
+            This is a vector in pixel coordinates from the topleft of the window to the game origin,
+            i.e., this translation vector describes the origin offset.
+            The name 'translation' refers to how it is used in the CoordinateTransform.
+            Mouse panning is included in the origin offset when calculating 'translation'.
+    """
+    panning:                Panning
     window_size:            Vec2D
     gcs_width:              float = 2                   # GCS -1:1 fills screen width
 
     def __post_init__(self) -> None:
-        self.origin_p = self.window_center              # Origin is initially the window center
+        self.pcs_origin = self.window_center              # Origin is initially the window center
 
     @property
     def window_center(self) -> Point2D:
-        """Return the center of the window in pixel coordinates."""
+        """The center of the window in pixel coordinates."""
         return Point2D(self.window_size.x/2, self.window_size.y/2)
 
     @property
     def translation(self) -> Vec2D:
-        """Return the translation vector: adds mouse pan to origin offset.
+        """The translation vector describing the origin offset relative to the window (0,0).
 
-        CoordinateSystem.translation updates the panning on the screen when it is used in the
-        coordiante transforms: CoordinateTransform.gcs_to_pcs() and CoordinateTransform.pcs_to_gcs()
+        Dependency chain showing how translation is used and how it is affected by panning:
+            renderer <-- xfm.gcs_to_pcs <-- coord_sys.translation <-- panning.vector
+            In the above dependency chain:
+                - read "<--" as "thing-on-left uses thing-on-right"
+                - panning.vector = panning.end - panning.start
         """
-        return Vec2D(x=self.origin_p.x + self.game.panning.vector.x,
-                     y=self.origin_p.y + self.game.panning.vector.y)
+        return Vec2D(x=self.pcs_origin.x + self.panning.vector.x,
+                     y=self.pcs_origin.y + self.panning.vector.y)

@@ -1,5 +1,4 @@
-"""Panning is a helper struct to organize Game. It tracks all state for panning: panning.start,
-panning.end, panning.amount.
+"""Panning is a helper struct to organize Game. It tracks the mouse panning state.
 """
 from dataclasses import dataclass
 from .geometry_types import Point2D, Vec2D
@@ -7,7 +6,23 @@ from .geometry_types import Point2D, Vec2D
 
 @dataclass
 class Panning:
-    """Track panning state.
+    """Track mouse panning state.
+
+    Attributes:
+        is_active (bool):
+            Panning is in two states: either active (is_active=True) or inactive (is_active=False).
+        start (Point2D):
+            Position in the pixel coordinate system when panning transitioned to the active state.
+            While in the active state, 'start' does not change.
+        end (Point2D):
+            Latest mouse position in the pixel coordinate system while panning: the game loads 'end'
+            with the mouse position on every iteration of the game loop.
+        vector (Vec2D):
+            Amount of mouse pan, obtained from end - start.
+            The 'panning.vector' is picked up during rendering: when the game loop renders drawing
+            entities, it converts entity coordinates from the game to the pixel coordinate system.
+            That coordinate transform ('xfm.gcs_to_pcs()') uses the origin offset (the
+            'coord_sys.translation' vector), which uses the 'panning.vector' in its calculation.
 
     >>> panning = Panning()                             # Track panning state
     >>> mouse_pos = (123, 456)                          # Position when button 1 was pressed

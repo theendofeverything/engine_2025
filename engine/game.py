@@ -1,4 +1,10 @@
-"""Top-level game code."""
+"""Top-level game code.
+
+Abbreviations:
+    GCS: Game Coordinate System
+    PCS: Pixel Coordinate System
+    xfm: transform
+"""
 import sys                  # Exit with sys.exit()
 import logging
 import pygame
@@ -25,19 +31,19 @@ class Game:
         # Load pygame
         pygame.init()
         pygame.font.init()
+        # Set up a clock to set frame rate and measure frame period
+        self.timing = Timing()
+        # Track panning state
+        self.panning = Panning()
         # Set the window size and center the GCS origin in the window.
-        self.coord_sys = CoordinateSystem(game=self, window_size=Vec2D(x=60*16, y=60*9))
+        self.coord_sys = CoordinateSystem(panning=self.panning, window_size=Vec2D(x=60*16, y=60*9))
         # Get a window from the OS
         self.window_surface = pygame.display.set_mode(
                 size=self.coord_sys.window_size.as_tuple(),
                 flags=pygame.RESIZABLE
                 )
-        # Set up a clock to set frame rate and measure frame period
-        self.timing = Timing()
         # Create 'xfm' for transforming between coordinate systems
-        self.xfm = CoordinateTransform(self)
-        # Track panning state
-        self.panning = Panning()
+        self.xfm = CoordinateTransform(coord_sys=self.coord_sys)
 
     def run(self, log: logging.Logger) -> None:
         """Run the game."""
@@ -50,12 +56,9 @@ class Game:
         """Loop until the user quits."""
         self.handle_events(log)
         # Physics
-        if self.panning.is_active:
-            # Update point where we have panned to
-            mouse_pos = pygame.mouse.get_pos()
-            self.panning.end = Point2D.from_tuple(mouse_pos)
         self.draw_shapes()
         # Render
+        self.update_panning()
         self.window_surface.fill(Colors.background)
         self.render_shapes()
         self.render_debug_hud()
@@ -94,7 +97,7 @@ class Game:
         # mouse_pos = pygame.mouse.get_pos()
         # mouse_p = Point2D.from_tuple(mouse_pos)
         # mouse_g = self.xfm.pcs_to_gcs(mouse_p.as_vec())
-        # origin_g = self.xfm.pcs_to_gcs(self.coord_sys.origin_p.as_vec())
+        # origin_g = self.xfm.pcs_to_gcs(self.coord_sys.pcs_origin.as_vec())
         # translation = self.Vec2D.from_points(start=origin_g, end=mouse_g)
         self.coord_sys.gcs_width *= 1.1
 
@@ -148,7 +151,7 @@ class Game:
             case 1:
                 self.mouse_button_1 = False             # Left mouse button released
                 self.panning.is_active = False          # Stop panning
-                self.coord_sys.origin_p = self.coord_sys.translation.as_point()  # Set new origin
+                self.coord_sys.pcs_origin = self.coord_sys.translation.as_point()  # Set new origin
                 self.panning.start = self.panning.end  # Zero-out the panning vector
             case _:
                 pass
@@ -183,8 +186,23 @@ class Game:
         # Update shapes dict
         self.shapes['lines'] = lines
 
+    def update_panning(self) -> None:
+        """Update 'panning.end': the latest point the mouse has panned to.
+
+        Dependency chain depicting how panning manifests as translating the game view on the screen:
+            renderer <-- xfm.gcs_to_pcs <-- coord_sys.translation <-- panning.vector
+
+            In the above dependency chain:
+                - read "<--" as "thing-on-left uses thing-on-right"
+                - panning.vector = panning.end - panning.start
+        """
+        if self.panning.is_active:
+            mouse_pos = pygame.mouse.get_pos()
+            self.panning.end = Point2D.from_tuple(mouse_pos)
+
     def render_shapes(self) -> None:
         """Render GCS shapes to the screen."""
+        # Convert all lines from GCS to PCS and draw lines to the screen.
         for line_g in self.shapes['lines']:
             # Convert GCS to PCS
             line_p = Line2D(start=self.xfm.gcs_to_pcs(line_g.start.as_vec()).as_point(),
@@ -234,7 +252,7 @@ class Game:
 
         def debug_pan() -> str:
             """Return string with pan values."""
-            return (f"origin: {self.coord_sys.origin_p}, "
+            return (f"origin: {self.coord_sys.pcs_origin}, "
                     f"translation: {self.coord_sys.translation}\n"
                     f"pan_start: {self.panning.start}, "
                     f"pan_end: {self.panning.end}\n"

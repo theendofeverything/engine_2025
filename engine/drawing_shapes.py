@@ -14,9 +14,3 @@ class Line2D:
     """
     start: Point2D
     end: Point2D
-
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
-    print("Import worked")

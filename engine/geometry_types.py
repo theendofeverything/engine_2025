@@ -1,5 +1,4 @@
 """Geometry data types: points and vectors.
-TODO: move coordinate transforms to geometry_operators.py
 """
 from __future__ import annotations
 from dataclasses import dataclass
@@ -67,8 +66,3 @@ class Vec2D:
         """Create a vector from two points: vector = end - start."""
         return cls(x=end.x-start.x,
                    y=end.y-start.y)
-
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
