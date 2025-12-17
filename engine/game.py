@@ -5,10 +5,8 @@ Abbreviations:
     PCS: Pixel Coordinate System
     xfm: transform
 """
-import sys                  # Exit with sys.exit()
 import logging
 import pygame
-from .colors import Colors
 from .geometry_types import Point2D, Vec2D
 from .geometry_operators import CoordinateTransform
 from .drawing_shapes import Line2D
@@ -16,6 +14,7 @@ from .timing import Timing
 from .coord_sys import CoordinateSystem
 from .panning import Panning
 from .renderer import Renderer
+from .ui import UI
 
 
 class Game:
@@ -25,8 +24,8 @@ class Game:
     xfm:                    CoordinateTransform
     panning:                Panning
     renderer:               Renderer
+    ui:                     UI
     shapes:                 dict[str, list[Line2D]]
-    mouse_button_1:         bool
 
     def __init__(self) -> None:
         # Load pygame
@@ -47,132 +46,22 @@ class Game:
                     ))
         # Create 'xfm' for transforming between coordinate systems
         self.xfm = CoordinateTransform(coord_sys=self.coord_sys)
+        # Handle all user interface events in ui.py
+        self.ui = UI(game=self)
 
     def run(self, log: logging.Logger) -> None:
         """Run the game."""
         self.shapes = {}                                # Shape primitives
-        self.mouse_button_1 = False                     # Track mouse button 1 down/up
         while True:
             self.loop(log)
 
     def loop(self, log: logging.Logger) -> None:
         """Loop until the user quits."""
-        self.handle_events(log)
-        # Physics
-        self.draw_shapes()
-        # Render
-        self.update_panning()
-        self.renderer.window_surface.fill(Colors.background)
-        self.renderer.render_shapes()
-        self.renderer.render_debug_hud()
-        pygame.display.flip()
+        self.ui.handle_events(log)
+        self.draw_shapes()                              # Physics
+        self.renderer.render_all()
         # Delay to keep game at 60 FPS.
         self.timing.ms_per_frame = self.timing.clock.tick(60)
-
-    def handle_events(self, log: logging.Logger) -> None:
-        """Handle events."""
-        for event in pygame.event.get():
-            match event.type:
-                case pygame.QUIT: sys.exit()
-                case pygame.KEYDOWN:
-                    log.debug("Keydown")
-                    sys.exit()
-                case pygame.WINDOWSIZECHANGED:
-                    # Update window size
-                    self.coord_sys.window_size = Vec2D(x=event.x, y=event.y)
-                    log.debug(f"Event WINDOWSIZECHANGED, new size: ({event.x}, {event.y})")
-                case pygame.MOUSEBUTTONDOWN:
-                    self.handle_mousebutton_down_events(event, log)
-                case pygame.MOUSEBUTTONUP:
-                    self.handle_mousebutton_up_events(event, log)
-                case pygame.MOUSEWHEEL:
-                    self.handle_mousewheel_events(event, log)
-                case _:
-                    self.log_unused_events(event, log)
-
-    def zoom_out(self) -> None:
-        """Zoom out.
-
-        TODO: zoom about a point.
-        Use mouse position to create an offset then add that to the origin. This is all in pixel
-        coordinates.
-        """
-        # mouse_pos = pygame.mouse.get_pos()
-        # mouse_p = Point2D.from_tuple(mouse_pos)
-        # mouse_g = self.xfm.pcs_to_gcs(mouse_p.as_vec())
-        # origin_g = self.xfm.pcs_to_gcs(self.coord_sys.pcs_origin.as_vec())
-        # translation = self.Vec2D.from_points(start=origin_g, end=mouse_g)
-        self.coord_sys.gcs_width *= 1.1
-
-    def zoom_in(self) -> None:
-        """Zoom in.
-
-        TODO: zoom about a point.
-        """
-        self.coord_sys.gcs_width *= 0.9
-
-    def handle_mousewheel_events(self,
-                                 event: pygame.event.Event,
-                                 log: logging.Logger) -> None:
-        """Handle mousewheel events."""
-        match event.y:
-            case -1:
-                log.debug("ZOOM OUT")
-                self.zoom_out()
-            case 1:
-                log.debug("ZOOM IN")
-                self.zoom_in()
-            case _:
-                log.debug("Unexpected y-value")
-        log.debug(f"Event MOUSEWHEEL, flipped: {event.flipped}, "
-                  f"x:{event.x}, y:{event.y}, "
-                  f"precise_x:{event.precise_x}, precise_y:{event.precise_y}")
-
-    def handle_mousebutton_down_events(self,
-                                       event: pygame.event.Event,
-                                       log: logging.Logger) -> None:
-        """Handle event mouse button down."""
-        log.debug("Event MOUSEBUTTONDOWN, "
-                  f"pos: {event.pos}, "
-                  f"button: {event.button}")
-        match event.button:
-            case 1:
-                self.mouse_button_1 = True              # Left mouse button pressed
-                self.panning.is_active = True           # Start panning
-                self.panning.start = Point2D.from_tuple(event.pos)
-            case _:
-                pass
-
-    def handle_mousebutton_up_events(self,
-                                     event: pygame.event.Event,
-                                     log: logging.Logger) -> None:
-        """Handle event mouse button up."""
-        log.debug("Event MOUSEBUTTONUP, "
-                  f"pos: {event.pos}, "
-                  f"button: {event.button}")
-        match event.button:
-            case 1:
-                self.mouse_button_1 = False             # Left mouse button released
-                self.panning.is_active = False          # Stop panning
-                self.coord_sys.pcs_origin = self.coord_sys.translation.as_point()  # Set new origin
-                self.panning.start = self.panning.end  # Zero-out the panning vector
-            case _:
-                pass
-
-    def log_unused_events(self, event: pygame.event.Event, log: logging.Logger) -> None:
-        """Log events that I have not found a use for yet."""
-        match event.type:
-            case pygame.MOUSEBUTTONDOWN:
-                log.debug(f"Event MOUSEBUTTONDOWN, pos: {event.pos}, button: {event.button}")
-            case pygame.MOUSEBUTTONUP:
-                log.debug(f"Event MOUSEBUTTONUP, pos: {event.pos}, button: {event.button}")
-            case pygame.VIDEORESIZE:
-                # Do we need this?
-                log.debug(f"Event VIDEORESIZE, new size: ({event.w}, {event.h})")
-            case pygame.WINDOWRESIZED:
-                # Do we need this?
-                log.debug(f"Event WINDOWRESIZED, new size: ({event.x}, {event.y})")
-            case _: log.debug(event)
 
     def draw_shapes(self) -> None:
         """Draw shapes in GCS."""
@@ -188,17 +77,3 @@ class Game:
                        ))
         # Update shapes dict
         self.shapes['lines'] = lines
-
-    def update_panning(self) -> None:
-        """Update 'panning.end': the latest point the mouse has panned to.
-
-        Dependency chain depicting how panning manifests as translating the game view on the screen:
-            renderer <-- xfm.gcs_to_pcs <-- coord_sys.translation <-- panning.vector
-
-            In the above dependency chain:
-                - read "<--" as "thing-on-left uses thing-on-right"
-                - panning.vector = panning.end - panning.start
-        """
-        if self.panning.is_active:
-            mouse_pos = pygame.mouse.get_pos()
-            self.panning.end = Point2D.from_tuple(mouse_pos)

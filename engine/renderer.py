@@ -13,6 +13,13 @@ class Renderer:
     game:                   'Game'
     window_surface:         pygame.Surface
 
+    def render_all(self) -> None:
+        """Called from the game loop."""
+        self.window_surface.fill(Colors.background)
+        self.render_shapes()
+        self.render_debug_hud()
+        pygame.display.flip()
+
     def render_shapes(self) -> None:
         """Render GCS shapes to the screen."""
         game = self.game
@@ -61,7 +68,7 @@ class Renderer:
         def debug_mouse_button() -> str:
             """Return string with mouse button state."""
             return ("Mouse buttons: "
-                    f"1: {game.mouse_button_1}\n"
+                    f"1: {game.ui.mouse_button_1}\n"
                     )
         text += debug_mouse_button()
 
