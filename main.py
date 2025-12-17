@@ -57,7 +57,7 @@ def shutdown(file: str, log: logging.Logger) -> None:
     log.debug("Shutdown finished.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _log = setup_logging()
     _log.debug("Run %s", Path(__file__).name)
     atexit.register(shutdown, __file__, _log)

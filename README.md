@@ -22,7 +22,45 @@ with matrix algebra using homogenous coordinates for translation.
 # Python code
 
 The Python project follows a simple structure. The project is essentially flat
-with an entry point in `main.py` and all other code residing in the `engine/` folder.
+with an entry point in `main.py` and all other code residing in the `engine/`
+folder with the top-level code in `engine/game.py`:
+
+```
+.
+├── main.py
+├── engine
+│   ├── __init__.py
+│   ├── game.py <------------ TOP-LEVEL GAME CODE
+│   ...
+│   └── ui.py
+├── .pylintrc
+└── mypy.ini
+```
+
+The `engine/__init__.py` makes this folder a package.
+
+*Note: Python runs the application just fine without this `__init__.py`. The
+`__init__.py` is only necessary to avoid linter `mypy` throwing the error
+`Cannot find implementation or library stub for module named ...`.*
+
+Many of the `engine/` files are Python modules that define a single
+class:
+
+File                  | Class
+----                  | -----
+`engine/colors.py`    | `Colors`
+`engine/coord_sys.py` | `CoordinateSystem`
+`engine/game.py`      | `Game`
+`engine/panning.py`   | `Panning`
+`engine/renderer.py`  | `Renderer`
+`engine/timing.py`    | `Timing`
+`engine/ui.py`        | `UI`
+
+Class `Game` class contains the top-level game code. It is instantiated by
+`main.py`: `Game().run()` launches the application. In the future, I might bump
+`game.py` up a level and get rid of `main.py`. For now, `main.py` is a
+convenient place to setup logging and register a `shutdown` function (for
+cleanup when the application exits).
 
 # Docs in `doc`
 
@@ -32,3 +70,4 @@ miscellany of developing a Python project.
 - [Pygame Docs](doc/pygame_docs.md)
 - [Vim](doc/vim.md)
 - [Python Linters](doc/python_linters.md)
+- [Unit Tests](doc/unit_tests.md)

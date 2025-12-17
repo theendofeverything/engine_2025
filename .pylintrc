@@ -1,11 +1,32 @@
 [MASTER]
 extension-pkg-allow-list=pygame
 
+[FORMAT]
+
+# Allow the body of an if to be on the same line as the test if there is no
+# else.
+single-line-if-stmt=yes
+
+# Maximum number of lines in a module
+max-module-lines=500
+
+[MISCELLANEOUS]
+
+# List of note tags to take in consideration, separated by a comma.
+notes=TODO
+
+[STRING]
+
+# This flag controls whether inconsistent-quotes generates a warning when the
+# character used as a quote delimiter is used inconsistently within a module.
+check-quote-consistency=yes
+
 [BASIC]
 ## Good variable names which should always be accepted, separated by a comma.
-# good-names=i,
-#            j,
-#            k,
-#            ex,
-#            Run,
-#            _
+# good-names=i,j,k,_
+
+# Bad variable names which should always be refused, separated by a comma
+# bad-names=
+
+# List of valid names for the first argument in a class method.
+valid-classmethod-first-arg=cls

@@ -10,7 +10,7 @@ from .panning import Panning
 @dataclass
 class UI:
     """Handle user interface events."""
-    game:                   'Game'
+    game:                   "Game"
     panning:                Panning = Panning()  # Track panning state
     mouse_button_1:         bool = False  # Track mouse button 1 down/up
 

@@ -10,7 +10,7 @@ from .colors import Colors
 @dataclass
 class Renderer:
     """Renderer."""
-    game:                   'Game'
+    game:                   "Game"
     window_surface:         pygame.Surface
 
     def render_all(self) -> None:
@@ -24,7 +24,7 @@ class Renderer:
         """Render GCS shapes to the screen."""
         game = self.game
         # Convert all lines from GCS to PCS and draw lines to the screen.
-        for line_g in game.shapes['lines']:
+        for line_g in game.shapes["lines"]:
             # Convert GCS to PCS
             line_p = Line2D(start=game.xfm.gcs_to_pcs(line_g.start.as_vec()).as_point(),
                             end=game.xfm.gcs_to_pcs(line_g.end.as_vec()).as_point()
@@ -90,7 +90,7 @@ class Renderer:
             return f"frame: {game.timing.ms_per_frame:d}ms ({fps:0.1f}FPS)"
         text += debug_fps()
 
-        for i, line in enumerate(text.split('\n')):
+        for i, line in enumerate(text.split("\n")):
             text_surface = font.render(line, True, Colors.text)
             self.window_surface.blit(
                     text_surface,
