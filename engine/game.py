@@ -97,7 +97,7 @@ class Game:
 
     def draw_debug_shapes(self) -> None:
         """Draw debug artwork in GCS."""
-        if self.debug.is_visible:
+        if self.debug.art.is_visible:
             # Create debug artwork that uses lines
             crosses: list[Cross] = [
                 Cross(origin=Point2D(0, 0), size=0.1),

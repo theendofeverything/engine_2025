@@ -53,8 +53,11 @@ class UI:
                             log.debug("User pressed 'c' to clear debug snapshot artwork.")
                             game.debug.art.reset_snapshots()
                         case pygame.K_SPACE:
-                            log.debug("User pressed 'Space' to toggle debug overlay.")
-                            game.debug.is_visible = not game.debug.is_visible
+                            log.debug("User pressed 'Space' to toggle debug art overlay.")
+                            game.debug.art.is_visible = not game.debug.art.is_visible
+                        case pygame.K_d:
+                            log.debug("User pressed 'd' to toggle debug HUD.")
+                            game.debug.hud.is_visible = not game.debug.hud.is_visible
                 case pygame.WINDOWSIZECHANGED:
                     # Update window size
                     game.coord_sys.window_size = Vec2D(x=event.x, y=event.y)

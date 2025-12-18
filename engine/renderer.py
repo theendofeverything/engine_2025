@@ -17,7 +17,7 @@ class Renderer:
         """Called from the game loop."""
         self.window_surface.fill(Colors.background)
         self.render_shapes()
-        if self.game.debug.is_visible:
+        if self.game.debug.hud.is_visible:
             self.render_debug_hud()
         pygame.display.flip()
 
@@ -85,7 +85,7 @@ class Renderer:
 
         def debug_overlay_is_visible() -> str:
             """Return string displaying whether debug overlay is visible."""
-            return f"Debug overlay: {game.debug.is_visible}"
+            return f"Debug art overlay: {game.debug.art.is_visible}"
         game.debug.hud.print(debug_overlay_is_visible())
 
         # Print the snapshots last

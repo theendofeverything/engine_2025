@@ -8,6 +8,7 @@ class DebugArt:
     """Debug Artwork."""
     lines:      list[Line2D] = field(default_factory=list)  # Draw every iteration to persist
     snapshots:  list[Line2D] = field(default_factory=list)  # Sticks around until manually cleared
+    is_visible: bool = True
 
     def reset(self) -> None:
         """Clear the debug art."""
@@ -30,6 +31,7 @@ class DebugHud:
     """
     text:                   str = ""
     snapshots:              str = ""
+    is_visible:             bool = True
 
     def reset(self) -> None:
         """Clear the text in the debug HUD."""
@@ -59,4 +61,3 @@ class Debug:
     """Debug messages in the HUD and debug artwork."""
     hud:                    DebugHud = DebugHud()
     art:                    DebugArt = DebugArt()
-    is_visible:             bool = True
