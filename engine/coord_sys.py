@@ -29,6 +29,12 @@ class CoordinateSystem:
             i.e., this translation vector describes the origin offset.
             The name 'translation' refers to how it is used in the CoordinateTransform.
             Mouse panning is included in the origin offset when calculating 'translation'.
+        scale_gcs_to_pcs (float):
+            Scaling factor to transform from units of GCS to PCS.
+            The scale is based on the visible width of the GCS at this zoom level
+        scale_pcs_to_gcs (float):
+            Scaling factor to transform from units of PCS to GCS.
+            This is the inverse of scale_gcs_to_pcs.
     """
     panning:                Panning
     window_size:            Vec2D
@@ -54,3 +60,13 @@ class CoordinateSystem:
         """
         return Vec2D(x=self.pcs_origin.x + self.panning.vector.x,
                      y=self.pcs_origin.y + self.panning.vector.y)
+
+    @property
+    def scale_gcs_to_pcs(self) -> float:
+        """Scaling factor to convert from units of GCS to PCS."""
+        return self.window_size.x/self.gcs_width
+
+    @property
+    def scale_pcs_to_gcs(self) -> float:
+        """Scaling factor to convert from units of PCS to GCS."""
+        return 1/(self.scale_gcs_to_pcs)

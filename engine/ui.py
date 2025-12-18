@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import pygame
 from .geometry_types import Vec2D, Point2D
 from .panning import Panning
+from .drawing_shapes import Line2D
 
 
 @dataclass
@@ -43,8 +44,17 @@ class UI:
             match event.type:
                 case pygame.QUIT: sys.exit()
                 case pygame.KEYDOWN:
-                    log.debug("Keydown")
-                    sys.exit()
+                    log.debug(f"Keydown: {event}")
+                    match event.key:
+                        case pygame.K_q:
+                            log.debug("User pressed 'q' to quit.")
+                            sys.exit()
+                        case pygame.K_c:
+                            log.debug("User pressed 'c' to clear debug snapshot artwork.")
+                            game.debug.art.reset_snapshots()
+                        case pygame.K_SPACE:
+                            log.debug("User pressed 'Space' to toggle debug overlay.")
+                            game.debug.is_visible = not game.debug.is_visible
                 case pygame.WINDOWSIZECHANGED:
                     # Update window size
                     game.coord_sys.window_size = Vec2D(x=event.x, y=event.y)
@@ -58,28 +68,52 @@ class UI:
                 case _:
                     self.log_unused_events(event, log)
 
-    def zoom_out(self) -> None:
-        """Zoom out.
+    def _zoom(self, scale: float) -> None:
+        """Private zoom function used by zoom_in() and zoom_out().
 
-        TODO: zoom about a point.
-        Use mouse position to create an offset then add that to the origin. This is all in pixel
-        coordinates.
+        Zoom about a point: use mouse position to create an offset in GCS units before and after the
+        zoom. Use the new zoom scale to convert the offset vector back to PCS units. Add the offset
+        vector to the PCS origin. Be careful of the minus sign!
         """
         game = self.game
-        # mouse_pos = pygame.mouse.get_pos()
-        # mouse_p = Point2D.from_tuple(mouse_pos)
-        # mouse_g = self.xfm.pcs_to_gcs(mouse_p.as_vec())
-        # origin_g = self.xfm.pcs_to_gcs(self.coord_sys.pcs_origin.as_vec())
-        # translation = self.Vec2D.from_points(start=origin_g, end=mouse_g)
-        game.coord_sys.gcs_width *= 1.1
+        debug = True
+        if debug:
+            game.debug.hud.reset_snapshots()
+        mouse_pos = pygame.mouse.get_pos()
+        mouse_p = Point2D.from_tuple(mouse_pos)
+        # Mark the original mouse location in GCS
+        mouse_g_end = self.game.xfm.pcs_to_gcs(mouse_p.as_vec()).as_point()
+
+        # Update the coordinate system zoom scale
+        game.coord_sys.gcs_width *= scale
+
+        # Mark the new location in GCS
+        mouse_g_start = self.game.xfm.pcs_to_gcs(mouse_p.as_vec()).as_point()
+        # Create an offset vector to get the mouse back to the original location
+        if debug:
+            game.debug.art.snapshots.append(Line2D(start=mouse_g_start, end=mouse_g_end))
+            game.debug.hud.snapshot(f"zoom about starts: {mouse_g_start.fmt(0.2)}, "
+                                    f"ends: {mouse_g_end.fmt(0.2)}")
+        offset_g = Vec2D.from_points(start=mouse_g_start, end=mouse_g_end)
+        if debug:
+            game.debug.hud.snapshot(f"offset: {offset_g.fmt(0.2)}GCS")
+        # Scale the vector from GCS to PCS
+        offset_p = Vec2D(x=game.coord_sys.scale_gcs_to_pcs*offset_g.x,
+                         y=game.coord_sys.scale_gcs_to_pcs*offset_g.y)
+        if debug:
+            game.debug.hud.snapshot(f"offset: {offset_p.fmt(0.2)}PCS")
+        # Change the PCS origin to move the GCS origin by that offset (keep zoom about the mouse)
+        # I don't understand why I have to subtract the x-offset, but this is what works.
+        game.coord_sys.pcs_origin.x -= offset_p.x
+        game.coord_sys.pcs_origin.y += offset_p.y
+
+    def zoom_out(self) -> None:
+        """Zoom out."""
+        self._zoom(scale=1.1)
 
     def zoom_in(self) -> None:
-        """Zoom in.
-
-        TODO: zoom about a point.
-        """
-        game = self.game
-        game.coord_sys.gcs_width *= 0.9
+        """Zoom in."""
+        self._zoom(scale=0.9)
 
     def handle_mousewheel_events(self,
                                  event: pygame.event.Event,
@@ -106,7 +140,7 @@ class UI:
                   f"pos: {event.pos}, "
                   f"button: {event.button}")
         match event.button:
-            case 1:
+            case 1 | 2:
                 self.mouse_button_1 = True              # Left mouse button pressed
                 self.panning.is_active = True           # Start panning
                 self.panning.start = Point2D.from_tuple(event.pos)
@@ -122,7 +156,7 @@ class UI:
                   f"pos: {event.pos}, "
                   f"button: {event.button}")
         match event.button:
-            case 1:
+            case 1 | 2:
                 self.mouse_button_1 = False             # Left mouse button released
                 self.panning.is_active = False          # Stop panning
                 game.coord_sys.pcs_origin = game.coord_sys.translation.as_point()  # Set new origin

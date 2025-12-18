@@ -34,6 +34,10 @@ class Point2D:
         """Return point as (x, y)."""
         return (self.x, self.y)
 
+    def fmt(self, precision: float = 0.1) -> str:
+        """Point as a string with the desired precision."""
+        return f"({self.x:{precision}f}, {self.y:{precision}f})"
+
     @classmethod
     def from_tuple(cls, position: tuple[float, float]) -> Point2D:
         """Create a point from a pygame event position (x, y)."""
@@ -60,6 +64,10 @@ class Vec2D:
     def as_tuple(self) -> tuple[float, float]:
         """Return vector as tuple (x, y)."""
         return (self.x, self.y)
+
+    def fmt(self, precision: float = 0.1) -> str:
+        """Vector as a string with the desired precision."""
+        return f"({self.x:{precision}f}, {self.y:{precision}f})"
 
     @classmethod
     def from_points(cls, start: Point2D, end: Point2D) -> Vec2D:

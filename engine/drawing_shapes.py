@@ -1,6 +1,6 @@
 """Shape primitives.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from .geometry_types import Point2D
 
 
@@ -17,18 +17,30 @@ class Line2D:
 
 
 @dataclass
-class Cross45:
-    """Describe a cross-hair rotated by 1/8-turn."""
-    origin: Point2D                                     # Origin in GCS
-    size: float                                         # Span this width in GCS units
+class Cross:
+    """Describe a cross-hair."""
+    origin:     Point2D                                     # Origin in GCS
+    size:       float                                       # Span this width in GCS units
+    rotate45:   bool = False                                # Rotate cross-hair by 1/8th of a turn
+    lines:      list[Line2D] = field(default_factory=list)  # Two lines make up the cross
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         r = self.size/2
-        self.lines = [
-                Line2D(start=Point2D(self.origin.x - r, self.origin.y - r),
-                       end=Point2D(self.origin.x + r, self.origin.y + r)
-                       ),
-                Line2D(start=Point2D(self.origin.x + r, self.origin.y - r),
-                       end=Point2D(self.origin.x - r, self.origin.y + r)
-                       )
-                ]
+        if self.rotate45:
+            self.lines = [
+                    Line2D(start=Point2D(self.origin.x - r, self.origin.y - r),
+                           end=Point2D(self.origin.x + r, self.origin.y + r)
+                           ),
+                    Line2D(start=Point2D(self.origin.x + r, self.origin.y - r),
+                           end=Point2D(self.origin.x - r, self.origin.y + r)
+                           )
+                    ]
+        else:
+            self.lines = [
+                    Line2D(start=Point2D(self.origin.x - r, self.origin.y),
+                           end=Point2D(self.origin.x + r, self.origin.y)
+                           ),
+                    Line2D(start=Point2D(self.origin.x, self.origin.y - r),
+                           end=Point2D(self.origin.x, self.origin.y + r)
+                           )
+                    ]

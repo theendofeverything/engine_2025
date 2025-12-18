@@ -18,27 +18,27 @@
     * [x] Handle window resize events
     * [x] Capture new window size
 * [x] Track mouse zoom
-    * [ ] Zoom at a point: calculate a translation vector based on the location of the zoom. Get the
+    * [x] Zoom at a point: calculate a translation vector based on the location of the zoom. Get the
     mouse location, convert to GCS, then after the zoom increment, convert the mouse coordinate to
-    GCS again. Use the two GCS points to get a vector. Convert that vector to pixel coordinates,
-    then translate by the vector so that the screen pans just the right amount to keep that mouse
-    position at the center.
-* [ ] Track mouse pan
+    GCS again. Use the two GCS points to get a vector. Convert that vector to pixel coordinates
+    (this was tricky to figure out), then offset the PCS origin by that vector so that the screen
+    pans just the right amount to keep that mouse position at the center.
+* [x] Track mouse pan
     * [x] Catch events for mouse button press and release
     * [x] Track whether mouse button 1 is up/down
     * [x] Track where pan starts and ends
     * [x] Calculate the panning vector
     * [x] Define translation and panning vectors as properties (values returned by function)
     * [x] Update the origin when panning ends
-    * [ ] Update the origin when screen is resized
+    * [x] Update the origin when screen is resized -- this is the same as "track mouse zoom"
 * [ ] Replace pixel coordinates with world space coordinates
     * [x] Create high-school algebra transforms to map from world space to
           pixel space
     * [x] Draw in GCS then render in PCS
-    * [ ] Eliminate hard-coded values in the transforms
+    * [x] Eliminate hard-coded values in the transforms
         * [x] Hard-coded scaling factor screen_width/2 becomes screen_width/gcs_width
               where gcs_width is adjusted on mouse zoom
-        * [ ] Hard-coded translation screen_xy/2 must get updated on zoom and on pan
+        * [x] Hard-coded translation screen_xy/2 must get updated on zoom and on pan
     * [ ] Create matrix algebra transforms
 """
 import atexit               # Register a function to run on exit
