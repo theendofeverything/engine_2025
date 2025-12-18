@@ -5,46 +5,45 @@ Abbreviations:
     PCS: Pixel Coordinate System
     xfm: transform
 """
+from dataclasses import dataclass, field
 import logging
 import pygame
-from .geometry_types import Point2D, Vec2D
-from .geometry_operators import CoordinateTransform
-from .drawing_shapes import Line2D, Cross
-from .timing import Timing
-from .coord_sys import CoordinateSystem
-from .renderer import Renderer
-from .ui import UI
 from .debug import Debug
+from .timing import Timing
 from .art import Art
+from .ui import UI
+from .panning import Panning
+from .coord_sys import CoordinateSystem
+from .coord_xfm import CoordinateTransform
+from .renderer import Renderer
+from .geometry_types import Point2D, Vec2D
+from .drawing_shapes import Line2D, Cross
 
 
+@dataclass
 class Game:
     """Game data is shared by all the code"""
-    debug:                  Debug
-    ui:                     UI
-    timing:                 Timing
-    coord_sys:              CoordinateSystem
-    xfm:                    CoordinateTransform
-    renderer:               Renderer
-    art:                    Art
+    debug:      Debug = Debug()     # Display debug prints in HUD and overlay debug art
+    timing:     Timing = Timing()   # Set up a clock to set frame rate and measure frame period
+    art:        Art = Art()         # Set up all artwork for rendering
+    # field(init=False): See https://docs.python.org/3/library/dataclasses.html#post-init-processing
+    ui:         UI = field(init=False)                  # Keyboard, mouse, panning, zoom
+    coord_sys:  CoordinateSystem = field(init=False)    # PCS and GCS
+    coord_xfm:  CoordinateTransform = field(init=False)
+    renderer:   Renderer = field(init=False)
 
-    def __init__(self) -> None:
+    def __post_init__(self) -> None:
         # Load pygame
         pygame.init()
         pygame.font.init()
-        # Display debug prints in the debug HUD
-        self.debug = Debug()
-        # Display debug art
-        # Handle all user interface events in ui.py
-        self.ui = UI(game=self)
-        # Set up a clock to set frame rate and measure frame period
-        self.timing = Timing()
+        # Handle all user interface events in ui.py (keyboard, mouse, panning, zoom)
+        self.ui = UI(game=self, panning=Panning())
         # Set the window size and center the GCS origin in the window.
         self.coord_sys = CoordinateSystem(
                 panning=self.ui.panning,
                 window_size=Vec2D(x=60*16, y=60*9))
-        # Create 'xfm' for transforming between coordinate systems
-        self.xfm = CoordinateTransform(coord_sys=self.coord_sys)
+        # Create 'coord_xfm' for transforming between coordinate systems
+        self.coord_xfm = CoordinateTransform(coord_sys=self.coord_sys)
         # Handle rendering in renderer.py
         self.renderer = Renderer(
                 game=self,
@@ -52,8 +51,6 @@ class Game:
                     size=self.coord_sys.window_size.as_tuple(),
                     flags=pygame.RESIZABLE
                     ))
-        # Set up all artwork in art
-        self.art = Art()
 
     def run(self, log: logging.Logger) -> None:
         """Run the game."""

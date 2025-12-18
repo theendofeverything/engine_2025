@@ -1,4 +1,18 @@
-"""User Interface."""
+"""User interface events.
+
+TODO: finish writing this docstring
+Events:
+    Window resized:
+        See pygame documentation for 'pygame.event'.
+        See 'pygame.WINDOWSIZECHANGED' in this code.
+    Key pressed:
+        See 'pygame.KEYDOWN' in this code.
+    Mouse button down/up:
+
+User actions:
+    Panning:
+    Zoom:
+"""
 import sys                  # Exit with sys.exit()
 import logging
 from dataclasses import dataclass
@@ -11,9 +25,10 @@ from .drawing_shapes import Line2D
 @dataclass
 class UI:
     """Handle user interface events."""
-    game:                   "Game"
-    panning:                Panning = Panning()  # Track panning state
-    mouse_button_1:         bool = False  # Track mouse button 1 down/up
+    game:           "Game"
+    panning:        Panning                             # Track panning state
+    mouse_button_1: bool = False                        # Track mouse button 1 down/up
+    mouse_button_2: bool = False                        # Track mouse button 2 down/up
 
     def handle_events(self, log: logging.Logger) -> None:
         """Handle events."""
@@ -24,7 +39,7 @@ class UI:
         """Update 'panning.end': the latest point the mouse has panned to.
 
         Dependency chain depicting how panning manifests as translating the game view on the screen:
-            renderer <-- xfm.gcs_to_pcs <-- coord_sys.translation <-- panning.vector
+            renderer <-- coord_xfm.gcs_to_pcs <-- coord_sys.translation <-- panning.vector
 
             In the above dependency chain:
                 - read "<--" as "thing-on-left uses thing-on-right"
@@ -39,37 +54,107 @@ class UI:
 
         All events are logged, including unused events.
         """
-        game = self.game
         for event in pygame.event.get():
             match event.type:
                 case pygame.QUIT: sys.exit()
-                case pygame.KEYDOWN:
-                    log.debug(f"Keydown: {event}")
-                    match event.key:
-                        case pygame.K_q:
-                            log.debug("User pressed 'q' to quit.")
-                            sys.exit()
-                        case pygame.K_c:
-                            log.debug("User pressed 'c' to clear debug snapshot artwork.")
-                            game.debug.art.reset_snapshots()
-                        case pygame.K_SPACE:
-                            log.debug("User pressed 'Space' to toggle debug art overlay.")
-                            game.debug.art.is_visible = not game.debug.art.is_visible
-                        case pygame.K_d:
-                            log.debug("User pressed 'd' to toggle debug HUD.")
-                            game.debug.hud.is_visible = not game.debug.hud.is_visible
-                case pygame.WINDOWSIZECHANGED:
-                    # Update window size
-                    game.coord_sys.window_size = Vec2D(x=event.x, y=event.y)
-                    log.debug(f"Event WINDOWSIZECHANGED, new size: ({event.x}, {event.y})")
-                case pygame.MOUSEBUTTONDOWN:
-                    self.handle_mousebutton_down_events(event, log)
-                case pygame.MOUSEBUTTONUP:
-                    self.handle_mousebutton_up_events(event, log)
-                case pygame.MOUSEWHEEL:
-                    self.handle_mousewheel_events(event, log)
-                case _:
-                    self.log_unused_events(event, log)
+                case pygame.KEYDOWN: self.handle_keydown_events(event, log)
+                case pygame.WINDOWSIZECHANGED: self.handle_windowsizechanged_events(event, log)
+                case pygame.MOUSEBUTTONDOWN: self.handle_mousebutton_down_events(event, log)
+                case pygame.MOUSEBUTTONUP: self.handle_mousebutton_up_events(event, log)
+                case pygame.MOUSEWHEEL: self.handle_mousewheel_events(event, log)
+                case _: self.log_unused_events(event, log)
+
+    def handle_windowsizechanged_events(self,
+                                        event: pygame.event.Event,
+                                        log: logging.Logger) -> None:
+        """User resized the window. Update window size in the PCS."""
+        game = self.game
+        game.coord_sys.window_size = Vec2D(x=event.x, y=event.y)
+        log.debug(f"Event WINDOWSIZECHANGED, new size: ({event.x}, {event.y})")
+
+    def handle_mousewheel_events(self,
+                                 event: pygame.event.Event,
+                                 log: logging.Logger) -> None:
+        """Handle mousewheel events."""
+        match event.y:
+            case -1:
+                log.debug("ZOOM OUT")
+                self.zoom_out()
+            case 1:
+                log.debug("ZOOM IN")
+                self.zoom_in()
+            case _:
+                log.debug("Unexpected y-value")
+        log.debug(f"Event MOUSEWHEEL, flipped: {event.flipped}, "
+                  f"x:{event.x}, y:{event.y}, "
+                  f"precise_x:{event.precise_x}, precise_y:{event.precise_y}")
+
+    def handle_mousebutton_down_events(self,
+                                       event: pygame.event.Event,
+                                       log: logging.Logger) -> None:
+        """Handle event mouse button down."""
+        log.debug("Event MOUSEBUTTONDOWN, "
+                  f"pos: {event.pos}, ({type(event.pos[0])})"
+                  f"button: {event.button}")
+        match event.button:
+            case 1 | 2:
+                self.start_panning(event.pos)
+                self.mouse_button_1 = True              # Left mouse button pressed
+                self.mouse_button_2 = True              # Middle mouse button pressed
+            case _:
+                pass
+
+    def handle_mousebutton_up_events(self,
+                                     event: pygame.event.Event,
+                                     log: logging.Logger) -> None:
+        """Handle event mouse button up."""
+        game = self.game
+        log.debug("Event MOUSEBUTTONUP, "
+                  f"pos: {event.pos}, "
+                  f"button: {event.button}")
+        match event.button:
+            case 1 | 2:
+                self.mouse_button_1 = False             # Left mouse button released
+                self.panning.is_active = False          # Stop panning
+                game.coord_sys.pcs_origin = game.coord_sys.translation.as_point()  # Set new origin
+                self.panning.start = self.panning.end  # Zero-out the panning vector
+            case _:
+                pass
+
+    def handle_keydown_events(self,
+                              event: pygame.event.Event,
+                              log: logging.Logger) -> None:
+        """Handle keydown events (keyboard key presses)."""
+        game = self.game
+        log.debug(f"Keydown: {event}")
+        match event.key:
+            case pygame.K_q:
+                log.debug("User pressed 'q' to quit.")
+                sys.exit()
+            case pygame.K_c:
+                log.debug("User pressed 'c' to clear debug snapshot artwork.")
+                game.debug.art.reset_snapshots()
+            case pygame.K_SPACE:
+                log.debug("User pressed 'Space' to toggle debug art overlay.")
+                game.debug.art.is_visible = not game.debug.art.is_visible
+            case pygame.K_d:
+                log.debug("User pressed 'd' to toggle debug HUD.")
+                game.debug.hud.is_visible = not game.debug.hud.is_visible
+
+    def log_unused_events(self, event: pygame.event.Event, log: logging.Logger) -> None:
+        """Log events that I have not found a use for yet."""
+        match event.type:
+            case pygame.MOUSEBUTTONDOWN:
+                log.debug(f"Event MOUSEBUTTONDOWN, pos: {event.pos}, button: {event.button}")
+            case pygame.MOUSEBUTTONUP:
+                log.debug(f"Event MOUSEBUTTONUP, pos: {event.pos}, button: {event.button}")
+            case pygame.VIDEORESIZE:
+                # Do we need this?
+                log.debug(f"Event VIDEORESIZE, new size: ({event.w}, {event.h})")
+            case pygame.WINDOWRESIZED:
+                # Do we need this?
+                log.debug(f"Event WINDOWRESIZED, new size: ({event.x}, {event.y})")
+            case _: log.debug(event)
 
     def _zoom(self, scale: float) -> None:
         """Private zoom function used by zoom_in() and zoom_out().
@@ -85,13 +170,13 @@ class UI:
         mouse_pos = pygame.mouse.get_pos()
         mouse_p = Point2D.from_tuple(mouse_pos)
         # Mark the original mouse location in GCS
-        mouse_g_end = self.game.xfm.pcs_to_gcs(mouse_p.as_vec()).as_point()
+        mouse_g_end = game.coord_xfm.pcs_to_gcs(mouse_p.as_vec()).as_point()
 
         # Update the coordinate system zoom scale
         game.coord_sys.gcs_width *= scale
 
         # Mark the new location in GCS
-        mouse_g_start = self.game.xfm.pcs_to_gcs(mouse_p.as_vec()).as_point()
+        mouse_g_start = game.coord_xfm.pcs_to_gcs(mouse_p.as_vec()).as_point()
         # Create an offset vector to get the mouse back to the original location
         if debug:
             game.debug.art.snapshots.append(Line2D(start=mouse_g_start, end=mouse_g_end))
@@ -118,66 +203,7 @@ class UI:
         """Zoom in."""
         self._zoom(scale=0.9)
 
-    def handle_mousewheel_events(self,
-                                 event: pygame.event.Event,
-                                 log: logging.Logger) -> None:
-        """Handle mousewheel events."""
-        match event.y:
-            case -1:
-                log.debug("ZOOM OUT")
-                self.zoom_out()
-            case 1:
-                log.debug("ZOOM IN")
-                self.zoom_in()
-            case _:
-                log.debug("Unexpected y-value")
-        log.debug(f"Event MOUSEWHEEL, flipped: {event.flipped}, "
-                  f"x:{event.x}, y:{event.y}, "
-                  f"precise_x:{event.precise_x}, precise_y:{event.precise_y}")
-
-    def handle_mousebutton_down_events(self,
-                                       event: pygame.event.Event,
-                                       log: logging.Logger) -> None:
-        """Handle event mouse button down."""
-        log.debug("Event MOUSEBUTTONDOWN, "
-                  f"pos: {event.pos}, "
-                  f"button: {event.button}")
-        match event.button:
-            case 1 | 2:
-                self.mouse_button_1 = True              # Left mouse button pressed
-                self.panning.is_active = True           # Start panning
-                self.panning.start = Point2D.from_tuple(event.pos)
-            case _:
-                pass
-
-    def handle_mousebutton_up_events(self,
-                                     event: pygame.event.Event,
-                                     log: logging.Logger) -> None:
-        """Handle event mouse button up."""
-        game = self.game
-        log.debug("Event MOUSEBUTTONUP, "
-                  f"pos: {event.pos}, "
-                  f"button: {event.button}")
-        match event.button:
-            case 1 | 2:
-                self.mouse_button_1 = False             # Left mouse button released
-                self.panning.is_active = False          # Stop panning
-                game.coord_sys.pcs_origin = game.coord_sys.translation.as_point()  # Set new origin
-                self.panning.start = self.panning.end  # Zero-out the panning vector
-            case _:
-                pass
-
-    def log_unused_events(self, event: pygame.event.Event, log: logging.Logger) -> None:
-        """Log events that I have not found a use for yet."""
-        match event.type:
-            case pygame.MOUSEBUTTONDOWN:
-                log.debug(f"Event MOUSEBUTTONDOWN, pos: {event.pos}, button: {event.button}")
-            case pygame.MOUSEBUTTONUP:
-                log.debug(f"Event MOUSEBUTTONUP, pos: {event.pos}, button: {event.button}")
-            case pygame.VIDEORESIZE:
-                # Do we need this?
-                log.debug(f"Event VIDEORESIZE, new size: ({event.w}, {event.h})")
-            case pygame.WINDOWRESIZED:
-                # Do we need this?
-                log.debug(f"Event WINDOWRESIZED, new size: ({event.x}, {event.y})")
-            case _: log.debug(event)
+    def start_panning(self, position: tuple[float, float]) -> None:
+        """User started panning."""
+        self.panning.is_active = True
+        self.panning.start = Point2D.from_tuple(position)

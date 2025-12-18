@@ -36,9 +36,9 @@ class CoordinateSystem:
             Scaling factor to transform from units of PCS to GCS.
             This is the inverse of scale_gcs_to_pcs.
     """
-    panning:                Panning
-    window_size:            Vec2D
-    gcs_width:              float = 2                   # GCS -1:1 fills screen width
+    panning:        Panning                             # Track panning state
+    window_size:    Vec2D                               # Track window size
+    gcs_width:      float = 2                           # Initial value GCS -1:1 fills screen width
 
     def __post_init__(self) -> None:
         self.pcs_origin = self.window_center              # Origin is initially the window center
@@ -53,7 +53,7 @@ class CoordinateSystem:
         """The translation vector describing the origin offset relative to the window (0,0).
 
         Dependency chain showing how translation is used and how it is affected by panning:
-            renderer <-- xfm.gcs_to_pcs <-- coord_sys.translation <-- panning.vector
+            renderer <-- coord_xfm.gcs_to_pcs <-- coord_sys.translation <-- panning.vector
             In the above dependency chain:
                 - read "<--" as "thing-on-left uses thing-on-right"
                 - panning.vector = panning.end - panning.start

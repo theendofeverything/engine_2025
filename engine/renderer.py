@@ -29,8 +29,8 @@ class Renderer:
             """Convert all lines from GCS to PCS and draw lines to the screen."""
             for line_g in lines:
                 # Convert GCS to PCS
-                line_p = Line2D(start=game.xfm.gcs_to_pcs(line_g.start.as_vec()).as_point(),
-                                end=game.xfm.gcs_to_pcs(line_g.end.as_vec()).as_point()
+                line_p = Line2D(start=game.coord_xfm.gcs_to_pcs(line_g.start.as_vec()).as_point(),
+                                end=game.coord_xfm.gcs_to_pcs(line_g.end.as_vec()).as_point()
                                 )
                 # Render to screen
                 pygame.draw.line(self.window_surface,
@@ -60,9 +60,9 @@ class Renderer:
             mouse_position = Vec2D(x=mouse_position_tuple[0],
                                    y=mouse_position_tuple[1])
             # Get mouse position in game coordinates
-            mouse_g = game.xfm.pcs_to_gcs(mouse_position)
+            mouse_g = game.coord_xfm.pcs_to_gcs(mouse_position)
             # Test transform by converting back to pixel coordinates
-            mouse_p = game.xfm.gcs_to_pcs(mouse_g)
+            mouse_p = game.coord_xfm.gcs_to_pcs(mouse_g)
             return f"Mouse: {mouse_g.fmt(0.2)}, GCS, {mouse_p.fmt(0.0)}, PCS"
         game.debug.hud.print(debug_mouse_position())
 

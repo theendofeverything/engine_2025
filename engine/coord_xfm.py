@@ -1,4 +1,4 @@
-"""Geometry operators: coordinate transforms.
+"""Coordinate transforms operate on geometry types.
 """
 from dataclasses import dataclass
 from .geometry_types import Vec2D
