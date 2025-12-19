@@ -3,7 +3,6 @@
 from dataclasses import dataclass
 import pygame
 from .drawing_shapes import Line2D
-from .geometry_types import Vec2D
 from .colors import Colors
 
 
@@ -15,9 +14,10 @@ class Renderer:
 
     def render_all(self) -> None:
         """Called from the game loop."""
+        game = self.game
         self.window_surface.fill(Colors.background)
         self.render_shapes()
-        if self.game.debug.hud.is_visible:
+        if game.debug.hud.is_visible:
             self.render_debug_hud()
         pygame.display.flip()
 
@@ -39,39 +39,15 @@ class Renderer:
                                  line_p.end.as_tuple()
                                  )
         render_lines(lines=game.art.shapes["lines"], color=Colors.line)
-        render_lines(lines=game.art.shapes["lines_debug"], color=Colors.line_debug)
+        if game.debug.art.is_visible:
+            render_lines(lines=game.debug.art.lines, color=Colors.line_debug)
+            render_lines(lines=game.debug.art.snapshots, color=Colors.line_debug)
 
     def render_debug_hud(self) -> None:
         """Display values in the Debug HUD."""
         game = self.game
         font = pygame.font.SysFont("RobotoMono", 15, bold=False)
         pos = (0, 0)
-
-        def debug_window_size() -> str:
-            # Display window size
-            center = (game.coord_sys.window_size.x/2, game.coord_sys.window_size.y/2)
-            return f"Window size: {game.coord_sys.window_size}, Center: {center} PCS"
-        game.debug.hud.print(debug_window_size())
-
-        def debug_mouse_position() -> str:
-            """Return string with mouse position in game and pixel coordiantes."""
-            # Get mouse position in pixel coordinates
-            mouse_position_tuple = pygame.mouse.get_pos()
-            mouse_position = Vec2D(x=mouse_position_tuple[0],
-                                   y=mouse_position_tuple[1])
-            # Get mouse position in game coordinates
-            mouse_g = game.coord_xfm.pcs_to_gcs(mouse_position)
-            # Test transform by converting back to pixel coordinates
-            mouse_p = game.coord_xfm.gcs_to_pcs(mouse_g)
-            return f"Mouse: {mouse_g.fmt(0.2)}, GCS, {mouse_p.fmt(0.0)}, PCS"
-        game.debug.hud.print(debug_mouse_position())
-
-        def debug_mouse_button() -> str:
-            """Return string with mouse button state."""
-            return ("Mouse buttons: "
-                    f"1: {game.ui.mouse_button_1}"
-                    )
-        game.debug.hud.print(debug_mouse_button())
 
         def debug_pan() -> str:
             """Return string with pan values."""
@@ -91,7 +67,7 @@ class Renderer:
         # Print the snapshots last
         game.debug.hud.print_snapshots()
 
-        for i, line in enumerate(game.debug.hud.text.split("\n")):
+        for i, line in enumerate(game.debug.hud.lines):
             text_surface = font.render(line, True, Colors.text)
             self.window_surface.blit(
                     text_surface,

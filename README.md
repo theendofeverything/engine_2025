@@ -73,3 +73,4 @@ miscellany of developing a Python project.
 - [Unit Tests](doc/unit_tests.md)
 - [Dataclasses](doc/dataclasses.md)
 - [Type Hints](doc/type_hints.md)
+- [Pattern Matching](doc/pattern_matching.md)

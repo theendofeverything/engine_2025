@@ -29,9 +29,9 @@ class Game:
     art:        Art = Art()         # Set up all artwork for rendering
 
     # Instance variables defined in __post_init__()
-    ui:         UI = field(init=False)                  # Keyboard, mouse, panning, zoom
-    coord_sys:  CoordinateSystem = field(init=False)    # PCS and GCS
-    coord_xfm:  CoordinateTransform = field(init=False)
+    ui:         UI = field(init=False)                      # Keyboard, mouse, panning, zoom
+    coord_sys:  CoordinateSystem = field(init=False)        # Track state of PCS and GCS
+    coord_xfm:  CoordinateTransform = field(init=False)     # Xfm vectors btwn PCS and GCS
     renderer:   Renderer = field(init=False)
 
     def __post_init__(self) -> None:
@@ -63,25 +63,57 @@ class Game:
         """Loop until the user quits."""
         self.debug.hud.reset()                          # Clear the debug HUD
         self.debug.art.reset()                          # Clear the debug artwork
-        self.debug_fps()                                # Display FPS in the HUD
+        self.debug_values()                             # HUD: display values to debug
         self.ui.handle_events(log)                      # Handle all user events
         self.art.reset()                                # Reset previous artwork
-        self.draw_shapes()                              # Draw application artwork
-        self.draw_debug_shapes()                        # Draw debug artwork
+        self.draw_a_cross()                             # Draw application artwork
+        self.draw_debug_crosses()                       # Draw debug artwork
         self.renderer.render_all()                      # Render all artwork and HUD
         # Delay to keep game at 60 FPS.
         self.timing.ms_per_frame = self.timing.clock.tick(60)
 
-    def debug_fps(self) -> None:
-        """Display frame duration in milliseconds and rate in FPS."""
-        # # TODO: update fps every N frames instead of every frame
-        # fps = 1000 / self.timing.ms_per_frame
-        # # Use get_fps() for now -- it averages every 10 frames
-        fps = self.timing.clock.get_fps()
-        self.debug.hud.print(f"frame: {self.timing.ms_per_frame:d}ms ({fps:0.1f}FPS)")
+    def debug_values(self) -> None:
+        """Most of the values to display in the HUD are printed in this function."""
 
-    def draw_shapes(self) -> None:
-        """Draw shapes in GCS."""
+        def debug_fps() -> None:
+            """Display frame duration in milliseconds and rate in FPS."""
+            # # TODO: update fps every N frames instead of every frame
+            # fps = 1000 / self.timing.ms_per_frame
+            # # Use get_fps() for now -- it averages every 10 frames
+            fps = self.timing.clock.get_fps()
+            self.debug.hud.print(f"frame: {self.timing.ms_per_frame:d}ms ({fps:0.1f}FPS)")
+
+        def debug_window_size() -> None:
+            """Display window size."""
+            center = (self.coord_sys.window_size.x/2, self.coord_sys.window_size.y/2)
+            self.debug.hud.print(f"Window size: {self.coord_sys.window_size}, Center: {center} PCS")
+
+        def debug_mouse_position() -> None:
+            """Display mouse position in GCS and PCS."""
+            # Get mouse position in pixel coordinates
+            mouse_position_tuple = pygame.mouse.get_pos()
+            mouse_position = Vec2D(x=mouse_position_tuple[0],
+                                   y=mouse_position_tuple[1])
+            # Get mouse position in game coordinates
+            mouse_g = self.coord_xfm.pcs_to_gcs(mouse_position)
+            # Test transform by converting back to pixel coordinates
+            mouse_p = self.coord_xfm.gcs_to_pcs(mouse_g)
+            self.debug.hud.print(f"Mouse: {mouse_g.fmt(0.2)}, GCS, {mouse_p.fmt(0.0)}, PCS")
+
+        def debug_mouse_buttons() -> None:
+            """Display mouse button state."""
+            self.debug.hud.print("Mouse buttons: "
+                                 f"1: {self.ui.mouse_button_1}, "
+                                 f"2: {self.ui.mouse_button_2}"
+                                 )
+
+        debug_fps()
+        debug_window_size()
+        debug_mouse_position()
+        debug_mouse_buttons()
+
+    def draw_a_cross(self) -> None:
+        """Draw a cross in the GCS."""
         # Create artwork that uses lines
         crosses: list[Cross] = [
             Cross(origin=Point2D(-0.1, 0.1), size=0.2, rotate45=True)
@@ -94,24 +126,14 @@ class Game:
         # Update shapes dict with lines
         self.art.shapes["lines"] = lines
 
-    def draw_debug_shapes(self) -> None:
-        """Draw debug artwork in GCS."""
-        if self.debug.art.is_visible:
-            # Create debug artwork that uses lines
-            crosses: list[Cross] = [
-                Cross(origin=Point2D(0, 0), size=0.1),
-                Cross(origin=Point2D(0.5, 0.5), size=0.1, rotate45=True)
-                ]
-            # Append line artwork to lines
-            lines: list[Line2D] = []
-            for cross in crosses:
-                for line in cross.lines:
-                    lines.append(line)
-            # Append debug artwork
-            for line in self.debug.art.lines:
-                lines.append(line)
-            # Append debug snapshot art (if any)
-            for line in self.debug.art.snapshots:
-                lines.append(line)
-            # Update shapes dict
-            self.art.shapes["lines_debug"] = lines
+    def draw_debug_crosses(self) -> None:
+        """Draw two crosses in the GCS to help me debug zooming about a point."""
+        # Create debug artwork that uses lines
+        crosses: list[Cross] = [
+            Cross(origin=Point2D(0, 0), size=0.1),
+            Cross(origin=Point2D(0.5, 0.5), size=0.1, rotate45=True)
+            ]
+        # Copy the line artwork to debug.art.lines
+        for cross in crosses:
+            for line in cross.lines:
+                self.debug.art.lines.append(line)

@@ -97,9 +97,11 @@ class UI:
                   f"pos: {event.pos}, ({type(event.pos[0])})"
                   f"button: {event.button}")
         match event.button:
-            case 1 | 2:
-                self.start_panning(event.pos)
+            case 1:
+                self.start_panning(event.pos)           # Start panning
                 self.mouse_button_1 = True              # Left mouse button pressed
+            case 2:
+                self.start_panning(event.pos)           # Start panning
                 self.mouse_button_2 = True              # Middle mouse button pressed
             case _:
                 pass
@@ -108,16 +110,16 @@ class UI:
                                      event: pygame.event.Event,
                                      log: logging.Logger) -> None:
         """Handle event mouse button up."""
-        game = self.game
         log.debug("Event MOUSEBUTTONUP, "
                   f"pos: {event.pos}, "
                   f"button: {event.button}")
         match event.button:
-            case 1 | 2:
+            case 1:
+                self.stop_panning()                     # Stop panning
                 self.mouse_button_1 = False             # Left mouse button released
-                self.panning.is_active = False          # Stop panning
-                game.coord_sys.pcs_origin = game.coord_sys.translation.as_point()  # Set new origin
-                self.panning.start = self.panning.end  # Zero-out the panning vector
+            case 2:
+                self.stop_panning()                     # Stop panning
+                self.mouse_button_2 = False             # Middle mouse button released
             case _:
                 pass
 
@@ -179,7 +181,7 @@ class UI:
         mouse_g_start = game.coord_xfm.pcs_to_gcs(mouse_p.as_vec()).as_point()
         # Create an offset vector to get the mouse back to the original location
         if debug:
-            game.debug.art.snapshots.append(Line2D(start=mouse_g_start, end=mouse_g_end))
+            game.debug.art.snapshot(Line2D(start=mouse_g_start, end=mouse_g_end))
             game.debug.hud.snapshot(f"zoom about starts: {mouse_g_start.fmt(0.2)}, "
                                     f"ends: {mouse_g_end.fmt(0.2)}")
         offset_g = Vec2D.from_points(start=mouse_g_start, end=mouse_g_end)
@@ -203,7 +205,14 @@ class UI:
         """Zoom in."""
         self._zoom(scale=0.9)
 
-    def start_panning(self, position: tuple[float, float]) -> None:
+    def start_panning(self, position: tuple[int | float, int | float]) -> None:
         """User started panning."""
         self.panning.is_active = True
         self.panning.start = Point2D.from_tuple(position)
+
+    def stop_panning(self) -> None:
+        """User stopped panning."""
+        game = self.game
+        self.panning.is_active = False
+        game.coord_sys.pcs_origin = game.coord_sys.translation.as_point()  # Set new origin
+        self.panning.start = self.panning.end  # Zero-out the panning vector
