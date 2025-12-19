@@ -6,11 +6,11 @@ from .drawing_shapes import Line2D
 @dataclass
 class Art:
     """Container for all artwork to render."""
-    shapes: dict[str, list[Line2D]] = field(default_factory=dict)
+    lines: list[Line2D] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.reset()
 
     def reset(self) -> None:
         """Clear out all artwork."""
-        self.shapes = {"lines": [], "lines_debug": []}
+        self.lines = []

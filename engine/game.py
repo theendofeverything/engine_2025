@@ -17,7 +17,7 @@ from .coord_sys import CoordinateSystem
 from .coord_xfm import CoordinateTransform
 from .renderer import Renderer
 from .geometry_types import Point2D, Vec2D
-from .drawing_shapes import Line2D, Cross
+from .drawing_shapes import Cross
 
 
 @dataclass
@@ -118,13 +118,10 @@ class Game:
         crosses: list[Cross] = [
             Cross(origin=Point2D(-0.1, 0.1), size=0.2, rotate45=True)
             ]
-        # Append line artwork to lines
-        lines: list[Line2D] = []
+        # Append line artwork to art.lines
         for cross in crosses:
             for line in cross.lines:
-                lines.append(line)
-        # Update shapes dict with lines
-        self.art.shapes["lines"] = lines
+                self.art.lines.append(line)
 
     def draw_debug_crosses(self) -> None:
         """Draw two crosses in the GCS to help me debug zooming about a point."""

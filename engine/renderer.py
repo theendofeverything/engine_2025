@@ -38,7 +38,7 @@ class Renderer:
                                  line_p.start.as_tuple(),
                                  line_p.end.as_tuple()
                                  )
-        render_lines(lines=game.art.shapes["lines"], color=Colors.line)
+        render_lines(lines=game.art.lines, color=Colors.line)
         if game.debug.art.is_visible:
             render_lines(lines=game.debug.art.lines, color=Colors.line_debug)
             render_lines(lines=game.debug.art.snapshots, color=Colors.line_debug)

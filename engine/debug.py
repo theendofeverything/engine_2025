@@ -17,7 +17,7 @@ class DebugArt:
                     game.debug.art.is_visible = not game.debug.art.is_visible
                 In renderer:
                     if game.debug.art.is_visible:
-                        render_lines(lines=game.art.shapes["lines_debug"], ...
+                        render_lines(lines=game.debug.art.lines, ...
         lines (list[Line2D]):
             A list of debug lines to draw.
             The lines are in the GCS. The renderer converts the coordinates to PCS in render_shapes.
@@ -28,7 +28,7 @@ class DebugArt:
                         debug.art.lines.append(line)
                 The renderer draws these to the window in render_shapes:
                     if game.debug.art.is_visible:
-                        render_lines(lines=game.debug.art.lines, color=Colors.line_debug)
+                        render_lines(lines=game.debug.art.lines, ...
                 The debug artwork is reset at the top of the game loop:
                     self.debug.art.reset()
         snapshots (list[Line2D]):
@@ -42,6 +42,9 @@ class DebugArt:
                 Use 'debug.art.reset_snapshots()' at the top of the code block to clear old lineart.
                     if debug:
                         game.debug.hud.reset_snapshots()
+                The renderer draws these to the window in render_shapes:
+                    if game.debug.art.is_visible:
+                        render_lines(lines=game.debug.art.snapshots, ...
     """
     is_visible: bool = True                             # Controls whether debug artwork is visible
     lines:      list[Line2D] = field(default_factory=list)  # Draw every iteration to persist
@@ -55,7 +58,7 @@ class DebugArt:
         """Clear out the snapshots."""
         self.snapshots = []
 
-    def snapshot(self, line:Line2D) -> None:
+    def snapshot(self, line: Line2D) -> None:
         """Append line to snapshots."""
         self.snapshots.append(line)
 
