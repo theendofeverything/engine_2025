@@ -1,0 +1,2 @@
+- See https://docs.python.org/3/library/typing.html
+- See https://mypy.readthedocs.io/en/stable/cheat_sheet_py3.html

@@ -56,11 +56,11 @@ File                  | Class
 `engine/timing.py`    | `Timing`
 `engine/ui.py`        | `UI`
 
-Class `Game` class contains the top-level game code. It is instantiated by
-`main.py`: `Game().run()` launches the application. In the future, I might bump
-`game.py` up a level and get rid of `main.py`. For now, `main.py` is a
-convenient place to setup logging and register a `shutdown` function (for
-cleanup when the application exits).
+Class `Game` contains the top-level game code. It is instantiated in `main.py`
+where `Game().run()` launches the application. In the future, I might bump
+`game.py` up out of the `engine/` folder and get rid of `main.py`. For now,
+`main.py` is a convenient place to setup logging and register a `shutdown()`
+function for cleanup when the application exits.
 
 # Docs in `doc`
 
@@ -71,3 +71,5 @@ miscellany of developing a Python project.
 - [Vim](doc/vim.md)
 - [Python Linters](doc/python_linters.md)
 - [Unit Tests](doc/unit_tests.md)
+- [Dataclasses](doc/dataclasses.md)
+- [Type Hints](doc/type_hints.md)

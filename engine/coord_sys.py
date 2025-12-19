@@ -4,7 +4,7 @@ There are two coordinate systems:
     PCS: Pixel Coordinate System
     GCS: Game Coordinate System
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from .geometry_types import Vec2D, Point2D
 from .panning import Panning
 
@@ -39,6 +39,7 @@ class CoordinateSystem:
     panning:        Panning                             # Track panning state
     window_size:    Vec2D                               # Track window size
     gcs_width:      float = 2                           # Initial value GCS -1:1 fills screen width
+    pcs_origin:     Point2D = field(init=False)         # Game origin in PCS
 
     def __post_init__(self) -> None:
         self.pcs_origin = self.window_center              # Origin is initially the window center

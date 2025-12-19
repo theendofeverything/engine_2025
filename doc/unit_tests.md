@@ -9,8 +9,7 @@ and pytest will find all docstring tests:
 $ pytest --doctest-modules -v
 ```
 
-I am leaving the following sub-section here to document the rabbit hole of
-finding the above setup for simple Python unit testing.
+## Context on my usual flow
 
 For context, I am used to writing a single script and using the
 `if __name__ == '__main__'` block as the place to invoke `doctest`. That does
@@ -24,7 +23,16 @@ is always broken.
 I emerge from this rabbit hole with the following wisdom: just use `pytest` to
 run the docstring tests.
 
+## Pursuing my usual flow down a rabbit hole
+
+I am leaving the following sub-section here to document the rabbit hole of
+abandoning my usual flow of running each module as its own script and instead
+adopting `pytest` to run all my Python doctest unit tests.
+
 ### Use try/except to find modules inside lib
+
+*You know you have taken a wrong turn if the basic `import` system seems to
+require exception handling.*
 
 When running a file on its own inside `lib` for testing purposes, this import
 statement does not work because we are already inside `lib`:
@@ -60,6 +68,6 @@ disable_error_code = import-not-found
 ```
 
 Or do not put an executable `__main__` section in lib code and create a
-top-level `tests.py` instead and call all the docstring tests from there. Nope,
-you don't even need that, nor am I sure how to set that up. Just use
-`pytest --doctest-modules`.
+top-level `tests.py` instead and call all the docstring tests from there?
+
+Nope, you don't even need that. Just use `pytest --doctest-modules`.

@@ -23,10 +23,12 @@ from .drawing_shapes import Line2D, Cross
 @dataclass
 class Game:
     """Game data is shared by all the code"""
+    # Instance variables defined in the implicit __init__()
     debug:      Debug = Debug()     # Display debug prints in HUD and overlay debug art
     timing:     Timing = Timing()   # Set up a clock to set frame rate and measure frame period
     art:        Art = Art()         # Set up all artwork for rendering
-    # field(init=False): See https://docs.python.org/3/library/dataclasses.html#post-init-processing
+
+    # Instance variables defined in __post_init__()
     ui:         UI = field(init=False)                  # Keyboard, mouse, panning, zoom
     coord_sys:  CoordinateSystem = field(init=False)    # PCS and GCS
     coord_xfm:  CoordinateTransform = field(init=False)
