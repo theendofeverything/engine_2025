@@ -67,9 +67,17 @@ class UI:
     def handle_windowsizechanged_events(self,
                                         event: pygame.event.Event,
                                         log: logging.Logger) -> None:
-        """User resized the window. Update window size in the PCS."""
+        """User resized the window. Update origin and window size."""
         game = self.game
+        # Store the current PCS location of the window center.
+        old_window_center = game.coord_sys.window_center
+        # Update window_size to the new size.
         game.coord_sys.window_size = Vec2D(x=event.x, y=event.y)
+        # Get the vector that goes from the old window center to the new window center.
+        translation = Vec2D.from_points(start=old_window_center, end=game.coord_sys.window_center)
+        # Use the vector to translate the origin.
+        game.coord_sys.pcs_origin.x += translation.x
+        game.coord_sys.pcs_origin.y += translation.y
         log.debug(f"Event WINDOWSIZECHANGED, new size: ({event.x}, {event.y})")
 
     def handle_mousewheel_events(self,

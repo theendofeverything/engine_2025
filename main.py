@@ -30,7 +30,7 @@
     * [x] Calculate the panning vector
     * [x] Define translation and panning vectors as properties (values returned by function)
     * [x] Update the origin when panning ends
-    * [x] Update the origin when screen is resized -- this is the same as "track mouse zoom"
+    * [x] Update the origin when screen is resized
 * [ ] Replace pixel coordinates with world space coordinates
     * [x] Create high-school algebra transforms to map from world space to
           pixel space
