@@ -40,6 +40,9 @@
               where gcs_width is adjusted on mouse zoom
         * [x] Hard-coded translation screen_xy/2 must get updated on zoom and on pan
     * [ ] Create matrix algebra transforms
+        * [x] Create gcs_to_pcs
+        * [ ] Document this
+        * [ ] Calculate matrix inverse
 """
 import atexit               # Register a function to run on exit
 from pathlib import Path    # Get file paths
