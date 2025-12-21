@@ -2,6 +2,7 @@
 """
 from dataclasses import dataclass
 from .geometry_types import Vec2D, Vec2DH, Matrix2DH
+from .geometry_operators import mult_vec2h_by_mat2h
 from .coord_sys import CoordinateSystem
 
 
@@ -27,11 +28,18 @@ def xfm_vec(v: Vec2D, xfm: Matrix2DH) -> Vec2D:
 
     The operation performed by xfm_vec() is t(v) * xfm:
 
-        |x y 1| * |m11 m12   0|   |x*m11 + y*m21 + Tx|
-                  |m21 m22   0| = |x*m12 + y*m22 + Ty|
-                  | Tx  Ty   1| = |    0 +     0 +  1|
+        |x y 1| * |m11 m12   0| = |x*m11 + y*m21 + Tx, x*m12 + y*m22 + Ty, 1|
+                  |m21 m22   0|
+                  | Tx  Ty   1|
 
-    Return the 2D vector:
+    It easier to read the product as the transpose:
+
+        |x*m11 + y*m21 + Tx|
+        |x*m12 + y*m22 + Ty|
+        |    0 +     0 +  1|
+
+    We only needed homogeneous coordinates to include translation in the transform.
+    Return just the 2D vector (discarding the third element, 1):
 
         |x*m11 + y*m21 + Tx|
         |x*m12 + y*m22 + Ty|
@@ -76,21 +84,10 @@ def xfm_vec(v: Vec2D, xfm: Matrix2DH) -> Vec2D:
     Vec2D(x=7, y=-2)
     """
     # Get the homogeneous-coordinate version of v
-    h = Vec2DH(m1=v.x, m2=v.y)
+    h = Vec2DH(x1=v.x, x2=v.y)
     # Multiply t(v) by the homogeneous-coordinate transformation matrix
     u: Vec2DH = mult_vec2h_by_mat2h(h, xfm)
-    # Using homogeneous coordinates, the third element should always be 1
-    assert u.m3 == 1
-    return Vec2D(x=u.m1, y=u.m2)
-
-
-def mult_vec2h_by_mat2h(h: Vec2DH, mat: Matrix2DH) -> Vec2DH:
-    """Multiply 1x3 vector 'h' by 3x3 matrix 'mat'."""
-    return Vec2DH(
-            h.m1*mat.m11 + h.m2*mat.m21 + h.m3*mat.m31,
-            h.m1*mat.m12 + h.m2*mat.m22 + h.m3*mat.m32,
-            h.m1*mat.m13 + h.m2*mat.m23 + h.m3*mat.m33
-            )
+    return Vec2D(x=u.x1, y=u.x2)
 
 
 @dataclass

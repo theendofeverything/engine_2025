@@ -81,13 +81,26 @@ class Vec2DH:
     """Two-dimensional vector for work in homogeneous coordinates.
 
     Create homogeneous-coordinates version of a 2D vector by adding 1 as a third entry
-    >>> h = Vec2DH(m1=0, m2=1)
+    >>> h = Vec2DH(x1=0, x2=1)
     >>> h
-    Vec2DH(m1=0, m2=1, m3=1)
+    Vec2DH(x1=0, x2=1, x3=1)
     """
-    m1: int | float
-    m2: int | float
-    m3: int | float = 1
+    x1: int | float
+    x2: int | float
+    x3: int | float = 1
+
+
+@dataclass
+class Vec3D:
+    """Three-dimensional vector.
+
+    >>> v = Vec3D(x1=1, x2=2, x3=3)
+    >>> v
+    Vec3D(x1=1, x2=2, x3=3)
+    """
+    x1: int | float
+    x2: int | float
+    x3: int | float
 
 
 # pylint: disable=too-many-instance-attributes
@@ -115,6 +128,38 @@ class Matrix2DH:
     def __post_init__(self) -> None:
         self.m31 = self.translation.x
         self.m32 = self.translation.y
+
+    def __str__(self) -> str:
+        return (f"|{self.m11:>5} {self.m12:>5}  {self.m13:>5}|\n"
+                f"|{self.m21:>5} {self.m22:>5}  {self.m23:>5}|\n"
+                f"|{self.m31:>5} {self.m32:>5}  {self.m33:>5}|")
+
+
+# pylint: disable=too-many-instance-attributes
+@dataclass
+class Matrix3D:
+    """3x3 matrix.
+
+    >>> m = Matrix3D(
+    ... m11=11, m12=12, m13=13,
+    ... m21=21, m22=22, m23=23,
+    ... m31=31, m32=22, m33=33)
+    >>> m
+    Matrix3D(m11=11, m12=12, m13=13, m21=21, m22=22, m23=23, m31=31, m32=22, m33=33)
+    >>> print(m)
+    |   11    12     13|
+    |   21    22     23|
+    |   31    22     33|
+    """
+    m11: float
+    m12: float
+    m13: float
+    m21: float
+    m22: float
+    m23: float
+    m31: float
+    m32: float
+    m33: float
 
     def __str__(self) -> str:
         return (f"|{self.m11:>5} {self.m12:>5}  {self.m13:>5}|\n"
