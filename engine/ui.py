@@ -153,15 +153,13 @@ class UI:
                 log.debug("User pressed 'd' to toggle debug HUD.")
                 game.debug.hud.is_visible = not game.debug.hud.is_visible
             case pygame.K_EQUALS:
-                if kmod & (pygame.KMOD_CTRL | pygame.KMOD_SHIFT):
-                    game.debug.hud.font_size += 1
-                    game.debug.hud.font_size = min(game.debug.hud.font_size, 30)
-                    log.debug(f"User pressed Ctrl_+. Font size: {game.debug.hud.font_size}.")
+                if (kmod & pygame.KMOD_CTRL) and (kmod & pygame.KMOD_SHIFT):
+                    game.debug.hud.font_size.increase()
+                    log.debug(f"User pressed Ctrl_+. Font size: {game.debug.hud.font_size.value}.")
             case pygame.K_MINUS:
-                if kmod & (pygame.KMOD_CTRL):
-                    log.debug(f"User pressed Ctrl_-. Font size: {game.debug.hud.font_size}.")
-                    game.debug.hud.font_size -= 1
-                    game.debug.hud.font_size = max(game.debug.hud.font_size, 6)
+                if kmod & pygame.KMOD_CTRL:
+                    game.debug.hud.font_size.decrease()
+                    log.debug(f"User pressed Ctrl_-. Font size: {game.debug.hud.font_size.value}.")
 
     def log_unused_events(self, event: pygame.event.Event, log: logging.Logger) -> None:
         """Log events that I have not found a use for yet."""

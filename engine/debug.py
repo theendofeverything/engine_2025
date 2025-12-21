@@ -4,6 +4,24 @@ from .drawing_shapes import Line2D
 
 
 @dataclass
+class FontSize:
+    """Font size of pgyame.font.Sysfont()."""
+    value: int
+    minimum: int
+    maximum: int
+
+    def increase(self) -> None:
+        """Increase the font size. Clamp at maximum size."""
+        self.value += 1
+        self.value = min(self.value, self.maximum)
+
+    def decrease(self) -> None:
+        """Decrease the font size. Clamp at minimum size."""
+        self.value -= 1
+        self.value = max(self.value, self.minimum)
+
+
+@dataclass
 class DebugArt:
     """Debug Artwork.
 
@@ -78,6 +96,19 @@ class DebugHud:
                 In renderer:
                     if game.debug.hud.is_visible:
                         self.render_debug_hud()
+        font_size (FontSize):
+            Control HUD font size with Ctrl_+/-.
+            Font size is initialized to 16. Minimum is 6, maximum is 30.
+            Intended usage:
+                The ui adjusts font size on keydown events:
+                    case pygame.K_EQUALS:
+                        if kmod & (pygame.KMOD_CTRL | pygame.KMOD_SHIFT):
+                            game.debug.hud.font_size.increase()
+                    case pygame.K_MINUS:
+                        if kmod & (pygame.KMOD_CTRL):
+                            game.debug.hud.font_size.decrease()
+                The renderer uses font size to create the font when rendering the HUD:
+                    font = pygame.font.SysFont("RobotoMono", game.debug.hud.font_size.value, ...
         _text (str):
             The text that is displayed in the Debug HUD.
             Don't manipulate '_text' directly.
@@ -98,7 +129,7 @@ class DebugHud:
                 Use 'debug.hud.reset_snapshots()' at the top of the code block to clear old values.
     """
     is_visible: bool = True     # Control whether HUD should be visible or not.
-    font_size:  int = 16        # Track HUD font size
+    font_size:  FontSize = FontSize(value=16, minimum=6, maximum=30)  # Track HUD font size
     _text:      str = ""        # The text that is displayed in the Debug HUD.
     _snapshots: str = ""        # Debug HUD text that persists until manually cleared.
 

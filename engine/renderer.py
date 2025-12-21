@@ -46,7 +46,7 @@ class Renderer:
     def render_debug_hud(self) -> None:
         """Display values in the Debug HUD."""
         game = self.game
-        font = pygame.font.SysFont("RobotoMono", game.debug.hud.font_size, bold=False)
+        font = pygame.font.SysFont("RobotoMono", game.debug.hud.font_size.value, bold=False)
         pos = (0, 0)
 
         # Display snapshot values at bottom of HUD
