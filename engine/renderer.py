@@ -46,25 +46,10 @@ class Renderer:
     def render_debug_hud(self) -> None:
         """Display values in the Debug HUD."""
         game = self.game
-        font = pygame.font.SysFont("RobotoMono", 15, bold=False)
+        font = pygame.font.SysFont("RobotoMono", game.debug.hud.font_size, bold=False)
         pos = (0, 0)
 
-        def debug_pan() -> str:
-            """Return string with pan values."""
-            return (f"origin: {game.coord_sys.pcs_origin.fmt(0.2)}, "
-                    f"translation: {game.coord_sys.translation.fmt(0.2)}\n"
-                    f"Panning start: {game.ui.panning.start}, "
-                    f"end: {game.ui.panning.end}, "
-                    f"vector: {game.ui.panning.vector}"
-                    )
-        game.debug.hud.print(debug_pan())
-
-        def debug_overlay_is_visible() -> str:
-            """Return string displaying whether debug overlay is visible."""
-            return f"Debug art overlay: {game.debug.art.is_visible}"
-        game.debug.hud.print(debug_overlay_is_visible())
-
-        # Print the snapshots last
+        # Display snapshot values at bottom of HUD
         game.debug.hud.print_snapshots()
 
         for i, line in enumerate(game.debug.hud.lines):

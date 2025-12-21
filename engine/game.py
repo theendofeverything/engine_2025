@@ -107,10 +107,25 @@ class Game:
                                  f"2: {self.ui.mouse_button_2}"
                                  )
 
+        def debug_pan() -> None:
+            """Display panning values."""
+            self.debug.hud.print(f"origin: {self.coord_sys.pcs_origin.fmt(0.2)}, "
+                                 f"translation: {self.coord_sys.translation.fmt(0.2)}\n"
+                                 f"Panning start: {self.ui.panning.start}, "
+                                 f"end: {self.ui.panning.end}, "
+                                 f"vector: {self.ui.panning.vector}"
+                                 )
+
+        def debug_overlay_is_visible() -> None:
+            """Display whether debug artwork overlay is visible."""
+            self.debug.hud.print(f"Debug art overlay: {self.debug.art.is_visible}")
+
         debug_fps()
         debug_window_size()
         debug_mouse_position()
         debug_mouse_buttons()
+        debug_pan()
+        debug_overlay_is_visible()
 
     def draw_a_cross(self) -> None:
         """Draw a cross in the GCS."""

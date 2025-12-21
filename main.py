@@ -31,7 +31,7 @@
     * [x] Define translation and panning vectors as properties (values returned by function)
     * [x] Update the origin when panning ends
     * [x] Update the origin when screen is resized
-* [ ] Replace pixel coordinates with world space coordinates
+* [x] Replace pixel coordinates with world space coordinates
     * [x] Create high-school algebra transforms to map from world space to
           pixel space
     * [x] Draw in GCS then render in PCS

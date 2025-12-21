@@ -98,6 +98,7 @@ class DebugHud:
                 Use 'debug.hud.reset_snapshots()' at the top of the code block to clear old values.
     """
     is_visible: bool = True     # Control whether HUD should be visible or not.
+    font_size:  int = 16        # Track HUD font size
     _text:      str = ""        # The text that is displayed in the Debug HUD.
     _snapshots: str = ""        # Debug HUD text that persists until manually cleared.
 

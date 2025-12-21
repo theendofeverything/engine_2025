@@ -54,10 +54,11 @@ class UI:
 
         All events are logged, including unused events.
         """
+        kmod = pygame.key.get_mods()
         for event in pygame.event.get():
             match event.type:
                 case pygame.QUIT: sys.exit()
-                case pygame.KEYDOWN: self.handle_keydown_events(event, log)
+                case pygame.KEYDOWN: self.handle_keydown_events(event, kmod, log)
                 case pygame.WINDOWSIZECHANGED: self.handle_windowsizechanged_events(event, log)
                 case pygame.MOUSEBUTTONDOWN: self.handle_mousebutton_down_events(event, log)
                 case pygame.MOUSEBUTTONUP: self.handle_mousebutton_up_events(event, log)
@@ -133,6 +134,7 @@ class UI:
 
     def handle_keydown_events(self,
                               event: pygame.event.Event,
+                              kmod: int,
                               log: logging.Logger) -> None:
         """Handle keydown events (keyboard key presses)."""
         game = self.game
@@ -150,6 +152,16 @@ class UI:
             case pygame.K_d:
                 log.debug("User pressed 'd' to toggle debug HUD.")
                 game.debug.hud.is_visible = not game.debug.hud.is_visible
+            case pygame.K_EQUALS:
+                if kmod & (pygame.KMOD_CTRL | pygame.KMOD_SHIFT):
+                    game.debug.hud.font_size += 1
+                    game.debug.hud.font_size = min(game.debug.hud.font_size, 30)
+                    log.debug(f"User pressed Ctrl_+. Font size: {game.debug.hud.font_size}.")
+            case pygame.K_MINUS:
+                if kmod & (pygame.KMOD_CTRL):
+                    log.debug(f"User pressed Ctrl_-. Font size: {game.debug.hud.font_size}.")
+                    game.debug.hud.font_size -= 1
+                    game.debug.hud.font_size = max(game.debug.hud.font_size, 6)
 
     def log_unused_events(self, event: pygame.event.Event, log: logging.Logger) -> None:
         """Log events that I have not found a use for yet."""
