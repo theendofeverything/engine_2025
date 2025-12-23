@@ -6,7 +6,39 @@ You don't need any `tests.py` or `test_blah.py` files. Just run this command
 and pytest will find all docstring tests:
 
 ```
-$ pytest --doctest-modules -v
+$ pytest --doctest-modules --verbose
+```
+
+### Control pytest behavior
+
+Stop after failing two tests:
+
+```
+	pytest --doctest-modules --verbose --maxfail=2
+```
+
+### Control doctest behavior
+
+To set doctest option flags, see https://docs.pytest.org/en/4.6.x/doctest.html
+
+Create a `.pytest.ini` file:
+
+```
+[pytest]
+doctest_optionflags = NORMALIZE_WHITEPSPACE
+```
+
+Alternatively, you can use comments directly in the code to apply options to
+individual tests. Doctest calls these "directives". See
+file:///home/kelvin/.local/share/doc/python-3.14-docs-html/library/doctest.html#directives
+
+```python
+>>> print(list(range(20)))  # doctest: +NORMALIZE_WHITESPACE
+[0,   1,  2,  3,  4,  5,  6,  7,  8,  9,
+10,  11, 12, 13, 14, 15, 16, 17, 18, 19]
+
+>>> print(list(range(20)))  # doctest: +ELLIPSIS
+[0, 1, ..., 18, 19]
 ```
 
 ## Context on my usual flow
