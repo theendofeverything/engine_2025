@@ -1,12 +1,12 @@
 """Coordinate transforms operate on geometry types.
 """
 from dataclasses import dataclass
-from .geometry_types import Vec2D, Vec2DH, Matrix2DH
-from .geometry_operators import mult_vec2h_by_mat2h
+from .geometry_types import Vec2D, Vec2DH, RowMatrix2DH
+from .geometry_operators import mult_rowvec2h_by_rowmat2h
 from .coord_sys import CoordinateSystem
 
 
-def xfm_vec(v: Vec2D, xfm: Matrix2DH) -> Vec2D:
+def _xfm_vec(v: Vec2D, xfm: RowMatrix2DH) -> Vec2D:
     """Xfm 'v' to a new coordinate system by matrix multiplication of 'v' and 'xfm'.
 
     v:
@@ -26,7 +26,7 @@ def xfm_vec(v: Vec2D, xfm: Matrix2DH) -> Vec2D:
 
             where |Tx Ty| is the vector that translates the origin between coordinate systems
 
-    The operation performed by xfm_vec() is t(v) * xfm:
+    The operation performed by _xfm_vec() is t(v) * xfm:
 
         |x y 1| * |m11 m12   0| = |x*m11 + y*m21 + Tx, x*m12 + y*m22 + Ty, 1|
                   |m21 m22   0|
@@ -48,45 +48,45 @@ def xfm_vec(v: Vec2D, xfm: Matrix2DH) -> Vec2D:
     >>> v = Vec2D(x=1, y=1)
     >>> v
     Vec2D(x=1, y=1)
-    >>> xfm = Matrix2DH(m11=5, m12=0, m21=0, m22=-5, translation=Vec2D(x=0, y=0))
+    >>> xfm = RowMatrix2DH(m11=5, m12=0, m21=0, m22=-5, translation=Vec2D(x=0, y=0))
     >>> print(xfm)
     |    5     0      0|
     |    0    -5      0|
     |    0     0      1|
 
-    >>> xfm_vec(v, xfm)
+    >>> _xfm_vec(v, xfm)
     Vec2D(x=5, y=-5)
 
     Example 2: Now just translate the origin and don't change anything else.
     >>> v = Vec2D(x=1, y=1)
     >>> v
     Vec2D(x=1, y=1)
-    >>> xfm = Matrix2DH(m11=1, m12=0, m21=0, m22=1, translation=Vec2D(x=2, y=3))
+    >>> xfm = RowMatrix2DH(m11=1, m12=0, m21=0, m22=1, translation=Vec2D(x=2, y=3))
     >>> print(xfm)
     |    1     0      0|
     |    0     1      0|
     |    2     3      1|
 
-    >>> xfm_vec(v, xfm)
+    >>> _xfm_vec(v, xfm)
     Vec2D(x=3, y=4)
 
     Example 3: Scale and translate.
     >>> v = Vec2D(x=1, y=1)
     >>> v
     Vec2D(x=1, y=1)
-    >>> xfm = Matrix2DH(m11=5, m12=0, m21=0, m22=-5, translation=Vec2D(x=2, y=3))
+    >>> xfm = RowMatrix2DH(m11=5, m12=0, m21=0, m22=-5, translation=Vec2D(x=2, y=3))
     >>> print(xfm)
     |    5     0      0|
     |    0    -5      0|
     |    2     3      1|
 
-    >>> xfm_vec(v, xfm)
+    >>> _xfm_vec(v, xfm)
     Vec2D(x=7, y=-2)
     """
     # Get the homogeneous-coordinate version of v
     h = Vec2DH(x1=v.x, x2=v.y)
     # Multiply t(v) by the homogeneous-coordinate transformation matrix
-    u: Vec2DH = mult_vec2h_by_mat2h(h, xfm)
+    u: Vec2DH = mult_rowvec2h_by_rowmat2h(h, xfm)
     return Vec2D(x=u.x1, y=u.x2)
 
 
@@ -97,13 +97,13 @@ class CoordinateTransform:
 
     def gcs_to_pcs(self, v: Vec2D) -> Vec2D:
         """Transform vector from game coord sys to pixel coord sys."""
-        return xfm_vec(v, self.xfm_gcs_to_pcs)
+        return _xfm_vec(v, self.xfm_gcs_to_pcs)
 
     @property
-    def xfm_gcs_to_pcs(self) -> Matrix2DH:
+    def xfm_gcs_to_pcs(self) -> RowMatrix2DH:
         """Matrix that transforms from GCS to PCS."""
         k = self.coord_sys.scale_gcs_to_pcs
-        return Matrix2DH(m11=k, m12=0, m21=0, m22=-k, translation=self.coord_sys.translation)
+        return RowMatrix2DH(m11=k, m12=0, m21=0, m22=-k, translation=self.coord_sys.translation)
 
     def old_gcs_to_pcs(self, v: Vec2D) -> Vec2D:
         """Transform vector from game coord sys to pixel coord sys."""
