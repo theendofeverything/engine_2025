@@ -29,8 +29,9 @@ class Renderer:
             """Convert all lines from GCS to PCS and draw lines to the screen."""
             for line_g in lines:
                 # Convert GCS to PCS
-                line_p = Line2D(start=game.coord_xfm.gcs_to_pcs(line_g.start.as_vec()).as_point(),
-                                end=game.coord_xfm.gcs_to_pcs(line_g.end.as_vec()).as_point()
+                xfm = game.coord_sys.gcs_to_pcs
+                line_p = Line2D(start=game.coord_sys.xfm(line_g.start.as_vec(), xfm).as_point(),
+                                end=game.coord_sys.xfm(line_g.end.as_vec(), xfm).as_point()
                                 )
                 # Render to screen
                 pygame.draw.line(self.window_surface,

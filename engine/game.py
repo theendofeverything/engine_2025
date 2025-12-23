@@ -14,7 +14,7 @@ from .art import Art
 from .ui import UI
 from .panning import Panning
 from .coord_sys import CoordinateSystem
-from .coord_xfm import CoordinateTransform
+# from .coord_xfm import CoordinateTransform
 from .renderer import Renderer
 from .geometry_types import Point2D, Vec2D
 from .drawing_shapes import Cross
@@ -31,7 +31,7 @@ class Game:
     # Instance variables defined in __post_init__()
     ui:         UI = field(init=False)                      # Keyboard, mouse, panning, zoom
     coord_sys:  CoordinateSystem = field(init=False)        # Track state of PCS and GCS
-    coord_xfm:  CoordinateTransform = field(init=False)     # Xfm vectors btwn PCS and GCS
+    # coord_xfm:  CoordinateTransform = field(init=False)     # Xfm vectors btwn PCS and GCS
     renderer:   Renderer = field(init=False)
 
     def __post_init__(self) -> None:
@@ -45,7 +45,7 @@ class Game:
                 panning=self.ui.panning,
                 window_size=Vec2D(x=60*16, y=60*9))
         # Create 'coord_xfm' for transforming between coordinate systems
-        self.coord_xfm = CoordinateTransform(coord_sys=self.coord_sys)
+        # self.coord_xfm = CoordinateTransform(coord_sys=self.coord_sys)
         # Handle rendering in renderer.py
         self.renderer = Renderer(
                 game=self,
@@ -95,9 +95,9 @@ class Game:
             mouse_position = Vec2D(x=mouse_position_tuple[0],
                                    y=mouse_position_tuple[1])
             # Get mouse position in game coordinates
-            mouse_g = self.coord_xfm.pcs_to_gcs(mouse_position)
+            mouse_g = self.coord_sys.xfm(mouse_position, self.coord_sys.pcs_to_gcs)
             # Test transform by converting back to pixel coordinates
-            mouse_p = self.coord_xfm.gcs_to_pcs(mouse_g)
+            mouse_p = self.coord_sys.xfm(mouse_g, self.coord_sys.gcs_to_pcs)
             self.debug.hud.print(f"Mouse: {mouse_g.fmt(0.2)}, GCS, {mouse_p.fmt(0.0)}, PCS")
 
         def debug_mouse_buttons() -> None:
