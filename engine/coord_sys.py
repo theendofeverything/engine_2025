@@ -50,13 +50,17 @@ class _Matrices:
         gcs_to_pcs (Matrix2DH):
             Matrix that transforms from GCS to PCS.
             Intended usage:
+                mouse_p = coord_sys.xfm(
+                            mouse_g,
+                            coord_sys.mat.gcs_to_pcs
+                            )
         pcs_to_gcs (Matrix2DH):
             Matrix that transforms from GCS to PCS.
             Intended usage:
-                mouse_g = game.coord_sys.xfm(
-                        mouse_p.as_vec(),
-                        game.coord_sys.mat.pcs_to_gcs
-                        ).as_point()
+                mouse_g = coord_sys.xfm(
+                            mouse_p.as_vec(),
+                            coord_sys.mat.pcs_to_gcs
+                            )
 
     >>> coord_sys = CoordinateSystem(window_size=Vec2D(16, 9))
 
@@ -191,15 +195,15 @@ class CoordinateSystem:
 
         Matrix multiplication:
 
-            |a   c  Tx|   |x|   |ax + cy + Tx|   |x*m11 + y*m12 + Tx|
-            |b   d  Ty| * |y| = |bx + dy + Ty| = |x*m21 + y*m22 + Ty|
+            |a   c  Tx|   |x|   |ax + cy + Tx|   |m11*x + m12*y + Tx|
+            |b   d  Ty| * |y| = |bx + dy + Ty| = |m21*x + m22*y + Ty|
             |0   0   1|   |1|   | 0 +  0 +  1| = |    0 +     0 +  1|
 
         We only needed homogeneous coordinates to include translation in the transform.
         Return just the 2D vector (discarding the third element, 1):
 
-            |x*m11 + y*m12 + Tx|
-            |x*m21 + y*m22 + Ty|
+            |m11*x + m12*y + Tx|
+            |m21*x + m22*y + Ty|
 
         Examples
         --------
@@ -225,7 +229,7 @@ class CoordinateSystem:
         >>> coord_sys.xfm(v, xfm)
         Vec2D(x=5, y=-5)
 
-        Example 1A: Redo example 1 using CoordinateSystem.
+        Example 1A: Redo example 1 using the GCS to PCS matrix calculated by CoordinateSystem.
         >>> coord_sys = CoordinateSystem(window_size=Vec2D(16, 9))
         >>> coord_sys.pcs_origin = Point2D(0, 0) # Put origin at topleft to eliminate translation
         >>> print(coord_sys.mat.gcs_to_pcs)
@@ -246,7 +250,7 @@ class CoordinateSystem:
         >>> coord_sys.xfm(v, xfm)
         Vec2D(x=3, y=4)
 
-        Example 2A: Redo example 2 using CoordinateSystem.
+        Example 2A: Redo example 2 using the GCS to PCS matrix calculated by CoordinateSystem.
         Note:
             I use a window size of 2x2 because this is the initial size of the GCS visible in the
             window: -1.0:1.0 in both the x and y dimensions. By matching the window size to the
@@ -274,7 +278,7 @@ class CoordinateSystem:
         >>> coord_sys.xfm(v, xfm)
         Vec2D(x=7, y=-2)
 
-        Example 3A: Redo example 3 using CoordinateSystem.
+        Example 3A: Redo example 3 using the GCS to PCS matrix calculated by CoordinateSystem.
         >>> coord_sys = CoordinateSystem(window_size=Vec2D(16, 9))
         >>> print(coord_sys.mat.gcs_to_pcs)
         |  8.0     0    8.0|

@@ -22,6 +22,14 @@ class Point2D:
     >>> point = Point2D.from_tuple((0,1))
     >>> point
     Point2D(x=0, y=1)
+
+    Debug a point:
+    >>> print(point)
+    (0.00, 1.00)
+
+    Print with higher precision:
+    >>> print(point.fmt(0.3))
+    (0.000, 1.000)
     """
     x: float
     y: float
@@ -33,6 +41,11 @@ class Point2D:
     def as_tuple(self) -> tuple[float, float]:
         """Return point as (x, y)."""
         return (self.x, self.y)
+
+    def __str__(self) -> str:
+        """Point as a string with precision to two decimal places."""
+        precision = 0.2
+        return f"({self.x:{precision}f}, {self.y:{precision}f})"
 
     def fmt(self, precision: float = 0.1) -> str:
         """Point as a string with the desired precision."""
@@ -64,6 +77,11 @@ class Vec2D:
     def as_tuple(self) -> tuple[float, float]:
         """Return vector as tuple (x, y)."""
         return (self.x, self.y)
+
+    def __str__(self) -> str:
+        """Vector as a string with precision to two decimal places."""
+        precision = 0.2
+        return f"({self.x:{precision}f}, {self.y:{precision}f})"
 
     def fmt(self, precision: float = 0.1) -> str:
         """Vector as a string with the desired precision."""
@@ -138,38 +156,6 @@ class Matrix2DH:
 
 # pylint: disable=too-many-instance-attributes
 @dataclass
-class RowMatrix2DH:
-    """2D affine xfm matrix augmented with homogeneous coordinates for translation.
-
-    >>> gcs_to_pcs = RowMatrix2DH(m11=5, m12=0, m21=0, m22=-5, translation=Vec2D(x=2, y=3))
-    >>> gcs_to_pcs
-    RowMatrix2DH(m11=5, m12=0, m21=0, m22=-5, translation=Vec2D(x=2, y=3), m13=0, m23=0, m33=1)
-    >>> print(gcs_to_pcs)
-    |    5     0      0|
-    |    0    -5      0|
-    |    2     3      1|
-    """
-    m11: float
-    m12: float
-    m21: float
-    m22: float
-    translation: Vec2D
-    m13: float = 0
-    m23: float = 0
-    m33: float = 1
-
-    def __post_init__(self) -> None:
-        self.m31 = self.translation.x
-        self.m32 = self.translation.y
-
-    def __str__(self) -> str:
-        return (f"|{self.m11:>5} {self.m12:>5}  {self.m13:>5}|\n"
-                f"|{self.m21:>5} {self.m22:>5}  {self.m23:>5}|\n"
-                f"|{self.m31:>5} {self.m32:>5}  {self.m33:>5}|")
-
-
-# pylint: disable=too-many-instance-attributes
-@dataclass
 class Matrix3D:
     """3x3 matrix.
 
@@ -195,6 +181,7 @@ class Matrix3D:
     m33: float
 
     def __str__(self) -> str:
-        return (f"|{self.m11:>5} {self.m12:>5}  {self.m13:>5}|\n"
-                f"|{self.m21:>5} {self.m22:>5}  {self.m23:>5}|\n"
-                f"|{self.m31:>5} {self.m32:>5}  {self.m33:>5}|")
+        w = 10  # Right-align each entry to be 10-characters wide
+        return (f"|{self.m11:>{w}} {self.m12:>{w}}  {self.m13:>{w}}|\n"
+                f"|{self.m21:>{w}} {self.m22:>{w}}  {self.m23:>{w}}|\n"
+                f"|{self.m31:>{w}} {self.m32:>{w}}  {self.m33:>{w}}|")

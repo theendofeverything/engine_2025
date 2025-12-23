@@ -53,6 +53,9 @@ class Renderer:
         # Display snapshot values at bottom of HUD
         game.debug.hud.print_snapshots()
 
+        # The debug HUD now consists of all debug.hud.print() text followed by all
+        # debug.hud.snapshot() text. This is all in debug.hud.lines. Generate a texture for each
+        # line and blit that texture to the OS window.
         for i, line in enumerate(game.debug.hud.lines):
             text_surface = font.render(line, True, Colors.text)
             self.window_surface.blit(

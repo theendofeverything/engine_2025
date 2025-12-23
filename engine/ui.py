@@ -3,15 +3,26 @@
 TODO: finish writing this docstring
 Events:
     Window resized:
-        See pygame documentation for 'pygame.event'.
-        See 'pygame.WINDOWSIZECHANGED' in this code.
+        See 'handle_windowsizechanged_events()'.
+        Also see pygame documentation for 'pygame.event'.
     Key pressed:
-        See 'pygame.KEYDOWN' in this code.
+        See 'handle_keydown_events()'.
     Mouse button down/up:
+        See 'handle_mousebutton_down_events()'.
+        See 'handle_mousebutton_up_events()'.
 
 User actions:
     Panning:
+        See 'handle_mousebutton_down_events()' and 'start_panning()'.
+        See 'handle_mousebutton_up_events()' and 'stop_panning()'.
     Zoom:
+        See 'handle_mousewheel_events()', 'zoom_out()', and 'zoom_in()'.
+    Press 'q': Quit.
+    Press 'c': Clear debug snapshot artwork.
+    Press 'Space': Toggle debug art overlay.
+    Press 'd': Toggle debug HUD.
+    Press Ctrl_+: Increase debug HUD font.
+    Press Ctrl_-: Decrease debug HUD font.
 """
 import sys                  # Exit with sys.exit()
 import logging
@@ -203,16 +214,17 @@ class UI:
         # Create an offset vector to get the mouse back to the original location
         if debug:
             game.debug.art.snapshot(Line2D(start=mouse_g_start, end=mouse_g_end))
-            game.debug.hud.snapshot(f"zoom about starts: {mouse_g_start.fmt(0.2)}, "
-                                    f"ends: {mouse_g_end.fmt(0.2)}")
+            game.debug.hud.snapshot(f"zoom about starts: {mouse_g_start}, "
+                                    f"ends: {mouse_g_end}")
         offset_g = Vec2D.from_points(start=mouse_g_start, end=mouse_g_end)
         if debug:
-            game.debug.hud.snapshot(f"offset: {offset_g.fmt(0.2)}GCS")
+            game.debug.hud.snapshot(f"offset: {offset_g}GCS")
         # Scale the vector from GCS to PCS
         offset_p = Vec2D(x=game.coord_sys.scaling.gcs_to_pcs*offset_g.x,
                          y=game.coord_sys.scaling.gcs_to_pcs*offset_g.y)
         if debug:
-            game.debug.hud.snapshot(f"offset: {offset_p.fmt(0.2)}PCS")
+            # Note: although this is in PCS, the offset is fractional: (float, float)
+            game.debug.hud.snapshot(f"offset: {offset_p}PCS")
         # Change the PCS origin to move the GCS origin by that offset (keep zoom about the mouse)
         # I don't understand why I have to subtract the x-offset, but this is what works.
         game.coord_sys.pcs_origin.x -= offset_p.x

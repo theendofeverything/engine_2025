@@ -10,9 +10,9 @@ def mult_vec3_by_mat3(v: Vec2DH | Vec3D, mat: Matrix2DH | Matrix3D) -> Vec3D:
         |m31 m32 m33|   |x3|   |y3|
     """
     return Vec3D(
-            v.x1*mat.m11 + v.x2*mat.m12 + v.x3*mat.m13,
-            v.x1*mat.m21 + v.x2*mat.m22 + v.x3*mat.m23,
-            v.x1*mat.m31 + v.x2*mat.m32 + v.x3*mat.m33)
+            mat.m11*v.x1 + mat.m12*v.x2 + mat.m13*v.x3,
+            mat.m21*v.x1 + mat.m22*v.x2 + mat.m23*v.x3,
+            mat.m31*v.x1 + mat.m32*v.x2 + mat.m33*v.x3)
 
 
 def mult_vec2h_by_mat2h(h: Vec2DH, mat: Matrix2DH) -> Vec2DH:

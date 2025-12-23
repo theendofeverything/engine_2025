@@ -57,15 +57,15 @@ class DebugArt:
                 Use 'debug.art.snapshot()' to append a debug line art in event-triggered code:
                     if debug:
                         game.debug.art.snapshot(Line2D(start=mouse_g_start, end=mouse_g_end))
-                Use 'debug.art.reset_snapshots()' at the top of the code block to clear old lineart.
+                Use 'debug.art.reset_snapshots()' at start of code block to clear old line art.
                     if debug:
                         game.debug.hud.reset_snapshots()
                 The renderer draws these to the window in render_shapes:
                     if game.debug.art.is_visible:
                         render_lines(lines=game.debug.art.snapshots, ...
     """
-    is_visible: bool = True                             # Controls whether debug artwork is visible
-    lines:      list[Line2D] = field(default_factory=list)  # Draw every iteration to persist
+    is_visible: bool = True  # Controls whether debug artwork is visible
+    lines:      list[Line2D] = field(default_factory=list)  # Cleared on each iteration of game loop
     snapshots:  list[Line2D] = field(default_factory=list)  # Sticks around until manually cleared
 
     def reset(self) -> None:

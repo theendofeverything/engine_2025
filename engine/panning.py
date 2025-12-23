@@ -19,10 +19,13 @@ class Panning:
             with the mouse position on every iteration of the game loop.
         vector (Vec2D):
             Amount of mouse pan, obtained from end - start.
-            The 'panning.vector' is picked up during rendering: when the game loop renders drawing
-            entities, it converts entity coordinates from the game to the pixel coordinate system.
-            That coordinate transform ('xfm.gcs_to_pcs()') uses the origin offset (the
-            'coord_sys.translation' vector), which uses the 'panning.vector' in its calculation.
+            The 'panning.vector' is picked up during rendering, as follows:
+                When the game loop renders drawing entities, it converts entity coordinates from
+                GCS to PCS:
+                    coord_sys.xfm(v:Vec2D, coord_sys.mat.gcs_to_pcs)
+                That coordinate transform matrix is calculated using the origin offset vector:
+                    coord_sys.translation
+                And coord_sys.translation is calculated using the 'panning.vector' (this attribute).
 
     >>> panning = Panning()                             # Track panning state
     >>> mouse_pos = (123, 456)                          # Position when button 1 was pressed

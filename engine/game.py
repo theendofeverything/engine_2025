@@ -4,6 +4,11 @@ Abbreviations:
     GCS: Game Coordinate System
     PCS: Pixel Coordinate System
     xfm: transform
+
+Suffix abbreviations:
+    h:  homogeneous coordinates
+    _g: GCS
+    _p: PCS
 """
 from dataclasses import dataclass, field
 import logging
@@ -14,7 +19,6 @@ from .art import Art
 from .ui import UI
 from .panning import Panning
 from .coord_sys import CoordinateSystem
-# from .coord_xfm import CoordinateTransform
 from .renderer import Renderer
 from .geometry_types import Point2D, Vec2D
 from .drawing_shapes import Cross
@@ -22,7 +26,17 @@ from .drawing_shapes import Cross
 
 @dataclass
 class Game:
-    """Game data is shared by all the code"""
+    """Game data is shared by all the code.
+
+    >>> game = Game()
+    >>> game
+    Game(debug=Debug(...),
+         timing=Timing(...),
+         art=Art(...),
+         ui=UI(...),
+         coord_sys=CoordinateSystem(...),
+         renderer=Renderer(...))
+    """
     # Instance variables defined in the implicit __init__()
     debug:      Debug = Debug()     # Display debug prints in HUD and overlay debug art
     timing:     Timing = Timing()   # Set up a clock to set frame rate and measure frame period
@@ -31,7 +45,6 @@ class Game:
     # Instance variables defined in __post_init__()
     ui:         UI = field(init=False)                      # Keyboard, mouse, panning, zoom
     coord_sys:  CoordinateSystem = field(init=False)        # Track state of PCS and GCS
-    # coord_xfm:  CoordinateTransform = field(init=False)     # Xfm vectors btwn PCS and GCS
     renderer:   Renderer = field(init=False)
 
     def __post_init__(self) -> None:
@@ -44,8 +57,6 @@ class Game:
         self.coord_sys = CoordinateSystem(
                 panning=self.ui.panning,
                 window_size=Vec2D(x=60*16, y=60*9))
-        # Create 'coord_xfm' for transforming between coordinate systems
-        # self.coord_xfm = CoordinateTransform(coord_sys=self.coord_sys)
         # Handle rendering in renderer.py
         self.renderer = Renderer(
                 game=self,
@@ -98,7 +109,7 @@ class Game:
             mouse_g = self.coord_sys.xfm(mouse_position, self.coord_sys.mat.pcs_to_gcs)
             # Test transform by converting back to pixel coordinates
             mouse_p = self.coord_sys.xfm(mouse_g, self.coord_sys.mat.gcs_to_pcs)
-            self.debug.hud.print(f"Mouse: {mouse_g.fmt(0.2)}, GCS, {mouse_p.fmt(0.0)}, PCS")
+            self.debug.hud.print(f"Mouse: {mouse_g}, GCS, {mouse_p.fmt(0.0)}, PCS")
 
         def debug_mouse_buttons() -> None:
             """Display mouse button state."""
@@ -109,8 +120,8 @@ class Game:
 
         def debug_pan() -> None:
             """Display panning values."""
-            self.debug.hud.print(f"origin: {self.coord_sys.pcs_origin.fmt(0.2)}, "
-                                 f"translation: {self.coord_sys.translation.fmt(0.2)}\n"
+            self.debug.hud.print(f"origin: {self.coord_sys.pcs_origin}, "
+                                 f"translation: {self.coord_sys.translation}\n"
                                  f"Panning start: {self.ui.panning.start}, "
                                  f"end: {self.ui.panning.end}, "
                                  f"vector: {self.ui.panning.vector}"
