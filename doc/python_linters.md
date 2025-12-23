@@ -31,6 +31,23 @@ Fix this problem with this one-liner:
 from __future__ import annotations
 ```
 
+## mypy undefined name
+
+See [flake8 undefined name](#flake8-undefined-name).
+
+The `mypy` error is:
+
+```
+engine/ui.py|28| error: Name "Game" is not defined  [name-defined]
+```
+
+The fix is to create a `.mypy.ini` file to disable this error:
+
+```
+[mypy]
+disable_error_code = name-defined
+```
+
 ## pylint - too few public methods
 
 If a Class has "too few public methods", add this above the Class definition to
@@ -122,7 +139,9 @@ To leave these classes in separate files, do not import. Instead, put the type
 name in quotes. This is called `forward references`. See
 https://peps.python.org/pep-0484/#forward-references.
 
-This works just fine except that `flake8` complains "undefined name":
+This works just fine except that `mypy` and `flake8` both complain "undefined name".
+
+The `flake8` error is:
 
 ```
 lib/geometry_operators.py|10 col 30| F821 undefined name 'Game'
