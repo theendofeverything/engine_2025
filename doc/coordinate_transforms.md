@@ -96,6 +96,32 @@ def mult_vec2h_by_mat2h(h: Vec2DH, mat: Matrix2DH) -> Vec2DH:
     u = cast(Vec2DH, mult_vec3_by_mat3(h, mat))
     assert u.x3 == 1
     return u
+
+
+def mat2dh_inv(mat: Matrix2DH) -> Matrix2DH:
+    """Inverse of the special 3x3 matrix that is the 2x2 augmented for homogeneous coordinates.
+    Given the special 3x3 matrix:
+            |a   c  Tx|
+            |b   d  Ty|
+            |0   0   1|
+
+    The inverse is much simpler than the general 3x3 inverse.
+    """
+    assert matrix2dh_is_setup_for_column_vectors(mat)
+    a = mat.m11
+    b = mat.m21
+    c = mat.m12
+    d = mat.m22
+    det = a*d - b*c
+    s = 1/det
+    t = mat.translation
+    return Matrix2DH(m11=s*d, m12=-s*c,
+                     m21=-s*b, m22=s*a,
+                     translation=Vec2D(
+                         x=s*(-d*t.x + c*t.y),
+                         y=s*(b*t.x - a*t.y)
+                         ))
+
 ```
 
 ## Coordinate transforms
@@ -110,10 +136,6 @@ class CoordinateSystem:
         # Multiply h by the homogeneous-coordinate transformation matrix
         u: Vec2DH = mult_vec2h_by_mat2h(h, mat)
         return Vec2D(x=u.x1, y=u.x2)
-
-    def gcs_to_pcs(self, v: Vec2D) -> Vec2D:
-        """Transform vector from game coord sys to pixel coord sys."""
-        return xfm_vec(v, self.xfm_gcs_to_pcs)
 
     @property
     def gcs_to_pcs(self) -> Matrix2DH:

@@ -3,23 +3,6 @@ from typing import cast
 from .geometry_types import Vec2D, Vec2DH, Matrix2DH, Vec3D, Matrix3D
 
 
-def mult_rowvec3_by_rowmat3(v: Vec2DH | Vec3D, mat: Matrix2DH | Matrix3D) -> Vec3D:
-    """Multiply 3x3 matrix 'mat' by 3x3 vector 'v'.
-        |x1 x2 x3| * |m11 m12 m13| = |y1 y2 y3|
-                     |m21 m22 m23|
-                     |m31 m32 m33|
-        |m11 m12 m13|   |x1|   |y1|
-        |m21 m22 m23| * |x2| = |y2|
-        |m31 m32 m33|   |x3|   |y3|
-
-    """
-    return Vec3D(
-            v.x1*mat.m11 + v.x2*mat.m21 + v.x3*mat.m31,
-            v.x1*mat.m12 + v.x2*mat.m22 + v.x3*mat.m32,
-            v.x1*mat.m13 + v.x2*mat.m23 + v.x3*mat.m33
-            )
-
-
 def mult_vec3_by_mat3(v: Vec2DH | Vec3D, mat: Matrix2DH | Matrix3D) -> Vec3D:
     """Multiply 3x3 matrix 'mat' by 3x3 vector 'v'.
         |m11 m12 m13|   |x1|   |y1|
