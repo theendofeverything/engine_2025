@@ -130,9 +130,10 @@ class Matrix2DH:
         self.m23 = self.translation.y
 
     def __str__(self) -> str:
-        return (f"|{self.m11:>5} {self.m12:>5}  {self.m13:>5}|\n"
-                f"|{self.m21:>5} {self.m22:>5}  {self.m23:>5}|\n"
-                f"|{self.m31:>5} {self.m32:>5}  {self.m33:>5}|")
+        w = 10  # Right-align each entry to be 10-characters wide
+        return (f"|{self.m11:>{w}} {self.m12:>{w}}  {self.m13:>{w}}|\n"
+                f"|{self.m21:>{w}} {self.m22:>{w}}  {self.m23:>{w}}|\n"
+                f"|{self.m31:>{w}} {self.m32:>{w}}  {self.m33:>{w}}|")
 
 
 # pylint: disable=too-many-instance-attributes

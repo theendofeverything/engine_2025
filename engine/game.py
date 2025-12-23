@@ -95,9 +95,9 @@ class Game:
             mouse_position = Vec2D(x=mouse_position_tuple[0],
                                    y=mouse_position_tuple[1])
             # Get mouse position in game coordinates
-            mouse_g = self.coord_sys.xfm(mouse_position, self.coord_sys.pcs_to_gcs)
+            mouse_g = self.coord_sys.xfm(mouse_position, self.coord_sys.mat.pcs_to_gcs)
             # Test transform by converting back to pixel coordinates
-            mouse_p = self.coord_sys.xfm(mouse_g, self.coord_sys.gcs_to_pcs)
+            mouse_p = self.coord_sys.xfm(mouse_g, self.coord_sys.mat.gcs_to_pcs)
             self.debug.hud.print(f"Mouse: {mouse_g.fmt(0.2)}, GCS, {mouse_p.fmt(0.0)}, PCS")
 
         def debug_mouse_buttons() -> None:
