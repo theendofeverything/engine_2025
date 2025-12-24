@@ -1,6 +1,6 @@
 """Operators on geometry types."""
 from typing import cast
-from .geometry_types import Vec2D, Vec2DH, Matrix2DH, Vec3D, Matrix3D, Matrix2D
+from .geometry_types import Vec2D, Vec2DH, Matrix2DH, Vec3D, Matrix3D
 
 
 def mult_vec3_by_mat3(v: Vec2DH | Vec3D, mat: Matrix2DH | Matrix3D) -> Vec3D:
@@ -91,100 +91,6 @@ def mat2dh_inv(mat: Matrix2DH) -> Matrix2DH:
                          x=s*(-d*t.x + c*t.y),
                          y=s*(b*t.x - a*t.y)
                          ))
-
-
-def mat2d_inv(mat: Matrix2D) -> Matrix2D:
-    """Inverse of a 2x2 matrix.
-
-    >>> m = Matrix2D(
-    ... m11=2, m12=1,
-    ... m21=-1, m22=3)
-    >>> m
-    Matrix2D(m11=2, m12=1, m21=-1, m22=3)
-    >>> mat2d_inv(m)
-    Matrix2D(m11=0.42857142857142855, m12=0.14285714285714285,
-    m21=-0.14285714285714285, m22=0.2857142857142857)
-
-    inv(M) = det(M)*adj(M)
-
-    Finding the determinant:
-
-        Given the 2x2 column vector matrix M:
-            |a   c|
-            |b   d|
-
-        M transforms from coordinates (p1, p2) to (g1, g2):
-            |a   c|*|p1| = |a*p1 + c*p2| = |g1|
-            |b   d| |p2|   |b*p1 + d*p2|   |g2|
-
-        Using orthonormal basis vectors ihat and jhat for (p1, p2), we obtain the basis vectors of
-        the (g1, g2) coordinate system:
-            ihat = (1, 0),  M*ihat = (a, b)
-            jhat = (0, 1),  M*jhat = (c, d)
-
-        As a linear combination of ihat and jhat, the basis vectors of the (g1, g2) coordinate
-        system are:
-            va = (a*ihat + b*jhat)
-            vb = (c*ihat + d*jhat)
-
-        This means matrix M is comprised of the column basis vectors:
-
-              M = |va  vb|  where   va=|a|  and vb=|c|
-                                       |b|         |d|
-
-        The determinant of M is the signed magnitude of the wedge product of the basis vectors.
-        For the 2x2, it is the bivector obtained from va wedge vb:
-
-            va V vb = (a*ihat + b*jhat) V (c*ihat + d*jhat)
-
-        Note two properties of the wedge product:
-            1. The wedge product is distributive with addition: a V (b + c) = (a V b) + (a V c)
-            2. And the wedge product has the "zero-torque" property: a V a = 0
-        Combining properties 1 and 2, expand (a+b) V (a+b) to obtain the anti-commutative property:
-                a V b = -b V a
-
-        Applying zero-torque (a V a = 0) and anti-commutative (a V b = -b V a) properties to the
-        wedge product (va V vb), we obtain:
-
-            va V vb = (a*d - b*c)*(ihat V jhat)
-
-        And the determinant of M is (a*d - b*c).
-
-    Finding the adjugate:
-
-        The adjugate matrix is the transpose of the cofactor matrix.
-
-            adj(M) = tran(cof(M))
-
-        The cofactor matrix is the matrix of minors.
-
-            cof(M) = |minor11 minor12|
-                     |minor21 minor22|
-
-        The minor of element i,j is the determinant of the submatrix with row i and column j
-        removed, multiplied by -1^(i+j), meaning the signs of the minors is a checkerboard pattern
-        of + and - with + signs along the main diagonal.
-
-                 M = | a  b|
-                     | c  d|
-
-            cof(M) = | d -c|
-                     |-b  a|
-
-        The transpose operation swaps row and column indices, resulting in the adjugate:
-
-            adj(m) = | d -b|
-                     |-c  a|
-    """
-    a = mat.m11
-    b = mat.m21
-    c = mat.m12
-    d = mat.m22
-    det = a*d - b*c
-    s = 1/det
-    return Matrix2D(
-            m11=s*d,    m12=s*(-b),
-            m21=s*(-c), m22=s*a)
 
 
 def mat3d_inv(mat: Matrix3D) -> Matrix3D:

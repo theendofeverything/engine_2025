@@ -160,13 +160,21 @@ class Matrix2D:
     """2x2 matrix.
 
     >>> m = Matrix2D(
-    ... m11=11, m12=12,
-    ... m21=21, m22=22)
+    ... m11=2, m12=1,
+    ... m21=-4, m22=3)
     >>> m
-    Matrix2D(m11=11, m12=12, m21=21, m22=22)
+    Matrix2D(m11=2, m12=1, m21=-4, m22=3)
     >>> print(m)
-    |        11         12|
-    |        21         22|
+    |         2          1|
+    |        -4          3|
+    >>> m.det
+    10
+    >>> print(m.adj)
+    |         3          4|
+    |        -1          2|
+    >>> print(m.inv)
+    |0.30000000000000004                 0.4|
+    |               -0.1                 0.2|
     """
     m11: float
     m12: float
@@ -174,9 +182,111 @@ class Matrix2D:
     m22: float
 
     def __str__(self) -> str:
-        w = 10  # Right-align each entry to be 10-characters wide
+        w = 19  # Right-align each entry to be 19-characters wide
         return (f"|{self.m11:>{w}} {self.m12:>{w}}|\n"
                 f"|{self.m21:>{w}} {self.m22:>{w}}|")
+
+    @property
+    def det(self) -> float:
+        """Determinant of a 2x2 matrix.
+
+        Given the 2x2 column vector matrix M:
+            |a   c|
+            |b   d|
+
+        M transforms from coordinates (p1, p2) to (g1, g2):
+            |a   c|*|p1| = |a*p1 + c*p2| = |g1|
+            |b   d| |p2|   |b*p1 + d*p2|   |g2|
+
+        Using orthonormal basis vectors ihat and jhat for (p1, p2), we obtain the basis vectors of
+        the (g1, g2) coordinate system:
+            ihat = (1, 0),  M*ihat = (a, b)
+            jhat = (0, 1),  M*jhat = (c, d)
+
+        As a linear combination of ihat and jhat, the basis vectors of the (g1, g2) coordinate
+        system are:
+            va = (a*ihat + b*jhat)
+            vb = (c*ihat + d*jhat)
+
+        This means matrix M is comprised of the column basis vectors:
+
+              M = |va  vb|  where   va=|a|  and vb=|c|
+                                       |b|         |d|
+
+        The determinant of M is the signed magnitude of the wedge product of the basis vectors.
+        For the 2x2, it is the bivector obtained from va wedge vb:
+
+            va V vb = (a*ihat + b*jhat) V (c*ihat + d*jhat)
+
+        Note two properties of the wedge product:
+            1. The wedge product is distributive with addition: a V (b + c) = (a V b) + (a V c)
+            2. And the wedge product has the "zero-torque" property: a V a = 0
+        Combining properties 1 and 2, expand (a+b) V (a+b) to obtain the anti-commutative property:
+                a V b = -b V a
+
+        Applying zero-torque (a V a = 0) and anti-commutative (a V b = -b V a) properties to the
+        wedge product (va V vb), we obtain:
+
+            va V vb = (a*d - b*c)*(ihat V jhat)
+
+        And the determinant of M is (a*d - b*c).
+        """
+        a = self.m11
+        b = self.m21
+        c = self.m12
+        d = self.m22
+        return a*d - b*c
+
+    @property
+    def adj(self) -> Matrix2D:
+        """Adjugate of a 2x2 matrix.
+
+        The adjugate matrix is the transpose of the cofactor matrix.
+
+            adj(M) = tran(cof(M))
+
+        The cofactor matrix is the matrix of minors.
+
+            cof(M) = |minor11 minor12|
+                     |minor21 minor22|
+
+        The minor of element i,j is the determinant of the submatrix with row i and column j
+        removed, multiplied by -1^(i+j), meaning the signs of the minors is a checkerboard pattern
+        of + and - with + signs along the main diagonal.
+
+                 M = | a  b|
+                     | c  d|
+
+            cof(M) = | d -c|
+                     |-b  a|
+
+        The transpose operation swaps row and column indices, resulting in the adjugate:
+
+            adj(m) = | d -b|
+                     |-c  a|
+        """
+        a = self.m11
+        b = self.m21
+        c = self.m12
+        d = self.m22
+        return Matrix2D(
+                m11=d,  m12=-b,
+                m21=-c, m22=a)
+
+    @property
+    def inv(self) -> Matrix2D:
+        """Inverse of a 2x2 matrix.
+
+        inv(M) = (1/det(M))*adj(M)
+        """
+        a = self.adj.m11
+        b = self.adj.m21
+        c = self.adj.m12
+        d = self.adj.m22
+        s = 1/self.det
+        return Matrix2D(
+                m11=s*a, m12=s*c,
+                m21=s*b, m22=s*d)
 
 
 # pylint: disable=too-many-instance-attributes
