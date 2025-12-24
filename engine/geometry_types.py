@@ -156,6 +156,31 @@ class Matrix2DH:
 
 # pylint: disable=too-many-instance-attributes
 @dataclass
+class Matrix2D:
+    """2x2 matrix.
+
+    >>> m = Matrix2D(
+    ... m11=11, m12=12,
+    ... m21=21, m22=22)
+    >>> m
+    Matrix2D(m11=11, m12=12, m21=21, m22=22)
+    >>> print(m)
+    |        11         12|
+    |        21         22|
+    """
+    m11: float
+    m12: float
+    m21: float
+    m22: float
+
+    def __str__(self) -> str:
+        w = 10  # Right-align each entry to be 10-characters wide
+        return (f"|{self.m11:>{w}} {self.m12:>{w}}|\n"
+                f"|{self.m21:>{w}} {self.m22:>{w}}|")
+
+
+# pylint: disable=too-many-instance-attributes
+@dataclass
 class Matrix3D:
     """3x3 matrix.
 
