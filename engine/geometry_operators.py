@@ -4,6 +4,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from .geometry_types import Vec2D, Vec2DH, Vec3D
 
+FLOAT_ROUND_NDIGITS = 14
+FLOAT_PRINT_WIDTH = FLOAT_ROUND_NDIGITS + 3  # Account for "0." and one space
+
 
 # pylint: disable=too-many-instance-attributes
 @dataclass
@@ -24,7 +27,7 @@ class Matrix2D:
     |  3  -1|
     |  4   2|
     >>> print(m.inv)
-    |0.30000000000000004                -0.1|
+    |                0.3                -0.1|
     |                0.4                 0.2|
     """
     m11: float
@@ -33,9 +36,13 @@ class Matrix2D:
     m22: float
 
     def __str__(self) -> str:
-        w = 19  # Right-align each entry to be 19-characters wide
-        return (f"|{self.m11:>{w}} {self.m12:>{w}}|\n"
-                f"|{self.m21:>{w}} {self.m22:>{w}}|")
+        w = FLOAT_PRINT_WIDTH  # Right-align each entry to be this wide
+        m11 = round(self.m11, FLOAT_ROUND_NDIGITS)
+        m12 = round(self.m12, FLOAT_ROUND_NDIGITS)
+        m21 = round(self.m21, FLOAT_ROUND_NDIGITS)
+        m22 = round(self.m22, FLOAT_ROUND_NDIGITS)
+        return (f"|{m11:>{w}} {m12:>{w}}|\n"
+                f"|{m21:>{w}} {m22:>{w}}|")
 
     @property
     def det(self) -> float:
@@ -172,9 +179,9 @@ class Matrix2DH:
     |         4              2                  -82|
     |         0              0                   10|
     >>> print(m.inv)
-    |0.30000000000000004  -0.1  -3.9000000000000004|
-    |       0.4            0.2   -8.200000000000001|
-    |         0              0                    1|
+    |              0.3              -0.1               -3.9|
+    |              0.4               0.2               -8.2|
+    |                0                 0                  1|
 
     >>> m = Matrix2DH(m11=2, m12=1, m21=-1, m22=3, translation=Vec2D(x=16, y=9))
     >>> m
@@ -184,9 +191,9 @@ class Matrix2DH:
     |        -1          3           9|
     |         0          0           1|
     >>> print(m.inv)
-    |0.42857142857142855 -0.14285714285714285  -5.571428571428571|
-    |0.14285714285714285  0.2857142857142857   -4.857142857142857|
-    |                  0                    0                   1|
+    | 0.42857142857143 -0.14285714285714  -5.57142857142857|
+    | 0.14285714285714  0.28571428571429  -4.85714285714286|
+    |                0                 0                  1|
     """
     m11: float  # a
     m12: float  # c
@@ -202,10 +209,19 @@ class Matrix2DH:
         self.m23 = self.translation.y
 
     def __str__(self) -> str:
-        w = 10  # Right-align each entry to be 10-characters wide
-        return (f"|{self.m11:>{w}} {self.m12:>{w}}  {self.m13:>{w}}|\n"
-                f"|{self.m21:>{w}} {self.m22:>{w}}  {self.m23:>{w}}|\n"
-                f"|{self.m31:>{w}} {self.m32:>{w}}  {self.m33:>{w}}|")
+        w = FLOAT_PRINT_WIDTH  # Right-align each entry to be this wide
+        m11 = round(self.m11, FLOAT_ROUND_NDIGITS)
+        m12 = round(self.m12, FLOAT_ROUND_NDIGITS)
+        m13 = round(self.m13, FLOAT_ROUND_NDIGITS)
+        m21 = round(self.m21, FLOAT_ROUND_NDIGITS)
+        m22 = round(self.m22, FLOAT_ROUND_NDIGITS)
+        m23 = round(self.m23, FLOAT_ROUND_NDIGITS)
+        m31 = round(self.m31, FLOAT_ROUND_NDIGITS)
+        m32 = round(self.m32, FLOAT_ROUND_NDIGITS)
+        m33 = round(self.m33, FLOAT_ROUND_NDIGITS)
+        return (f"|{m11:>{w}} {m12:>{w}}  {m13:>{w}}|\n"
+                f"|{m21:>{w}} {m22:>{w}}  {m23:>{w}}|\n"
+                f"|{m31:>{w}} {m32:>{w}}  {m33:>{w}}|")
 
     @property
     def det(self) -> float:
@@ -426,9 +442,9 @@ class Matrix3D:
     |        -1          3           9|
     |         0          0           1|
     >>> print(m.inv)
-    |0.42857142857142855 -0.14285714285714285  -5.571428571428571|
-    |0.14285714285714285 0.2857142857142857  -4.857142857142857|
-    |       0.0        0.0         1.0|
+    | 0.42857142857143 -0.14285714285714  -5.57142857142857|
+    | 0.14285714285714  0.28571428571429  -4.85714285714286|
+    |              0.0               0.0                1.0|
     """
     m11: float
     m12: float
@@ -441,10 +457,19 @@ class Matrix3D:
     m33: float
 
     def __str__(self) -> str:
-        w = 10  # Right-align each entry to be 10-characters wide
-        return (f"|{self.m11:>{w}} {self.m12:>{w}}  {self.m13:>{w}}|\n"
-                f"|{self.m21:>{w}} {self.m22:>{w}}  {self.m23:>{w}}|\n"
-                f"|{self.m31:>{w}} {self.m32:>{w}}  {self.m33:>{w}}|")
+        w = FLOAT_PRINT_WIDTH  # Right-align each entry to be this wide
+        m11 = round(self.m11, FLOAT_ROUND_NDIGITS)
+        m12 = round(self.m12, FLOAT_ROUND_NDIGITS)
+        m13 = round(self.m13, FLOAT_ROUND_NDIGITS)
+        m21 = round(self.m21, FLOAT_ROUND_NDIGITS)
+        m22 = round(self.m22, FLOAT_ROUND_NDIGITS)
+        m23 = round(self.m23, FLOAT_ROUND_NDIGITS)
+        m31 = round(self.m31, FLOAT_ROUND_NDIGITS)
+        m32 = round(self.m32, FLOAT_ROUND_NDIGITS)
+        m33 = round(self.m33, FLOAT_ROUND_NDIGITS)
+        return (f"|{m11:>{w}} {m12:>{w}}  {m13:>{w}}|\n"
+                f"|{m21:>{w}} {m22:>{w}}  {m23:>{w}}|\n"
+                f"|{m31:>{w}} {m32:>{w}}  {m33:>{w}}|")
 
     def multiply_vec(self, v: Vec3D) -> Vec3D:
         """Multiply this 3x3 matrix by 3x1 vector 'v'.

@@ -148,3 +148,65 @@ class CoordinateSystem:
         """Matrix that transforms from PCS to GCS."""
         return mat2dh_inv(self.gcs_to_pcs)
 ```
+
+# Floating point error
+
+Floating-point errors obfuscate obvious relationships between the matrix and
+its inverse.
+
+See https://docs.python.org/3/tutorial/floatingpoint.html
+
+I attempted a quick fix using `float.as_integer_ratio()`:
+
+```python
+    def rat(self) -> str:
+        """Display fractional values as integer ratios."""
+        m11 = self.m11.as_integer_ratio()
+        m12 = self.m12.as_integer_ratio()
+        m13 = self.m13.as_integer_ratio()
+        m21 = self.m21.as_integer_ratio()
+        m22 = self.m22.as_integer_ratio()
+        m23 = self.m23.as_integer_ratio()
+        m31 = self.m31.as_integer_ratio()
+        m32 = self.m32.as_integer_ratio()
+        m33 = self.m33.as_integer_ratio()
+        return (f"|{m11} {m12} {m13}|\n"
+                f"|{m21} {m22} {m23}|\n"
+                f"|{m31} {m32} {m33}|")
+```
+
+But since I am applying this to the matrix after the calculation is already
+done, this yields the integer ratio of the floating-point result, not the
+integer ratio that is the precise result of the operation.
+
+My temporary solution is to pick, `FLOAT_ROUND_NDIGITS`, a number of digits
+after the decimal place that works for the small numbers I use in my doctests,
+to use this number for rounding in the `__str__()` methods, and to right-align
+the numbers using a width that allows for a single-digit integer portion, the
+decimal place, and a space.
+
+```python
+FLOAT_ROUND_NDIGITS = 14
+FLOAT_PRINT_WIDTH = FLOAT_ROUND_NDIGITS + 3  # Account for "0." and one space
+```
+
+For example:
+
+```python
+    def __str__(self) -> str:
+        w = FLOAT_PRINT_WIDTH  # Right-align each entry to be this wide
+        m11 = round(self.m11, FLOAT_ROUND_NDIGITS)
+        m12 = round(self.m12, FLOAT_ROUND_NDIGITS)
+        m21 = round(self.m21, FLOAT_ROUND_NDIGITS)
+        m22 = round(self.m22, FLOAT_ROUND_NDIGITS)
+        return (f"|{m11:>{w}} {m12:>{w}}|\n"
+                f"|{m21:>{w}} {m22:>{w}}|")
+
+```
+
+
+TODO: Revisit this and find a way to structure the data using rational numbers
+(as pairs of integers) to represent each entry in the matrix. Try the
+[fractions](https://docs.python.org/3/library/fractions.html#module-fractions)
+module combined with `decimal.Decimal`:
+[decimal](https://docs.python.org/3/library/decimal.html#module-decimal).

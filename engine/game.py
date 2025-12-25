@@ -96,20 +96,18 @@ class Game:
 
         def debug_window_size() -> None:
             """Display window size."""
-            center = (self.coord_sys.window_size.x/2, self.coord_sys.window_size.y/2)
-            self.debug.hud.print(f"Window size: {self.coord_sys.window_size}, Center: {center} PCS")
+            self.debug.hud.print(f"Window size: {self.coord_sys.window_size.fmt(0.0)}, "
+                                 f"Center: {self.coord_sys.window_center.fmt(0.0)} PCS")
 
         def debug_mouse_position() -> None:
             """Display mouse position in GCS and PCS."""
             # Get mouse position in pixel coordinates
-            mouse_position_tuple = pygame.mouse.get_pos()
-            mouse_position = Vec2D(x=mouse_position_tuple[0],
-                                   y=mouse_position_tuple[1])
+            mouse_position = Point2D.from_tuple(pygame.mouse.get_pos())
             # Get mouse position in game coordinates
-            mouse_g = self.coord_sys.xfm(mouse_position, self.coord_sys.mat.pcs_to_gcs)
+            mouse_gcs = self.coord_sys.xfm(mouse_position.as_vec(), self.coord_sys.mat.pcs_to_gcs)
             # Test transform by converting back to pixel coordinates
-            mouse_p = self.coord_sys.xfm(mouse_g, self.coord_sys.mat.gcs_to_pcs)
-            self.debug.hud.print(f"Mouse: {mouse_g}, GCS, {mouse_p.fmt(0.0)}, PCS")
+            mouse_pcs = self.coord_sys.xfm(mouse_gcs, self.coord_sys.mat.gcs_to_pcs)
+            self.debug.hud.print(f"Mouse: {mouse_gcs}, GCS, {mouse_pcs.fmt(0.0)}, PCS")
 
         def debug_mouse_buttons() -> None:
             """Display mouse button state."""
@@ -122,9 +120,9 @@ class Game:
             """Display panning values."""
             self.debug.hud.print(f"origin: {self.coord_sys.pcs_origin}, "
                                  f"translation: {self.coord_sys.translation}\n"
-                                 f"Panning start: {self.ui.panning.start}, "
-                                 f"end: {self.ui.panning.end}, "
-                                 f"vector: {self.ui.panning.vector}"
+                                 f"Panning start: {self.ui.panning.start.fmt(0.0)}, "
+                                 f"end: {self.ui.panning.end.fmt(0.0)}, "
+                                 f"vector: {self.ui.panning.vector.fmt(0.0)}"
                                  )
 
         def debug_overlay_is_visible() -> None:

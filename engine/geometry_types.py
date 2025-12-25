@@ -3,6 +3,8 @@
 from __future__ import annotations
 from dataclasses import dataclass
 
+FLOAT_PRINT_PRECISION = 0.2
+
 
 @dataclass
 class Point2D:
@@ -44,10 +46,10 @@ class Point2D:
 
     def __str__(self) -> str:
         """Point as a string with precision to two decimal places."""
-        precision = 0.2
+        precision = FLOAT_PRINT_PRECISION
         return f"({self.x:{precision}f}, {self.y:{precision}f})"
 
-    def fmt(self, precision: float = 0.1) -> str:
+    def fmt(self, precision: float = FLOAT_PRINT_PRECISION) -> str:
         """Point as a string with the desired precision."""
         return f"({self.x:{precision}f}, {self.y:{precision}f})"
 
@@ -103,10 +105,10 @@ class Vec2D:
 
     def __str__(self) -> str:
         """Vector as a string with precision to two decimal places."""
-        precision = 0.2
+        precision = FLOAT_PRINT_PRECISION
         return f"({self.x:{precision}f}, {self.y:{precision}f})"
 
-    def fmt(self, precision: float = 0.1) -> str:
+    def fmt(self, precision: float = FLOAT_PRINT_PRECISION) -> str:
         """Vector as a string with the desired precision."""
         return f"({self.x:{precision}f}, {self.y:{precision}f})"
 
