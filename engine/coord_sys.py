@@ -91,7 +91,6 @@ class _Matrices:
     @property
     def pcs_to_gcs(self) -> Matrix2DH:
         """Matrix that transforms from PCS to GCS."""
-        # return mat2dh_inv(self.gcs_to_pcs)
         return self.gcs_to_pcs.inv
 
 
