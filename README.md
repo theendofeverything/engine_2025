@@ -67,6 +67,8 @@ realize it isn't a big leap to turn this into a 3D engine.
 I have a basic UI to build on top of. Now I am working on getting more graphics
 onto the screen.
 
+![screenshot](doc/img/screenshot-2025-12-25.png)
+
 # Math
 
 The coordinate transforms use matrices as the transform operators. The matrix
