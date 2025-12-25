@@ -18,6 +18,17 @@ This does:
 $ ./main.py
 ```
 
+![screenshot](doc/img/screenshot-2025-12-25.png)
+
+- Mouse wheel zoom/pan
+- `q`: Quit
+- `c`: Clear debug snapshot artwork
+- `Space`: Toggle debug art overlay
+- `d`: Toggle debug hud
+- `Ctrl_+`: Increase debug HUD font
+- `Ctrl_-`: Decrease debug HUD font
+- Resize the window with a mouse click-drag
+
 ## Optional setup
 
 Install `pytest` (to run the doctests), and the linters `mypy`, `pycodestyle`,
@@ -66,8 +77,6 @@ realize it isn't a big leap to turn this into a 3D engine.
 
 I have a basic UI to build on top of. Now I am working on getting more graphics
 onto the screen.
-
-![screenshot](doc/img/screenshot-2025-12-25.png)
 
 # Math
 
