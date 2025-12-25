@@ -7,7 +7,7 @@ There are two coordinate systems:
 from __future__ import annotations
 from dataclasses import dataclass, field
 from .geometry_types import Vec2D, Point2D, Vec2DH, Matrix2DH
-from .geometry_operators import mult_vec2h_by_mat2h, mat2dh_inv
+from .geometry_operators import mult_vec2h_by_mat2h
 from .panning import Panning
 
 
@@ -91,7 +91,8 @@ class _Matrices:
     @property
     def pcs_to_gcs(self) -> Matrix2DH:
         """Matrix that transforms from PCS to GCS."""
-        return mat2dh_inv(self.gcs_to_pcs)
+        # return mat2dh_inv(self.gcs_to_pcs)
+        return self.gcs_to_pcs.inv
 
 
 @dataclass

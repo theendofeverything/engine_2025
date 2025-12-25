@@ -1,6 +1,6 @@
 """Operators on geometry types."""
 from typing import cast
-from .geometry_types import Vec2D, Vec2DH, Matrix2DH, Vec3D, Matrix3D
+from .geometry_types import Vec2DH, Matrix2DH, Vec3D, Matrix3D
 
 
 def mult_vec3_by_mat3(v: Vec2DH | Vec3D, mat: Matrix2DH | Matrix3D) -> Vec3D:
@@ -46,51 +46,6 @@ def mult_vec2h_by_mat2h(h: Vec2DH, mat: Matrix2DH) -> Vec2DH:
     u = cast(Vec2DH, mult_vec3_by_mat3(h, mat))
     assert u.x3 == 1
     return u
-
-
-def matrix2dh_is_setup_for_column_vectors(mat: Matrix2DH) -> bool:
-    """True if 'mat' is setup for multiplying by column vectors.
-
-    Note: this test only works for 2x2 matrices augmented for homogeneous coordinates.
-    """
-    return ((mat.m31 == 0) and (mat.m32 == 0))
-
-
-def mat2dh_inv(mat: Matrix2DH) -> Matrix2DH:
-    """Inverse of the special 3x3 matrix that is the 2x2 augmented for homogeneous coordinates.
-    Given the special 3x3 matrix:
-            |a   c  Tx|
-            |b   d  Ty|
-            |0   0   1|
-
-    The inverse is much simpler than the general 3x3 inverse.
-
-    >>> m = Matrix2DH(m11=2, m12=1, m21=-1, m22=3, translation=Vec2D(x=16, y=9))
-    >>> m
-    Matrix2DH(m11=2, m12=1, m21=-1, m22=3, translation=Vec2D(x=16, y=9), m31=0, m32=0, m33=1)
-    >>> print(m)
-    |         2          1          16|
-    |        -1          3           9|
-    |         0          0           1|
-    >>> print(mat2dh_inv(m))
-    |0.42857142857142855 -0.14285714285714285  -5.571428571428571|
-    |0.14285714285714285 0.2857142857142857  -4.857142857142857|
-    |         0          0           1|
-    """
-    assert matrix2dh_is_setup_for_column_vectors(mat)
-    a = mat.m11
-    b = mat.m21
-    c = mat.m12
-    d = mat.m22
-    det = a*d - b*c
-    s = 1/det
-    t = mat.translation
-    return Matrix2DH(m11=s*d, m12=-s*c,
-                     m21=-s*b, m22=s*a,
-                     translation=Vec2D(
-                         x=s*(-d*t.x + c*t.y),
-                         y=s*(b*t.x - a*t.y)
-                         ))
 
 
 def mat3d_inv(mat: Matrix3D) -> Matrix3D:
