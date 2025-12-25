@@ -6,7 +6,8 @@ There are two coordinate systems:
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
-from .geometry_types import Vec2D, Point2D, Matrix2DH
+from .geometry_types import Vec2D, Point2D
+from .geometry_operators import Matrix2DH
 from .panning import Panning
 
 
