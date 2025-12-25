@@ -21,3 +21,4 @@ class Colors:
     line:           Color = Color(120, 90, 30)
     line_debug:     Color = Color(200, 50, 50)
     text:           Color = Color(255, 255, 255)
+    panning:        Color = Color(255, 200, 200)

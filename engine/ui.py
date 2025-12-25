@@ -31,6 +31,7 @@ import pygame
 from .geometry_types import Vec2D, Point2D
 from .panning import Panning
 from .drawing_shapes import Line2D
+from .colors import Colors
 
 
 @dataclass
@@ -60,7 +61,7 @@ class UI:
             mouse_pos = pygame.mouse.get_pos()
             self.panning.end = Point2D.from_tuple(mouse_pos)
             self.game.debug.art.lines_pcs.append(
-                    Line2D(start=self.panning.start, end=self.panning.end))
+                    Line2D(start=self.panning.start, end=self.panning.end, color=Colors.panning))
 
     def consume_event_queue(self, log: logging.Logger) -> None:
         """Consume all events on the event queue.
@@ -215,7 +216,8 @@ class UI:
                 ).as_point()
         # Create an offset vector to get the mouse back to the original location
         if debug:
-            game.debug.art.snapshot(Line2D(start=mouse_g_start, end=mouse_g_end))
+            game.debug.art.snapshot(Line2D(start=mouse_g_start, end=mouse_g_end,
+                                           color=Colors.panning))
             game.debug.hud.snapshot(f"zoom about starts: {mouse_g_start}, "
                                     f"ends: {mouse_g_end}")
         offset_g = Vec2D.from_points(start=mouse_g_start, end=mouse_g_end)

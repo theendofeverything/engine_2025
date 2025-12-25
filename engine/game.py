@@ -22,6 +22,7 @@ from .coord_sys import CoordinateSystem
 from .renderer import Renderer
 from .geometry_types import Point2D, Vec2D
 from .drawing_shapes import Cross
+from .colors import Colors
 
 
 @dataclass
@@ -140,7 +141,7 @@ class Game:
         """Draw a cross in the GCS."""
         # Create artwork that uses lines
         crosses: list[Cross] = [
-            Cross(origin=Point2D(-0.1, 0.1), size=0.2, rotate45=True)
+            Cross(origin=Point2D(-0.1, 0.1), size=0.2, rotate45=True, color=Colors.line)
             ]
         # Append line artwork to art.lines
         for cross in crosses:
@@ -151,8 +152,8 @@ class Game:
         """Draw two crosses in the GCS to help me debug zooming about a point."""
         # Create debug artwork that uses lines
         crosses: list[Cross] = [
-            Cross(origin=Point2D(0, 0), size=0.1),
-            Cross(origin=Point2D(0.5, 0.5), size=0.1, rotate45=True)
+            Cross(origin=Point2D(0, 0), size=0.1, color=Colors.line_debug),
+            Cross(origin=Point2D(0.5, 0.5), size=0.1, rotate45=True, color=Colors.line_debug)
             ]
         # Copy the line artwork to debug.art.lines
         for cross in crosses:
