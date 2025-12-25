@@ -59,6 +59,8 @@ class UI:
         if self.panning.is_active:
             mouse_pos = pygame.mouse.get_pos()
             self.panning.end = Point2D.from_tuple(mouse_pos)
+            self.game.debug.art.lines_pcs.append(
+                    Line2D(start=self.panning.start, end=self.panning.end))
 
     def consume_event_queue(self, log: logging.Logger) -> None:
         """Consume all events on the event queue.

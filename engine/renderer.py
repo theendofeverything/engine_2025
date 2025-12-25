@@ -25,7 +25,16 @@ class Renderer:
         """Render GCS shapes to the screen."""
         game = self.game
 
-        def render_lines(lines: list[Line2D], color: pygame.Color) -> None:
+        def render_line_to_screen(line: Line2D, color: pygame.Color) -> None:
+            """Render a line in PCS to the screen."""
+            # Render to screen
+            pygame.draw.line(self.window_surface,
+                             color,
+                             line.start.as_tuple(),
+                             line.end.as_tuple()
+                             )
+
+        def render_gcs_lines(lines: list[Line2D], color: pygame.Color) -> None:
             """Convert all lines from GCS to PCS and draw lines to the screen."""
             for line_g in lines:
                 # Convert GCS to PCS
@@ -33,16 +42,18 @@ class Renderer:
                 line_p = Line2D(start=game.coord_sys.xfm(line_g.start.as_vec(), xfm).as_point(),
                                 end=game.coord_sys.xfm(line_g.end.as_vec(), xfm).as_point()
                                 )
-                # Render to screen
-                pygame.draw.line(self.window_surface,
-                                 color,
-                                 line_p.start.as_tuple(),
-                                 line_p.end.as_tuple()
-                                 )
-        render_lines(lines=game.art.lines, color=Colors.line)
+                render_line_to_screen(line_p, color)
+
+        def render_pcs_lines(lines: list[Line2D], color: pygame.Color) -> None:
+            """Draw PCS lines to the screen."""
+            for line_p in lines:
+                render_line_to_screen(line_p, color)
+
+        render_gcs_lines(lines=game.art.lines, color=Colors.line)
         if game.debug.art.is_visible:
-            render_lines(lines=game.debug.art.lines, color=Colors.line_debug)
-            render_lines(lines=game.debug.art.snapshots, color=Colors.line_debug)
+            render_gcs_lines(lines=game.debug.art.lines_gcs, color=Colors.line_debug)
+            render_pcs_lines(lines=game.debug.art.lines_pcs, color=Colors.line_debug)
+            render_gcs_lines(lines=game.debug.art.snapshots, color=Colors.line_debug)
 
     def render_debug_hud(self) -> None:
         """Display values in the Debug HUD."""

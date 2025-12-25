@@ -157,4 +157,4 @@ class Game:
         # Copy the line artwork to debug.art.lines
         for cross in crosses:
             for line in cross.lines:
-                self.debug.art.lines.append(line)
+                self.debug.art.lines_gcs.append(line)

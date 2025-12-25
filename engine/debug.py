@@ -35,20 +35,25 @@ class DebugArt:
                     game.debug.art.is_visible = not game.debug.art.is_visible
                 In renderer:
                     if game.debug.art.is_visible:
-                        render_lines(lines=game.debug.art.lines, ...
-        lines (list[Line2D]):
+                        render_gcs_lines(lines=game.debug.art.lines_gcs, ...
+                        render_pcs_lines(lines=game.debug.art.lines_pcs, ...
+        lines_gcs (list[Line2D]):
             A list of debug lines to draw.
             The lines are in the GCS. The renderer converts the coordinates to PCS in render_shapes.
             Use debug.art.reset() to clear 'lines' to an empty list.
             Intended usage:
                 Create some_shape. Then add the lines in this shape to the debug artwork:
                     for line in some_shape.lines:
-                        debug.art.lines.append(line)
+                        debug.art.lines_gcs.append(line)
                 The renderer draws these to the window in render_shapes:
                     if game.debug.art.is_visible:
                         render_lines(lines=game.debug.art.lines, ...
                 The debug artwork is reset at the top of the game loop:
                     self.debug.art.reset()
+        lines_pcs (list[Line2D]):
+            A list of debug lines to draw.
+            The lines are in the PCS. Same idea as lines_gcs, but the renderer does not have to
+            convert coordinates to PCS.
         snapshots (list[Line2D]):
             Debug lines that persist until manually cleared.
             The lines are in the GCS. The renderer converts the coordinates to PCS in render_shapes.
@@ -65,12 +70,14 @@ class DebugArt:
                         render_lines(lines=game.debug.art.snapshots, ...
     """
     is_visible: bool = True  # Controls whether debug artwork is visible
-    lines:      list[Line2D] = field(default_factory=list)  # Cleared on each iteration of game loop
+    lines_gcs:  list[Line2D] = field(default_factory=list)  # Cleared on each iteration of game loop
+    lines_pcs:  list[Line2D] = field(default_factory=list)  # Cleared on each iteration of game loop
     snapshots:  list[Line2D] = field(default_factory=list)  # Sticks around until manually cleared
 
     def reset(self) -> None:
         """Clear the debug art."""
-        self.lines = []
+        self.lines_gcs = []
+        self.lines_pcs = []
 
     def reset_snapshots(self) -> None:
         """Clear out the snapshots."""
