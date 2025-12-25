@@ -6,8 +6,7 @@ There are two coordinate systems:
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
-from .geometry_types import Vec2D, Point2D, Vec2DH, Matrix2DH
-from .geometry_operators import mult_vec2h_by_mat2h
+from .geometry_types import Vec2D, Point2D, Matrix2DH
 from .panning import Panning
 
 
@@ -167,7 +166,9 @@ class CoordinateSystem:
 
     @staticmethod
     def xfm(v: Vec2D, mat: Matrix2DH) -> Vec2D:
-        """Xfm 'v' to a new coordinate system by matrix multiplication of 'v' and 'xfm'.
+        """Xfm 'v' to a new coordinate system by matrix multiplication of 'v' and 'mat'.
+
+        Multiply column-vector matrix 'mat' by column vector 'v' in homogeneous coordinates.
 
         v:
             |x|
@@ -178,19 +179,19 @@ class CoordinateSystem:
             |y|
             |1|
 
-        xfm:
-            The xfm is a 2x2 augmented with a translation vector to become a 3x3:
+        mat:
+            The xfm matrix is 2x2, augmented with a translation vector to become a 3x3:
 
-                xfm = |m11 m12   Tx|
-                      |m21 m22   Ty|
-                      | Tx  Ty    1|
+                mat = |m11  m12  Tx|
+                      |m21  m22  Ty|
+                      |  0    0   1|
 
                 where |Tx Ty| is the vector that translates the origin between coordinate systems
 
             Since we are working with column vectors, note that the unit vectors of the 2x2: (a,b)
             and (c,d), must be the columns (not the rows):
 
-                xfm = |a   c  Tx|
+                mat = |a   c  Tx|
                       |b   d  Ty|
                       |0   0   1|
 
@@ -289,8 +290,5 @@ class CoordinateSystem:
         >>> coord_sys.xfm(v, coord_sys.mat.gcs_to_pcs)
         Vec2D(x=16.0, y=-3.5)
         """
-        # Get the homogeneous-coordinate version of v
-        h = Vec2DH(x1=v.x, x2=v.y)
-        # Multiply h by the homogeneous-coordinate transformation matrix
-        u: Vec2DH = mult_vec2h_by_mat2h(h, mat)
-        return Vec2D(x=u.x1, y=u.x2)
+        # Matrix multiply 'mat' by 'v' using homogeneous coordinates.
+        return mat.multiply_vec(v)

@@ -1,4 +1,4 @@
-"""Geometry data types: points and vectors.
+"""Geometry data types: points, vectors, matrices, and their geometry operations.
 """
 from __future__ import annotations
 from dataclasses import dataclass
@@ -64,8 +64,31 @@ class Vec2D:
     >>> vec = Vec2D(x=0, y=1)
     >>> vec
     Vec2D(x=0, y=1)
+
+    Represent as a point:
+    >>> vec.as_point()
+    Point2D(x=0, y=1)
+
+    Represent as a tuple:
     >>> vec.as_tuple()
     (0, 1)
+
+    Obtain a vector by subtracting two points:
+    >>> vec = Vec2D.from_points(start=Point2D(x=1, y=-1), end=Point2D(x=1, y=0))
+    >>> vec
+    Vec2D(x=0, y=1)
+
+    Obtain the vector in homogeneous coordinates:
+    >>> vec.homog
+    Vec2DH(x1=0, x2=1, x3=1)
+
+    Debug a vector:
+    >>> print(vec)
+    (0.00, 1.00)
+
+    Print the vector with higher precision:
+    >>> print(vec.fmt(0.3))
+    (0.000, 1.000)
     """
     x: float
     y: float
@@ -92,6 +115,11 @@ class Vec2D:
         """Create a vector from two points: vector = end - start."""
         return cls(x=end.x-start.x,
                    y=end.y-start.y)
+
+    @property
+    def homog(self) -> Vec2DH:
+        """Vector in homogeneous coordinates."""
+        return Vec2DH(self.x, self.y)
 
 
 @dataclass
@@ -453,6 +481,55 @@ class Matrix2DH:
                              y=s*(b*t.x - a*t.y)
                              ))
 
+    def multiply_vec(self, v: Vec2D) -> Vec2D:
+        """Multiply matrix by 2D vector in homogeneous coordinates.
+
+        The input vector is 2x1. It is augmented to become 3x1, resulting in multiplication sizes:
+
+            3x3 ● 3x1 = 3x1
+
+        The third element of this product is always 1. An exception is thrown if the third element
+        is not 1.
+
+        The third element is dropped and the 2x1 vector is returned.
+
+        self (Matrix2DH):
+            2x2 transformation matrix augmented for homogeneous coordinates:
+                |a   c  Tx|
+                |b   d  Ty|
+                |0   0   1|
+        v (Vec2D):
+            2x1 vector
+                |x|
+                |y|
+            The vector is augmented for homogeneous coordinates:
+                |x|
+                |y|
+                |1|
+
+        Multiplication:
+            |a   c  Tx|   |x|   |ax + cy + Tx|
+            |b   d  Ty| * |y| = |bx + dy + Ty|
+            |0   0   1|   |1|   | 0 +  0 +  1|
+
+        >>> m = Matrix2DH(
+        ... m11=2, m12=1,
+        ... m21=-4, m22=3,
+        ... translation=Vec2D(x=16, y=9))
+        >>> v = Vec2D(0, 1)
+        >>> m.multiply_vec(v)
+        Vec2D(x=17, y=12)
+
+        See CoordinateSystem.xfm() for more explanation and examples.
+        """
+        h = v.homog
+        u = Vec2DH(
+                self.m11*h.x1 + self.m12*h.x2 + self.m13*h.x3,
+                self.m21*h.x1 + self.m22*h.x2 + self.m23*h.x3,
+                self.m31*h.x1 + self.m32*h.x2 + self.m33*h.x3)
+        assert u.x3 == 1
+        return Vec2D(x=u.x1, y=u.x2)
+
 
 # pylint: disable=too-many-instance-attributes
 @dataclass
@@ -460,15 +537,41 @@ class Matrix3D:
     """3x3 matrix.
 
     >>> m = Matrix3D(
-    ... m11=11, m12=12, m13=13,
-    ... m21=21, m22=22, m23=23,
-    ... m31=31, m32=22, m33=33)
+    ... m11=2,  m12=1,  m13=4,
+    ... m21=-1, m22=-3, m23=1,
+    ... m31=4,  m32=-3, m33=2)
     >>> m
-    Matrix3D(m11=11, m12=12, m13=13, m21=21, m22=22, m23=23, m31=31, m32=22, m33=33)
+    Matrix3D(m11=2, m12=1, m13=4, m21=-1, m22=-3, m23=1, m31=4, m32=-3, m33=2)
     >>> print(m)
-    |   11    12     13|
-    |   21    22     23|
-    |   31    22     33|
+    |         2          1           4|
+    |        -1         -3           1|
+    |         4         -3           2|
+    >>> m.det
+    60
+    >>> print(m.adj)
+    |        -3        -14          13|
+    |         6        -12          -6|
+    |        15         10          -5|
+
+    >>> v = Vec3D(0, 1, 0)
+    >>> m.multiply_vec(v)
+    Vec3D(x1=1, x2=-3, x3=-3)
+
+
+    >>> m = Matrix3D(
+    ... m11=2, m12=1, m13=16,
+    ... m21=-1, m22=3, m23=9,
+    ... m31=0, m32=0, m33=1)
+    >>> m
+    Matrix3D(m11=2, m12=1, m13=16, m21=-1, m22=3, m23=9, m31=0, m32=0, m33=1)
+    >>> print(m)
+    |         2          1          16|
+    |        -1          3           9|
+    |         0          0           1|
+    >>> print(m.inv)
+    |0.42857142857142855 -0.14285714285714285  -5.571428571428571|
+    |0.14285714285714285 0.2857142857142857  -4.857142857142857|
+    |       0.0        0.0         1.0|
     """
     m11: float
     m12: float
@@ -485,3 +588,144 @@ class Matrix3D:
         return (f"|{self.m11:>{w}} {self.m12:>{w}}  {self.m13:>{w}}|\n"
                 f"|{self.m21:>{w}} {self.m22:>{w}}  {self.m23:>{w}}|\n"
                 f"|{self.m31:>{w}} {self.m32:>{w}}  {self.m33:>{w}}|")
+
+    def multiply_vec(self, v: Vec3D) -> Vec3D:
+        """Multiply this 3x3 matrix by 3x1 vector 'v'.
+            |m11 m12 m13|   |x1|   |y1|
+            |m21 m22 m23| * |x2| = |y2|
+            |m31 m32 m33|   |x3|   |y3|
+        """
+        return Vec3D(
+                self.m11*v.x1 + self.m12*v.x2 + self.m13*v.x3,
+                self.m21*v.x1 + self.m22*v.x2 + self.m23*v.x3,
+                self.m31*v.x1 + self.m32*v.x2 + self.m33*v.x3)
+
+    @property
+    def det(self) -> float:
+        """Determinant of this 3x3 matrix.
+
+        Given the 3x3 column vector matrix M:
+            |a   d   g|
+            |b   e   h|
+            |c   f   i|
+
+        M transforms from coordinates (p1, p2, p3) to (g1, g2, g3):
+            |a   d   g| |p1|   |a*p1 + d*p2 + g*p3|   |g1|
+            |b   e   h|*|p2| = |b*p1 + e*p2 + h*p3| = |g2|
+            |c   f   i| |p3|   |c*p1 + f*p2 + i*p3|   |g3|
+
+        Using the orthonormal basis ihat, jhat, and khat for (p1, p2, p3), we obtain the basis
+        vectors of the (g1, g2, g3) coordinate system:
+            ihat = (1, 0, 0),  M*ihat = (a, b, c)
+            jhat = (0, 1, 0),  M*jhat = (d, e, f)
+            khat = (0, 0, 1),  M*jhat = (g, h, i)
+
+        Decompose basis vectors of M into components over the orthonormal basis ihat, jhat, khat:
+            va = (a*ihat + b*jhat + c*khat)
+            vb = (d*ihat + e*jhat + f*khat)
+            vc = (g*ihat + h*jhat + i*khat)
+
+        This means matrix M is comprised of the column basis vectors:
+
+              M = |va  vb  vc|  where   va=|a|  vb=|d|  vc=|g|
+                                           |b|     |e|     |h|
+                                           |c|     |f|     |i|
+
+        The determinant of M is the signed magnitude of the wedge product of the basis vectors.
+        For the 3x3, it is the trivector obtained from va wedge vb wedge vc:
+
+            va V vb V vc =
+
+                        va             V             vb             V             vc
+
+            (a*ihat + b*jhat + c*khat) V (d*ihat + e*jhat + f*khat) V (g*ihat + h*jhat + i*khat)
+
+        Note two properties of the wedge product:
+            1. The wedge product is distributive with addition: a V (b + c) = (a V b) + (a V c)
+            2. And the wedge product has the "zero-torque" property: a V a = 0
+        Combining properties 1 and 2, expand (a+b) V (a+b) to obtain the anti-commutative property:
+                a V b = -b V a
+
+        Applying zero-torque (a V a = 0) and anti-commutative (a V b = -b V a) properties to the
+        wedge product (va V vb), we obtain:
+
+            va V vb V vc = (a(ei-fh) + b(fg-di) + c(dh-eg))*(ihat V jhat V khat)
+
+        And the determinant of M is (a(ei-fh) + b(fg-di) + c(dh-eg)).
+        """
+        a = self.m11
+        b = self.m21
+        c = self.m31
+        d = self.m12
+        e = self.m22
+        f = self.m32
+        g = self.m13
+        h = self.m23
+        i = self.m33
+        return a*(e*i-f*h) + b*(f*g-d*i) + c*(d*h-e*g)
+
+    @property
+    def adj(self) -> Matrix3D:
+        """Adjugate of this 3x3 matrix.
+
+        The adjugate matrix is the transpose of the cofactor matrix.
+
+            adj(M) = tran(cof(M))
+
+        The cofactor matrix is the matrix of minors.
+
+            cof(M) = |minor11  minor12  minor13|
+                     |minor21  minor22  minor23|
+                     |minor31  minor32  minor33|
+
+        The minor of element i,j is the determinant of the submatrix with row i and column j
+        removed, multiplied by -1^(i+j), meaning the signs of the minors is a checkerboard pattern
+        of + and - with + signs along the main diagonal.
+
+                 M = |    a      d      g|
+                     |    b      e      h|
+                     |    c      f      i|
+
+            cof(M) = |ei-fh  hc-bi  bf-ec|
+                     |gf-di  ai-gc  dc-af|
+                     |dh-ge  gb-ah  ae-bd|
+
+        The checkboard pattern of + and - is a direct result of the anti-commutative property of the
+        wedge product and that elements with odd i+j have 2x2 sub-matrix minors where the order of
+        the 2x2 basis vectors is flipped.
+
+        The transpose operation swaps row and column indices, resulting in the adjugate:
+
+            adj(m) = |ei-fh  gf-di  dh-ge|
+                     |hc-bi  ai-gc  gb-ah|
+                     |bf-ec  dc-af  ae-bd|
+        """
+        a = self.m11
+        b = self.m21
+        c = self.m31
+        d = self.m12
+        e = self.m22
+        f = self.m32
+        g = self.m13
+        h = self.m23
+        i = self.m33
+        return Matrix3D(
+                m11=e*i-f*h, m12=g*f-d*i, m13=d*h-g*e,
+                m21=h*c-b*i, m22=a*i-g*c, m23=g*b-a*h,
+                m31=b*f-e*c, m32=d*c-a*f, m33=a*e-b*d)
+
+    @property
+    def inv(self) -> Matrix3D:
+        """Inverse of this 3x3 matrix.
+
+        inv(M) = (1/det(M))*adj(M)
+
+        Exception: 'assert' fails if the determinant is zero.
+        """
+        assert self.det != 0
+        s = 1/self.det
+        adj = self.adj
+        return Matrix3D(
+            m11=s*adj.m11, m12=s*adj.m12, m13=s*adj.m13,
+            m21=s*adj.m21, m22=s*adj.m22, m23=s*adj.m23,
+            m31=s*adj.m31, m32=s*adj.m32, m33=s*adj.m33)

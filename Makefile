@@ -2,7 +2,7 @@ run:
 	./main.py
 
 tests:
-	pytest --doctest-modules --verbose --maxfail=1
+	pytest --doctest-modules --verbose
 
 lint:
 	-pycodestyle --max-line-length=100 .
