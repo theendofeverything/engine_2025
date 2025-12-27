@@ -2,6 +2,9 @@
 
 Use pygame to create an application.
 
+Folder `engine` is my 2D engine Python package. `game_template.py` is a
+starting point for writing a `game.py`.
+
 # Setup
 
 Install `pygame` (for talking to the OS).
@@ -95,13 +98,10 @@ folder with the top-level code in `engine/game.py`:
 .
 ├── doc
 ├── engine
-│   ├── ...
-│   ├── game.py <-------------- TOP LEVEL GAME CODE
-│   ├── ...
 │   ├── __init__.py <---------- MAKES engine A PACKAGE
 │   ├── ...
 │   ...
-├── main.py <------------------ ENTRY POINT
+├── game.py <------------------ TOP LEVEL GAME CODE
 ├── Makefile <----------------- RECIPES FOR LINTING, TESTING, AND TAGGING
 ├── .mypy.ini <---------------- LINTING CONFIGURATION
 ├── .pylintrc <---------------- LINTING CONFIGURATION
@@ -125,7 +125,6 @@ File                  | Class
 `engine/colors.py`    | `Colors`
 `engine/coord_sys.py` | `CoordinateSystem`
 `engine/debug.py`     | `Debug`
-`engine/game.py`      | `Game`
 `engine/panning.py`   | `Panning`
 `engine/renderer.py`  | `Renderer`
 `engine/timing.py`    | `Timing`
@@ -140,11 +139,14 @@ File                           | Classes
 `engine/geometry_types.py`     | `Point2D`, `Vec2D`, `Vec2DH`, `Vec3D`
 `log.py`                       | No class, just function `setup_logging()`
 
+The root-folder contains a `main.py` and `game.py`. The `game_template.py` is
+just a starting point for writing a `game.py`.
+
+`main.py` is not specific to any game. It just sets up logging, registers a
+`shutdown()` function for cleanup on exit, and launches the game code.
+
 Class `Game` contains the top-level game code. It is instantiated in `main.py`
-where `Game().run()` launches the application. In the future, I might bump
-`game.py` up out of the `engine/` folder and get rid of `main.py`. For now,
-`main.py` is a convenient place to setup logging and register a `shutdown()`
-function for cleanup when the application exits.
+where `Game().run()` launches the application.
 
 # Docs in `doc`
 

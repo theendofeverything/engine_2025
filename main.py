@@ -50,7 +50,7 @@ from pathlib import Path    # Get file paths
 import logging
 import pygame
 from engine.log import setup_logging
-from engine.game import Game
+from game import Game
 
 
 def shutdown(file: str, log: logging.Logger) -> None:
