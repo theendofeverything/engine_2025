@@ -90,9 +90,11 @@ homogeneous coordinates for translation. See
 
 # Python code
 
+## Engine structure
+
 The Python project follows a simple structure. The project is essentially flat
-with an entry point in `main.py` and all other code residing in the `engine/`
-folder with the top-level code in `engine/game.py`:
+with an entry point in `main.py`, the game in `game.py`, and all engine code
+residing in the `engine/` folder:
 
 ```
 .
@@ -114,6 +116,52 @@ The `engine/__init__.py` makes this folder a package.
 *Note: Python runs the application just fine without this `__init__.py`. The
 `__init__.py` is only necessary to avoid linter `mypy` throwing the error
 `Cannot find implementation or library stub for module named ...`.*
+
+## Use engine for a game
+
+My quick and dirty way to use the engine is to create symbolic links. I know
+engine will change as I develop game code and rather than deal with git
+submodules, I am just going to use symbolic links and update the git repos
+separately.
+
+I clone `engine_2025`. Then I make a new folder, I make a link to `setup.sh` in
+my new folder and run the `setup.sh`:
+
+```
+$ mkdir my_project && cd my_project
+$ ln -rs ../engine/setup.sh
+$ ./setup.sh
+```
+
+This results in the following project structure for my game:
+
+```
+.
+├── doc -> ../engine_2025/doc
+├── engine -> ../engine_2025/engine
+├── game.py
+├── .gitignore
+├── main.py -> ../engine_2025/main.py
+├── Makefile -> ../engine_2025/Makefile
+├── .mypy.ini
+├── .pylintrc
+├── .pytest.ini
+├── README.md
+└── setup.sh -> ../engine_2025/setup.sh
+```
+
+`game_template.py` is the starting point -- the `setup.sh` renames this to
+`game.py`. If you name it something other than `game.py`:
+
+- make a local copy of `main.py` and delete the symbolic link
+- edit the module name in `main.py` to import `Game` from the new name
+
+```python
+# main.py
+from game import Game
+```
+
+## Engine contents
 
 Many of the `engine/` files are Python modules that define a single
 class. Some modules define additional classes, but the API is in the one class
