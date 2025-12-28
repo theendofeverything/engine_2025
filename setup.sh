@@ -10,5 +10,8 @@ else
     ln -rs ../${repo}/engine/
     ln -rs ../${repo}/Makefile
     ln -rs ../${repo}/main.py
-    cp ../${repo}/game_template.py game.py
+    ln -rs ../${repo}/.mypy.ini
+    ln -rs ../${repo}/.pylintrc
+    ln -rs ../${repo}/.pytest.ini
+    cp -i ../${repo}/game_template.py game.py
 fi
