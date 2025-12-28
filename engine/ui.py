@@ -35,12 +35,18 @@ from .colors import Colors
 
 
 @dataclass
+class UIMouse:
+    """Track mouse button state."""
+    button_1: bool = False                              # Track mouse button 1 down/up
+    button_2: bool = False                              # Track mouse button 2 down/up
+
+
+@dataclass
 class UI:
     """Handle user interface events."""
     game:           "Game"
     panning:        Panning                             # Track panning state
-    mouse_button_1: bool = False                        # Track mouse button 1 down/up
-    mouse_button_2: bool = False                        # Track mouse button 2 down/up
+    mouse:          UIMouse = UIMouse()                 # Track mouse button down/up
 
     def handle_events(self, log: logging.Logger) -> None:
         """Handle events."""
@@ -122,10 +128,10 @@ class UI:
         match event.button:
             case 1:
                 self.start_panning(event.pos)           # Start panning
-                self.mouse_button_1 = True              # Left mouse button pressed
+                self.mouse.button_1 = True              # Left mouse button pressed
             case 2:
                 self.start_panning(event.pos)           # Start panning
-                self.mouse_button_2 = True              # Middle mouse button pressed
+                self.mouse.button_2 = True              # Middle mouse button pressed
             case _:
                 pass
 
@@ -139,10 +145,10 @@ class UI:
         match event.button:
             case 1:
                 self.stop_panning()                     # Stop panning
-                self.mouse_button_1 = False             # Left mouse button released
+                self.mouse.button_1 = False             # Left mouse button released
             case 2:
                 self.stop_panning()                     # Stop panning
-                self.mouse_button_2 = False             # Middle mouse button released
+                self.mouse.button_2 = False             # Middle mouse button released
             case _:
                 pass
 

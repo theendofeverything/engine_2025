@@ -165,8 +165,8 @@ class Game:
         def debug_mouse_buttons() -> None:
             """Display mouse button state."""
             self.debug.hud.print("Mouse buttons: "
-                                 f"1: {self.ui.mouse_button_1}, "
-                                 f"2: {self.ui.mouse_button_2}"
+                                 f"1: {self.ui.mouse.button_1}, "
+                                 f"2: {self.ui.mouse.button_2}"
                                  )
 
         def debug_pan() -> None:
