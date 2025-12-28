@@ -2,8 +2,8 @@
 
 Use pygame to create an application.
 
-Folder `engine` is my 2D engine Python package. `game_template.py` is a
-starting point for writing a `game.py`.
+Folder `engine` is my 2D engine Python package. `game.py` is a starting point
+for writing a Game in the `game.py` file.
 
 # Setup
 
@@ -129,7 +129,7 @@ my new folder and run the `setup.sh`:
 
 ```
 $ mkdir my_project && cd my_project
-$ ln -rs ../engine/setup.sh
+$ ln -rs ../engine_2025/setup.sh .
 $ ./setup.sh
 ```
 
@@ -150,8 +150,9 @@ This results in the following project structure for my game:
 └── setup.sh -> ../engine_2025/setup.sh
 ```
 
-`game_template.py` is the starting point -- the `setup.sh` renames this to
-`game.py`. If you name it something other than `game.py`:
+`game.py` is the starting point -- the `setup.sh` copies this to
+`game.py` in the project (rather than making a symbolic link). If you rename
+this file to something other than `game.py`:
 
 - make a local copy of `main.py` and delete the symbolic link
 - edit the module name in `main.py` to import `Game` from the new name
@@ -187,8 +188,8 @@ File                           | Classes
 `engine/geometry_types.py`     | `Point2D`, `Vec2D`, `Vec2DH`, `Vec3D`
 `log.py`                       | No class, just function `setup_logging()`
 
-The root-folder contains a `main.py` and `game.py`. The `game_template.py` is
-just a starting point for writing a `game.py`.
+The root-folder contains a `main.py` and `game.py`. The `game.py` is just a
+starting point for writing your actual `game.py`.
 
 `main.py` is not specific to any game. It just sets up logging, registers a
 `shutdown()` function for cleanup on exit, and launches the game code.

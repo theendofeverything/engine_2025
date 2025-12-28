@@ -1,6 +1,19 @@
+# Typing references
+
 - See https://docs.python.org/3/library/typing.html
 - See https://mypy.readthedocs.io/en/stable/cheat_sheet_py3.html
 - See https://mypy.readthedocs.io/en/stable/type_inference_and_annotations.html#type-inference-and-annotations
+
+# Stub file references
+
+A "stub" file is a `.pyi` (`i` is for interface), which is like a C header
+file. It just lists the types and does not do include variable assignments or
+function bodies.
+
+- See https://typing.python.org/en/latest/spec/distributing.html#stub-files
+- See https://typing.python.org/en/latest/spec/distributing.html#packaging-typed-libraries
+
+# Typing with mypy
 
 Typing does not affect the runtime.
 

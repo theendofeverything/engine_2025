@@ -6,12 +6,12 @@ then
     echo "pwd: $PWD"
     exit 1
 else
-    ln -rs ../${repo}/doc/
-    ln -rs ../${repo}/engine/
-    ln -rs ../${repo}/Makefile
-    ln -rs ../${repo}/main.py
-    ln -rs ../${repo}/.mypy.ini
-    ln -rs ../${repo}/.pylintrc
-    ln -rs ../${repo}/.pytest.ini
-    cp -i ../${repo}/game_template.py game.py
+    ln -rs ../${repo}/doc/ .
+    ln -rs ../${repo}/engine/ .
+    ln -rs ../${repo}/Makefile .
+    ln -rs ../${repo}/main.py .
+    ln -rs ../${repo}/.mypy.ini .
+    ln -rs ../${repo}/.pylintrc .
+    ln -rs ../${repo}/.pytest.ini .
+    cp -i ../${repo}/game.py .
 fi
