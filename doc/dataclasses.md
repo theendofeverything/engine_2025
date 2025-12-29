@@ -212,3 +212,83 @@ class CoordinateSystem:
         """The center of the window in pixel coordinates."""
         return Point2D(self.window_size.x/2, self.window_size.y/2)
 ```
+
+## Printing classes
+
+Use the `__str__()` method for custom printing. This is helpful for debugging.
+Don't define a `__repr__()` method -- let the `@dataclass` decorator do that
+for you (the `__repr__()` method is supposed to be formatted in a way that is
+executable code).
+
+For example, with no `__str__()` defined, printing `TickCounter` uses its `__repr__()`:
+
+```
+TickCounter(ticks=..., period=3, count=0, name='bob')
+```
+
+I want a more concise format for printing a `TickCounter` in the Debug HUD:
+
+```python
+@dataclass
+class TickCounter:
+    ...
+    def __str__(self) -> str:
+        return f"{self.name}({self.period} frames): {self.count}"
+```
+
+The above format tells me the name of the `TickCounter`, the number of frames
+in one period, and the count of periods thus far. For example, printing an
+instance of `TickCounter` results in something like this:
+
+```
+bob(3 frames): 123
+```
+
+### Printing classes that use other classes
+
+Say class `Ticks` has an attribute that is an instance of class `TickCounter`.
+If I print an instance of `Ticks`, I get the `__repr__()` of `TickCounter`, not its `__str__()`.
+
+To get the `__str__()`, I have to explicitly print the class attribute that is
+the instance of `TickCounter`.
+
+### Pretty print a matrix
+
+```python
+FLOAT_ROUND_NDIGITS = 14
+FLOAT_PRINT_WIDTH = FLOAT_ROUND_NDIGITS + 3  # Account for "0." and one space
+
+@dataclass
+class Matrix2D:
+    ...
+    def __str__(self) -> str:
+        w = FLOAT_PRINT_WIDTH  # Right-align each entry to be this wide
+        m11 = round(self.m11, FLOAT_ROUND_NDIGITS)
+        m12 = round(self.m12, FLOAT_ROUND_NDIGITS)
+        m21 = round(self.m21, FLOAT_ROUND_NDIGITS)
+        m22 = round(self.m22, FLOAT_ROUND_NDIGITS)
+        return (f"|{m11:>{w}} {m12:>{w}}|\n"
+                f"|{m21:>{w}} {m22:>{w}}|")
+```
+
+### Precision when printing types with floats
+
+`Point2D` has float attributes `x` and `y`.
+
+I use a default precision for floats in `__str__()`, but offer another `fmt()`
+method that requires explicitly stating the precision:
+
+```python
+FLOAT_PRINT_PRECISION = 0.2
+
+@dataclass
+class Point2D:
+    ...
+    def __str__(self) -> str:
+        """Point as string with two decimal places (default: FLOAT_PRINT_PRECISION)."""
+        return self.fmt(FLOAT_PRINT_PRECISION)
+
+    def fmt(self, precision: float) -> str:
+        """Point as a string with the desired precision."""
+        return f"({self.x:{precision}f}, {self.y:{precision}f})"
+```

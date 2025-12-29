@@ -45,11 +45,10 @@ class Point2D:
         return (self.x, self.y)
 
     def __str__(self) -> str:
-        """Point as a string with precision to two decimal places."""
-        precision = FLOAT_PRINT_PRECISION
-        return f"({self.x:{precision}f}, {self.y:{precision}f})"
+        """Point as string with two decimal places (default: FLOAT_PRINT_PRECISION)."""
+        return self.fmt(FLOAT_PRINT_PRECISION)
 
-    def fmt(self, precision: float = FLOAT_PRINT_PRECISION) -> str:
+    def fmt(self, precision: float) -> str:
         """Point as a string with the desired precision."""
         return f"({self.x:{precision}f}, {self.y:{precision}f})"
 
@@ -104,11 +103,10 @@ class Vec2D:
         return (self.x, self.y)
 
     def __str__(self) -> str:
-        """Vector as a string with precision to two decimal places."""
-        precision = FLOAT_PRINT_PRECISION
-        return f"({self.x:{precision}f}, {self.y:{precision}f})"
+        """Vector as string with two decimal places (default: FLOAT_PRINT_PRECISION)."""
+        return self.fmt(FLOAT_PRINT_PRECISION)
 
-    def fmt(self, precision: float = FLOAT_PRINT_PRECISION) -> str:
+    def fmt(self, precision: float) -> str:
         """Vector as a string with the desired precision."""
         return f"({self.x:{precision}f}, {self.y:{precision}f})"
 

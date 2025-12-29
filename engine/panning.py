@@ -1,6 +1,6 @@
 """Panning is a helper struct to organize Game. It tracks the mouse panning state.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from .geometry_types import Point2D, Vec2D
 
 
@@ -35,6 +35,7 @@ class Panning:
     >>> panning.vector                                  # Report the latest panning vector
     Vec2D(x=123, y=0)
     """
+    start:                  Point2D = field(init=False)
     end:                    Point2D = Point2D(0, 0)     # Dummy initial value
     is_active:              bool = False
 

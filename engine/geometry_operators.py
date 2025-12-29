@@ -1,7 +1,7 @@
 """Geometry operations expressed as matrices.
 """
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from .geometry_types import Vec2D, Vec2DH, Vec3D
 
 FLOAT_ROUND_NDIGITS = 14
@@ -157,7 +157,9 @@ class Matrix2DH:
 
     >>> gcs_to_pcs = Matrix2DH(m11=5, m12=0, m21=0, m22=-5, translation=Vec2D(x=2, y=3))
     >>> gcs_to_pcs
-    Matrix2DH(m11=5, m12=0, m21=0, m22=-5, translation=Vec2D(x=2, y=3), m31=0, m32=0, m33=1)
+    Matrix2DH(m11=5, m12=0, m21=0, m22=-5,
+        translation=Vec2D(x=2, y=3),
+        m13=2, m23=3, m31=0, m32=0, m33=1)
     >>> print(gcs_to_pcs)
     |    5     0      2|
     |    0    -5      3|
@@ -167,7 +169,9 @@ class Matrix2DH:
     ... m21=-4, m22=3,
     ... translation=Vec2D(x=16, y=9))
     >>> m
-    Matrix2DH(m11=2, m12=1, m21=-4, m22=3, translation=Vec2D(x=16, y=9), m31=0, m32=0, m33=1)
+    Matrix2DH(m11=2, m12=1, m21=-4, m22=3,
+        translation=Vec2D(x=16, y=9),
+        m13=16, m23=9, m31=0, m32=0, m33=1)
     >>> print(m)
     |         2          1          16|
     |        -4          3           9|
@@ -185,7 +189,9 @@ class Matrix2DH:
 
     >>> m = Matrix2DH(m11=2, m12=1, m21=-1, m22=3, translation=Vec2D(x=16, y=9))
     >>> m
-    Matrix2DH(m11=2, m12=1, m21=-1, m22=3, translation=Vec2D(x=16, y=9), m31=0, m32=0, m33=1)
+    Matrix2DH(m11=2, m12=1, m21=-1, m22=3,
+        translation=Vec2D(x=16, y=9),
+        m13=16, m23=9, m31=0, m32=0, m33=1)
     >>> print(m)
     |         2          1          16|
     |        -1          3           9|
@@ -200,6 +206,8 @@ class Matrix2DH:
     m21: float  # b
     m22: float  # d
     translation: Vec2D
+    m13: float = field(init=False)
+    m23: float = field(init=False)
     m31: float = 0
     m32: float = 0
     m33: float = 1
@@ -240,7 +248,9 @@ class Matrix2DH:
 
         >>> m = Matrix2DH(m11=2, m12=1, m21=-1, m22=3, translation=Vec2D(x=16, y=9))
         >>> m
-        Matrix2DH(m11=2, m12=1, m21=-1, m22=3, translation=Vec2D(x=16, y=9), m31=0, m32=0, m33=1)
+        Matrix2DH(m11=2, m12=1, m21=-1, m22=3,
+            translation=Vec2D(x=16, y=9),
+            m13=16, m23=9, m31=0, m32=0, m33=1)
         >>> print(m)
         |         2          1          16|
         |        -1          3           9|

@@ -86,9 +86,9 @@ class Game:
     Game(debug=Debug(...),
          timing=Timing(...),
          art=Art(...),
+         renderer=Renderer(...),
          ui=UI(...),
-         coord_sys=CoordinateSystem(...),
-         renderer=Renderer(...))
+         coord_sys=CoordinateSystem(...))
     """
     # Instance variables defined in the implicit __init__()
     debug:      Debug = Debug()     # Display debug prints in HUD and overlay debug art
@@ -96,9 +96,9 @@ class Game:
     art:        Art = Art()         # Set up all artwork for rendering
 
     # Instance variables defined in __post_init__()
+    renderer:   Renderer = field(init=False)
     ui:         UI = field(init=False)                      # Keyboard, mouse, panning, zoom
     coord_sys:  CoordinateSystem = field(init=False)        # Track state of PCS and GCS
-    renderer:   Renderer = field(init=False)
 
     def __post_init__(self) -> None:
         # Load pygame
@@ -135,16 +135,31 @@ class Game:
 
     def loop(self, log: logging.Logger) -> None:
         """Loop until the user quits."""
-        self.debug.hud.reset()                          # Clear the debug HUD
-        self.debug.art.reset()                          # Clear the debug artwork
-        self.debug_values()                             # Load debug HUD with most values
+        self.update_debug()                             # Kick-off the debug HUD
         self.ui.handle_events(log)                      # Handle all user events
-        self.art.reset()                                # Reset previous artwork
-        self.draw_a_cross()                             # Draw application artwork
-        self.draw_debug_crosses()                       # Draw debug artwork
-        self.renderer.render_all()                      # Render all artwork and HUD
+        self.update_animations()                        # Advance animation ticks
+        self.update_art()                               # Update the art
+        self.renderer.render_all()                      # Render all art and HUD
         # Delay to keep game at 60 FPS.
         self.timing.ms_per_frame = self.timing.clock.tick(60)
+
+    def update_debug(self) -> None:
+        """Update debug"""
+        self.debug.hud.reset()                          # Clear the debug HUD
+        self.debug_values()                             # Load debug HUD with most values
+
+    def update_animations(self) -> None:
+        """Update animations based on the frame count."""
+        if not self.timing.is_paused:
+            self.timing.ticks.update()
+        self.debug.hud.print(f"frames: {self.timing.ticks.frames}, {self.timing.ticks.t1}")
+
+    def update_art(self) -> None:
+        """Update art and debug art"""
+        self.art.reset()                                # Reset application artwork
+        self.draw_a_cross()                             # Draw application artwork
+        self.debug.art.reset()                          # Clear the debug artwork
+        self.draw_debug_crosses()                       # Draw debug artwork
 
     def debug_values(self) -> None:
         """Most of the values to display in the HUD are printed in this function."""

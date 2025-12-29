@@ -25,8 +25,10 @@ class Cross:
     origin:     Point2D                                     # Origin in GCS
     size:       float                                       # Span this width in GCS units
     rotate45:   bool = False                                # Rotate cross-hair by 1/8th of a turn
-    lines:      list[Line2D] = field(default_factory=list)  # Two lines make up the cross
     color:      Color = Colors.line                         # Use default line color
+
+    # Instance variables defined in __post_init__()
+    lines:      list[Line2D] = field(default_factory=list)  # Two lines make up the cross
 
     def __post_init__(self) -> None:
         r = self.size/2

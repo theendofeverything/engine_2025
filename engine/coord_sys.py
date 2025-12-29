@@ -101,8 +101,9 @@ class CoordinateSystem:
     >>> coord_sys = CoordinateSystem(window_size=Vec2D(20*16, 20*9), panning=Panning())
     >>> print(coord_sys)
     CoordinateSystem(window_size=Vec2D(x=320, y=180),
-                     panning=Panning(end=Point2D(x=0, y=0),
-                     is_active=False),
+                     panning=Panning(start=Point2D(x=0, y=0),
+                        end=Point2D(x=0, y=0),
+                        is_active=False),
                      gcs_width=2,
                      pcs_origin=Point2D(x=160.0, y=90.0),
                      scaling=CoordinateSystemScalingFactors(coord_sys=...),
@@ -137,6 +138,8 @@ class CoordinateSystem:
     window_size: Vec2D                                  # Track window size
     panning:     Panning  # Track UI panning: in game __post_init__() do 'panning=self.ui.panning'
     gcs_width:   float = 2                              # Initial value GCS -1:1 fills screen width
+
+    # Instance variables defined in __post_init__()
     pcs_origin:  Point2D = field(init=False)            # Game origin in PCS
     scaling:     CoordinateSystemScalingFactors = field(init=False)  # CS unit cell scaling factors
     matrix:      CoordinateSystemMatrices = field(init=False)  # CS xfm matrices

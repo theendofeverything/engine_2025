@@ -170,12 +170,15 @@ class UI:
             case pygame.K_c:
                 log.debug("User pressed 'c' to clear debug snapshot artwork.")
                 game.debug.art.reset_snapshots()
-            case pygame.K_SPACE:
-                log.debug("User pressed 'Space' to toggle debug art overlay.")
-                game.debug.art.is_visible = not game.debug.art.is_visible
-            case pygame.K_d:
-                log.debug("User pressed 'd' to toggle debug HUD.")
+            case pygame.K_F12:
+                log.debug("User pressed 'F12' to toggle debug HUD.")
                 game.debug.hud.is_visible = not game.debug.hud.is_visible
+            case pygame.K_SPACE:
+                log.debug("User pressed 'Space' to toggle pause.")
+                game.timing.is_paused = not game.timing.is_paused
+            case pygame.K_d:
+                log.debug("User pressed 'd' to toggle debug art overlay.")
+                game.debug.art.is_visible = not game.debug.art.is_visible
             case pygame.K_EQUALS:
                 if (kmod & pygame.KMOD_CTRL) and (kmod & pygame.KMOD_SHIFT):
                     game.debug.hud.font_size.increase()
