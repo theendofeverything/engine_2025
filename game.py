@@ -104,19 +104,29 @@ class Game:
         # Load pygame
         pygame.init()
         pygame.font.init()
-        # Handle all user interface events in ui.py (keyboard, mouse, panning, zoom)
-        self.ui = UI(game=self, panning=Panning())
-        # Set the window size and center the GCS origin in the window.
-        self.coord_sys = CoordinateSystem(
-                panning=self.ui.panning,
-                window_size=Vec2D(x=60*16, y=60*9))
+
+        # Set the window size
+        window_size = (60*16, 60*9)
+
         # Handle rendering in renderer.py
+        # Note: The window size is just an initial value.
+        #   On WINDOWSIZECHANGED events, the window size and the display surface size will
+        #   automatically adjust to the new size value. It is not necessary to create a new
+        #   window_surface with the new window size. See handle_windowsizechanged_events.
         self.renderer = Renderer(
                 game=self,
                 window_surface=pygame.display.set_mode(  # Get a window from the OS
-                    size=self.coord_sys.window_size.as_tuple(),
+                    size=window_size,
                     flags=pygame.RESIZABLE
                     ))
+
+        # Handle all user interface events in ui.py (keyboard, mouse, panning, zoom)
+        self.ui = UI(game=self, panning=Panning())
+
+        # Set the GCS to fit the window size and center the GCS origin in the window.
+        self.coord_sys = CoordinateSystem(
+                window_size=Vec2D.from_tuple(window_size),
+                panning=self.ui.panning)
 
     def run(self, log: logging.Logger) -> None:
         """Run the game."""
@@ -127,7 +137,7 @@ class Game:
         """Loop until the user quits."""
         self.debug.hud.reset()                          # Clear the debug HUD
         self.debug.art.reset()                          # Clear the debug artwork
-        self.debug_values()                             # HUD: display values to debug
+        self.debug_values()                             # Load debug HUD with most values
         self.ui.handle_events(log)                      # Handle all user events
         self.art.reset()                                # Reset previous artwork
         self.draw_a_cross()                             # Draw application artwork
@@ -157,9 +167,13 @@ class Game:
             # Get mouse position in pixel coordinates
             mouse_position = Point2D.from_tuple(pygame.mouse.get_pos())
             # Get mouse position in game coordinates
-            mouse_gcs = self.coord_sys.xfm(mouse_position.as_vec(), self.coord_sys.mat.pcs_to_gcs)
+            mouse_gcs = self.coord_sys.xfm(
+                    mouse_position.as_vec(),
+                    self.coord_sys.matrix.pcs_to_gcs)
             # Test transform by converting back to pixel coordinates
-            mouse_pcs = self.coord_sys.xfm(mouse_gcs, self.coord_sys.mat.gcs_to_pcs)
+            mouse_pcs = self.coord_sys.xfm(
+                    mouse_gcs,
+                    self.coord_sys.matrix.gcs_to_pcs)
             self.debug.hud.print(f"Mouse: {mouse_gcs}, GCS, {mouse_pcs.fmt(0.0)}, PCS")
 
         def debug_mouse_buttons() -> None:

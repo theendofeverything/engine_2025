@@ -118,6 +118,11 @@ class Vec2D:
         return cls(x=end.x-start.x,
                    y=end.y-start.y)
 
+    @classmethod
+    def from_tuple(cls, xy: tuple[int | float, int | float]) -> Vec2D:
+        """Create a vector from tuple (x, y)."""
+        return cls(x=xy[0], y=xy[1])
+
     @property
     def homog(self) -> Vec2DH:
         """Vector in homogeneous coordinates."""

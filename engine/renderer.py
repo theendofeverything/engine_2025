@@ -38,7 +38,7 @@ class Renderer:
             """Convert all lines from GCS to PCS and draw lines to the screen."""
             for line_g in lines:
                 # Convert GCS to PCS
-                xfm = game.coord_sys.mat.gcs_to_pcs
+                xfm = game.coord_sys.matrix.gcs_to_pcs
                 line_p = Line2D(start=game.coord_sys.xfm(line_g.start.as_vec(), xfm).as_point(),
                                 end=game.coord_sys.xfm(line_g.end.as_vec(), xfm).as_point(),
                                 color=line_g.color)

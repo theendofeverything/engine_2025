@@ -22,7 +22,7 @@ class Panning:
             The 'panning.vector' is picked up during rendering, as follows:
                 When the game loop renders drawing entities, it converts entity coordinates from
                 GCS to PCS:
-                    coord_sys.xfm(v:Vec2D, coord_sys.mat.gcs_to_pcs)
+                    coord_sys.xfm(v:Vec2D, coord_sys.matrix.gcs_to_pcs)
                 That coordinate transform matrix is calculated using the origin offset vector:
                     coord_sys.translation
                 And coord_sys.translation is calculated using the 'panning.vector' (this attribute).

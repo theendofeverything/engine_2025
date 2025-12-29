@@ -57,7 +57,7 @@ class UI:
         """Update 'panning.end': the latest point the mouse has panned to.
 
         Dependency chain depicting how panning manifests as translating the game view on the screen:
-            renderer <-- coord_sys.mat.gcs_to_pcs <-- coord_sys.translation <-- panning.vector
+            renderer <-- coord_sys.matrix.gcs_to_pcs <-- coord_sys.translation <-- panning.vector
 
             In the above dependency chain:
                 - read "<--" as "thing-on-left uses thing-on-right"
@@ -100,6 +100,10 @@ class UI:
         game.coord_sys.pcs_origin.x += translation.x
         game.coord_sys.pcs_origin.y += translation.y
         log.debug(f"Event WINDOWSIZECHANGED, new size: ({event.x}, {event.y})")
+        log.debug(f"... pygame.display.get_window_size(): "
+                  f"{pygame.display.get_window_size()}")
+        log.debug(f"... pygame.display.get_surface().get_size(): "
+                  f"{pygame.display.get_surface().get_size()}")
 
     def handle_mousewheel_events(self,
                                  event: pygame.event.Event,
@@ -210,7 +214,10 @@ class UI:
         mouse_pos = pygame.mouse.get_pos()
         mouse_p = Point2D.from_tuple(mouse_pos)
         # Mark the original mouse location in GCS
-        mouse_g_end = game.coord_sys.xfm(mouse_p.as_vec(), game.coord_sys.mat.pcs_to_gcs).as_point()
+        mouse_g_end = game.coord_sys.xfm(
+                mouse_p.as_vec(),
+                game.coord_sys.matrix.pcs_to_gcs
+                ).as_point()
 
         # Update the coordinate system zoom scale
         game.coord_sys.gcs_width *= scale
@@ -218,7 +225,7 @@ class UI:
         # Mark the new location in GCS
         mouse_g_start = game.coord_sys.xfm(
                 mouse_p.as_vec(),
-                game.coord_sys.mat.pcs_to_gcs
+                game.coord_sys.matrix.pcs_to_gcs
                 ).as_point()
         # Create an offset vector to get the mouse back to the original location
         if debug:
