@@ -48,9 +48,16 @@
     * Pull 'engine/game.py' out of `engine/` and up one level
     * Leave `main.py` as-is (it launches game but is not specific to any game)
     * Intent is to use `game.py` as a starting point in writing games.
-* [ ] Simplify debug HUD variable snapshots
-* [ ] Provide ability to color debug HUD text to make it easier to notice special values.
-* [ ] Put a transparent background behind the debug hud so that it is easier to read.
+* [x] Simplify debug HUD variable snapshots
+* [x] Create a BufferInt to buffer the display of FPS in the HUD.
+* [x] Add animation to the artwork: see 'Art.randomize_line' and 'Game.draw_a_cross'.
+* [ ] Control the speed of the animation using a TickCounter.
+* [ ] Change the structure of Ticks to be a dict of TickCounters.
+* [ ] Add a playable character (something the user can move around).
+* [ ] Add collision detection.
+* [ ] Improve debug HUD:
+    * [ ] Provide ability to color debug HUD text to make it easier to notice special values.
+    * [ ] Put a transparent background behind the debug hud so that it is easier to read.
 """
 
 from dataclasses import dataclass, field
@@ -213,7 +220,9 @@ class Game:
         # Append line artwork to art.lines
         for cross in crosses:
             for line in cross.lines:
-                self.art.lines.append(line)
+                # Randomize the line before appending it
+                wiggle_line = self.art.randomize_line(line, wiggle=0.01)
+                self.art.lines.append(wiggle_line)
 
     def draw_debug_crosses(self) -> None:
         """Draw two crosses in the GCS to help me debug zooming about a point."""

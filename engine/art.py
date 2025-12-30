@@ -1,6 +1,8 @@
 """Art is comprised of vertices."""
 from dataclasses import dataclass, field
+import random
 from .drawing_shapes import Line2D
+from .geometry_types import Point2D
 
 
 @dataclass
@@ -14,3 +16,19 @@ class Art:
     def reset(self) -> None:
         """Clear out all artwork."""
         self.lines = []
+
+    def randomize_line(self, line: Line2D, wiggle: float = 0.01) -> Line2D:
+        """Randomize the start and end points of the line by 'wiggle'.
+
+        wiggle (float):
+            A value between 0 and 0.1
+        """
+        return Line2D(start=Point2D(
+                          line.start.x + random.uniform(-1*wiggle, wiggle),
+                          line.start.y + random.uniform(-1*wiggle, wiggle)
+                          ),
+                      end=Point2D(
+                          line.end.x + random.uniform(-1*wiggle, wiggle),
+                          line.end.y + random.uniform(-1*wiggle, wiggle)
+                          )
+                      )
