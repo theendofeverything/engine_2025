@@ -1,5 +1,5 @@
 run:
-	./main.py
+	SDL_VIDEO_WINDOW_POS="950,0" ./main.py
 
 tests:
 	pytest --doctest-modules --verbose --maxfail=1

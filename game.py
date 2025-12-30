@@ -48,7 +48,11 @@
     * Pull 'engine/game.py' out of `engine/` and up one level
     * Leave `main.py` as-is (it launches game but is not specific to any game)
     * Intent is to use `game.py` as a starting point in writing games.
+* [ ] Simplify debug HUD variable snapshots
+* [ ] Provide ability to color debug HUD text to make it easier to notice special values.
+* [ ] Put a transparent background behind the debug hud so that it is easier to read.
 """
+
 from dataclasses import dataclass, field
 import logging
 import pygame
@@ -104,6 +108,7 @@ class Game:
         # Load pygame
         pygame.init()
         pygame.font.init()
+        self.debug_font = "fonts/ProggyClean.ttf"
 
         # Set the window size
         window_size = (60*16, 60*9)
@@ -135,88 +140,73 @@ class Game:
 
     def loop(self, log: logging.Logger) -> None:
         """Loop until the user quits."""
-        self.update_debug()                             # Kick-off the debug HUD
+        # Update debug
+        self.debug.hud.reset()                          # Clear the debug HUD
+        self.debug_top_values()                         # Load debug HUD with top values
+        self.reset_art()                                # Clear old art
         self.ui.handle_events(log)                      # Handle all user events
         self.update_animations()                        # Advance animation ticks
-        self.update_art()                               # Update the art
+        self.draw_remaining_art()                       # Draw any remaining art not already drawn
+        self.debug.display_snapshots_in_hud()           # Print snapshots in HUD last
         self.renderer.render_all()                      # Render all art and HUD
-        # Delay to keep game at 60 FPS.
-        self.timing.ms_per_frame = self.timing.clock.tick(60)
-
-    def update_debug(self) -> None:
-        """Update debug"""
-        self.debug.hud.reset()                          # Clear the debug HUD
-        self.debug_values()                             # Load debug HUD with most values
+        self.timing.maintain_framerate(fps=60)          # Run at 60 FPS
 
     def update_animations(self) -> None:
         """Update animations based on the frame count."""
-        if not self.timing.is_paused:
-            self.timing.ticks.update()
-        self.debug.hud.print(f"frames: {self.timing.ticks.frames}, {self.timing.ticks.t1}")
+        hud = self.debug.hud
+        timing = self.timing
+        if not timing.is_paused:
+            timing.ticks.update()
+        hud.print("|\n+- loop() -> update_animations()")
+        hud.print(f"| +- frames: {timing.ticks.frames}")
+        hud.print(f"| +- {timing.ticks.t1}")
 
-    def update_art(self) -> None:
-        """Update art and debug art"""
+    def reset_art(self) -> None:
+        """Clear out old artwork: application and debug."""
         self.art.reset()                                # Reset application artwork
-        self.draw_a_cross()                             # Draw application artwork
         self.debug.art.reset()                          # Clear the debug artwork
+
+    def draw_remaining_art(self) -> None:
+        """Update art and debug art"""
+        self.draw_a_cross()                             # Draw application artwork
         self.draw_debug_crosses()                       # Draw debug artwork
 
-    def debug_values(self) -> None:
+    def debug_top_values(self) -> None:
         """Most of the values to display in the HUD are printed in this function."""
+
+        debug = self.debug
+        debug.hud.print(f"{'debug_top_values()':<60} {'debug.hud.font_size:':<22}"
+                        f"{debug.hud.font_size.value}")
+        debug.hud.print(f"{'|':<60} {'debug.art.is_visible:':<22}"
+                        f"{debug.art.is_visible} ('d' to toggle)")
 
         def debug_fps() -> None:
             """Display frame duration in milliseconds and rate in FPS."""
-            # # TODO: update fps every N frames instead of every frame
-            # fps = 1000 / self.timing.ms_per_frame
-            # # Use get_fps() for now -- it averages every 10 frames
-            fps = self.timing.clock.get_fps()
-            self.debug.hud.print(f"frame: {self.timing.ms_per_frame:d}ms ({fps:0.1f}FPS)")
+            # # Old: use get_fps() for now -- it averages every 10 frames
+            # fps = self.timing.clock.get_fps()
+            if self.timing.ticks.hud_fps.is_period:
+                # # These values are updated once every 30 frames.
+                # # See Ticks.hud_fps and Ticks.update().
+                # debug.snapshots["fps"] = self.timing.fps
+                # debug.snapshots["ms_per_frame"] = self.timing.ms_per_frame
+                # TODO: create a buffered instance of these variables
+                pass
+            # Print to HUD
+            # ms_per_frame = debug.safe_read_snapshot("ms_per_frame")
+            ms_per_frame = self.timing.ms_per_frame
+            # fps = debug.safe_read_snapshot("fps")
+            fps = self.timing.fps
+            debug.hud.print(f"|\n+- FPS: {fps:0.1f}, frame period: {ms_per_frame:d}ms")
 
         def debug_window_size() -> None:
             """Display window size."""
-            self.debug.hud.print(f"Window size: {self.coord_sys.window_size.fmt(0.0)}, "
-                                 f"Center: {self.coord_sys.window_center.fmt(0.0)} PCS")
-
-        def debug_mouse_position() -> None:
-            """Display mouse position in GCS and PCS."""
-            # Get mouse position in pixel coordinates
-            mouse_position = Point2D.from_tuple(pygame.mouse.get_pos())
-            # Get mouse position in game coordinates
-            mouse_gcs = self.coord_sys.xfm(
-                    mouse_position.as_vec(),
-                    self.coord_sys.matrix.pcs_to_gcs)
-            # Test transform by converting back to pixel coordinates
-            mouse_pcs = self.coord_sys.xfm(
-                    mouse_gcs,
-                    self.coord_sys.matrix.gcs_to_pcs)
-            self.debug.hud.print(f"Mouse: {mouse_gcs}, GCS, {mouse_pcs.fmt(0.0)}, PCS")
-
-        def debug_mouse_buttons() -> None:
-            """Display mouse button state."""
-            self.debug.hud.print("Mouse buttons: "
-                                 f"1: {self.ui.mouse.button_1}, "
-                                 f"2: {self.ui.mouse.button_2}"
-                                 )
-
-        def debug_pan() -> None:
-            """Display panning values."""
-            self.debug.hud.print(f"origin: {self.coord_sys.pcs_origin}, "
-                                 f"translation: {self.coord_sys.translation}\n"
-                                 f"Panning start: {self.ui.panning.start.fmt(0.0)}, "
-                                 f"end: {self.ui.panning.end.fmt(0.0)}, "
-                                 f"vector: {self.ui.panning.vector.fmt(0.0)}"
-                                 )
-
-        def debug_overlay_is_visible() -> None:
-            """Display whether debug artwork overlay is visible."""
-            self.debug.hud.print(f"Debug art overlay: {self.debug.art.is_visible}")
+            debug.hud.print("|\n+- OS window (in pixels)")
+            debug.hud.print(f"|  +- window_size: {self.coord_sys.window_size.fmt(0.0)}")
+            debug.hud.print(f"|  +- window_center: {self.coord_sys.window_center.fmt(0.0)}")
 
         debug_fps()
         debug_window_size()
-        debug_mouse_position()
-        debug_mouse_buttons()
-        debug_pan()
-        debug_overlay_is_visible()
+        debug.hud.print("\nLocals")                     # Local debug prints (e.g., from UI)
 
     def draw_a_cross(self) -> None:
         """Draw a cross in the GCS."""

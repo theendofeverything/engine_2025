@@ -7,6 +7,7 @@ then
     exit 1
 else
     ln -rs ../${repo}/doc/ .
+    ln -rs ../${repo}/fonts/ .
     ln -rs ../${repo}/engine/ .
     ln -rs ../${repo}/Makefile .
     ln -rs ../${repo}/main.py .

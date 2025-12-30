@@ -58,15 +58,11 @@ class Renderer:
     def render_debug_hud(self) -> None:
         """Display values in the Debug HUD."""
         game = self.game
-        font = pygame.font.SysFont("RobotoMono", game.debug.hud.font_size.value, bold=False)
+        font = pygame.font.Font(game.debug_font, game.debug.hud.font_size.value)
         pos = (0, 0)
 
-        # Display snapshot values at bottom of HUD
-        game.debug.hud.print_snapshots()
-
-        # The debug HUD now consists of all debug.hud.print() text followed by all
-        # debug.hud.snapshot() text. This is all in debug.hud.lines. Generate a texture for each
-        # line and blit that texture to the OS window.
+        # Iterate over lines of debug HUD text using debug.hud.lines.
+        # Generate a texture for each line and blit that texture to the OS window.
         for i, line in enumerate(game.debug.hud.lines):
             text_surface = font.render(line, True, Colors.text)
             self.window_surface.blit(

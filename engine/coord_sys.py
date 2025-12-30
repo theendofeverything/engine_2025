@@ -118,6 +118,10 @@ class CoordinateSystem:
             The visible width of the game in the game coordinate system.
         pcs_origin (Point2D):
             The game coordinate system origin in pixel coordinates.
+            The pcs_origin is updated in:
+                UI.handle_windowsizechanged_events() -- when user resizes the window
+                UI._zoom() -- when user zooms in or out
+                UI.handle_mousebutton_up_events() -- when user releases mouse button to stop panning
 
 
     >>> for name, attr in CoordinateSystem.__dict__.items():

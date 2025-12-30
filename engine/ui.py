@@ -51,7 +51,36 @@ class UI:
     def handle_events(self, log: logging.Logger) -> None:
         """Handle events."""
         self.consume_event_queue(log)
+        self.debug_mouse()
         self.update_panning()
+
+    def debug_mouse(self) -> None:
+        """Debug mouse position and buttons."""
+        debug = self.game.debug
+        coord_sys = self.game.coord_sys
+        debug.hud.print("|\n+- UI -> Mouse:")
+
+        def debug_mouse_position() -> None:
+            """Display mouse position in GCS and PCS."""
+            # Get mouse position in pixel coordinates
+            mouse_position = Point2D.from_tuple(pygame.mouse.get_pos())
+            # Get mouse position in game coordinates
+            mouse_gcs = coord_sys.xfm(
+                    mouse_position.as_vec(),
+                    coord_sys.matrix.pcs_to_gcs)
+            # Test transform by converting back to pixel coordinates
+            mouse_pcs = coord_sys.xfm(
+                    mouse_gcs,
+                    coord_sys.matrix.gcs_to_pcs)
+            debug.hud.print(f"|  +- {mouse_gcs} GCS, {mouse_pcs.fmt(0.0)} PCS")
+        debug_mouse_position()
+
+        def debug_mouse_buttons() -> None:
+            """Display mouse button state."""
+            debug.hud.print("|  +- mouse.button_:")
+            debug.hud.print(f"|     +- 1: {self.mouse.button_1}")
+            debug.hud.print(f"|     +- 2: {self.mouse.button_2}")
+        debug_mouse_buttons()
 
     def update_panning(self) -> None:
         """Update 'panning.end': the latest point the mouse has panned to.
@@ -63,11 +92,22 @@ class UI:
                 - read "<--" as "thing-on-left uses thing-on-right"
                 - panning.vector = panning.end - panning.start
         """
-        if self.panning.is_active:
+        coord_sys = self.game.coord_sys
+        debug = self.game.debug
+        panning = self.panning
+        debug.hud.print(f"|\n+- UI -> Panning: {panning.is_active}")
+        debug.hud.print(f"|        +- .start: {panning.start.fmt(0.0)}")
+        debug.hud.print(f"|        +- .end: {panning.end.fmt(0.0)}")
+        debug.hud.print(f"|        +- .vector: {panning.vector.fmt(0.0)}")
+        debug.hud.print("|           +- Panning updates the coord_sys:")
+        debug.hud.print(f"|              +- coord_sys.pcs_origin:  {coord_sys.pcs_origin}")
+        debug.hud.print(f"|              +- coord_sys.translation: {coord_sys.translation} = "
+                        "pcs_origin + .vector")
+        if panning.is_active:
             mouse_pos = pygame.mouse.get_pos()
-            self.panning.end = Point2D.from_tuple(mouse_pos)
-            self.game.debug.art.lines_pcs.append(
-                    Line2D(start=self.panning.start, end=self.panning.end, color=Colors.panning))
+            panning.end = Point2D.from_tuple(mouse_pos)
+            debug.art.lines_pcs.append(
+                    Line2D(start=panning.start, end=panning.end, color=Colors.panning))
 
     def consume_event_queue(self, log: logging.Logger) -> None:
         """Consume all events on the event queue.
@@ -176,6 +216,7 @@ class UI:
             case pygame.K_SPACE:
                 log.debug("User pressed 'Space' to toggle pause.")
                 game.timing.is_paused = not game.timing.is_paused
+                game.debug.snapshots["pause"] = f"game.timing.is_paused: {game.timing.is_paused}"
             case pygame.K_d:
                 log.debug("User pressed 'd' to toggle debug art overlay.")
                 game.debug.art.is_visible = not game.debug.art.is_visible
@@ -212,8 +253,6 @@ class UI:
         """
         game = self.game
         debug = True
-        if debug:
-            game.debug.hud.reset_snapshots()
         mouse_pos = pygame.mouse.get_pos()
         mouse_p = Point2D.from_tuple(mouse_pos)
         # Mark the original mouse location in GCS
@@ -234,17 +273,18 @@ class UI:
         if debug:
             game.debug.art.snapshot(Line2D(start=mouse_g_start, end=mouse_g_end,
                                            color=Colors.panning))
-            game.debug.hud.snapshot(f"zoom about starts: {mouse_g_start}, "
-                                    f"ends: {mouse_g_end}")
+            game.debug.snapshots["zoom_about"] = ("UI -> _zoom() | zoom about "
+                                                  f"starts: {mouse_g_start}, "
+                                                  f"ends: {mouse_g_end}")
+
         offset_g = Vec2D.from_points(start=mouse_g_start, end=mouse_g_end)
         if debug:
-            game.debug.hud.snapshot(f"offset: {offset_g}GCS")
+            game.debug.snapshots["offset_g"] = f"UI -> _zoom() | offset_g: {offset_g}GCS"
         # Scale the vector from GCS to PCS
         offset_p = Vec2D(x=game.coord_sys.scaling.gcs_to_pcs*offset_g.x,
                          y=game.coord_sys.scaling.gcs_to_pcs*offset_g.y)
-        if debug:
-            # Note: although this is in PCS, the offset is fractional: (float, float)
-            game.debug.hud.snapshot(f"offset: {offset_p}PCS")
+        # Note: although this is in PCS, the offset is fractional: (float, float)
+        game.debug.snapshots["offset_p"] = f"UI -> _zoom() | offset_p: {offset_p}GCS"
         # Change the PCS origin to move the GCS origin by that offset (keep zoom about the mouse)
         # I don't understand why I have to subtract the x-offset, but this is what works.
         game.coord_sys.pcs_origin.x -= offset_p.x

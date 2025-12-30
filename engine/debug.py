@@ -64,7 +64,7 @@ class DebugArt:
                         game.debug.art.snapshot(Line2D(start=mouse_g_start, end=mouse_g_end))
                 Use 'debug.art.reset_snapshots()' at start of code block to clear old line art.
                     if debug:
-                        game.debug.hud.reset_snapshots()
+                        game.debug.art.reset_snapshots()
                 The renderer draws these to the window in render_shapes:
                     if game.debug.art.is_visible:
                         render_lines(lines=game.debug.art.snapshots, ...
@@ -126,19 +126,10 @@ class DebugHud:
                 Use 'debug.hud.print()' to debug values updated on every iteration of the game loop.
                 At the top of the game loop, use 'debug.hud.reset()' to clear '_text'.
                 The renderer uses 'debug.hud.lines' to iterate over the lines of text in '_text'.
-        _snapshots (str):
-            Debug HUD text that persists until manually cleared.
-            Don't manipulate '_snapshots' directly.
-            Use debug.hud.snapshot() to append text to '_snapshots'.
-            Use debug.hud.reset_snapshots() to reset '_snapshots' to an empty string.
-            Intended usage:
-                Use 'debug.hud.snapshot()' to debug values in event-triggered code.
-                Use 'debug.hud.reset_snapshots()' at the top of the code block to clear old values.
     """
-    is_visible: bool = True     # Control whether HUD should be visible or not.
     font_size:  FontSize = FontSize(value=16, minimum=6, maximum=30)  # Track HUD font size
+    is_visible: bool = True     # Control whether HUD should be visible or not.
     _text:      str = ""        # The text that is displayed in the Debug HUD.
-    _snapshots: str = ""        # Debug HUD text that persists until manually cleared.
 
     @property
     def lines(self) -> list[str]:
@@ -154,22 +145,54 @@ class DebugHud:
         """Clear the text in the debug HUD."""
         self._text = ""
 
-    def snapshot(self, text: str) -> None:
-        """Take a snapshot of a value to debug."""
-        self._snapshots += text
-        self._snapshots += "\n"
-
-    def print_snapshots(self) -> None:
-        """Print the snapshot dictionary to the debug HUD."""
-        self._text += f"{self._snapshots}"
-
-    def reset_snapshots(self) -> None:
-        """Clear out the snapshots."""
-        self._snapshots = ""
-
 
 @dataclass
 class Debug:
     """Debug messages in the HUD and debug artwork."""
     hud:                    DebugHud = DebugHud()
     art:                    DebugArt = DebugArt()
+    snapshots:              dict[str, str] = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.snapshots = {}
+
+    def display_snapshots_in_hud(self) -> None:
+        """Display variable snapshots in the HUD.
+
+        Variable snapshots are for displaying variables in the HUD for code that doesn't run on
+        every iteration of the game loop.
+
+        Usage:
+
+            The application code just takes a snapshot by writing to dict 'debug.snapshots':
+
+                def _zoom(self, scale: float) -> None:
+                    debug = True
+                    ...
+                    if debug:
+                        game.debug.snapshots["zoom_about"] = ("UI -> _zoom() | zoom about "
+                                                              f"starts: {mouse_g_start}, "
+                                                              f"ends: {mouse_g_end}")
+
+            And the variable will be printed to the HUD whenever the application calls
+            'debug.display_snapshots_in_hud()':
+
+                def loop():
+                    debug.hud.reset()                   # Clear the debug HUD
+                    debug_fps()                         # Application debugging func: prints to HUD
+                    ...
+                    debug.display_snapshots_in_hud()    # THIS FUNC: prints all snapshots to HUD
+
+        The HUD displays snapshot variables like this:
+
+        Snapshots
+        |
+        +- UI -> _zoom() | zoom about starts: (-0.06, -0.14), ends: (-0.06, -0.15)
+        |
+        ...
+        """
+        snapshots = self.snapshots
+        hud = self.hud
+        hud.print("\nSnapshots")
+        for msg in snapshots.values():
+            hud.print(f"|\n+- {msg}")
