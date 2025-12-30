@@ -182,20 +182,16 @@ class Game:
 
         def debug_fps() -> None:
             """Display frame duration in milliseconds and rate in FPS."""
-            # # Old: use get_fps() for now -- it averages every 10 frames
-            # fps = self.timing.clock.get_fps()
-            if self.timing.ticks.hud_fps.is_period:
-                # # These values are updated once every 30 frames.
-                # # See Ticks.hud_fps and Ticks.update().
-                # debug.snapshots["fps"] = self.timing.fps
-                # debug.snapshots["ms_per_frame"] = self.timing.ms_per_frame
-                # TODO: create a buffered instance of these variables
-                pass
-            # Print to HUD
-            # ms_per_frame = debug.safe_read_snapshot("ms_per_frame")
-            ms_per_frame = self.timing.ms_per_frame
-            # fps = debug.safe_read_snapshot("fps")
-            fps = self.timing.fps
+            timing = self.timing
+            # # Old: use get_fps() -- it averages every 10 frames
+            # fps = timing.clock.get_fps()
+            if timing.ticks.hud_fps.is_period:
+                # Update buffered milliseconds per frame once every period (30 frames).
+                # See Ticks.hud_fps and Ticks.update() for period.
+                timing.update_buffered_ms_per_frame()
+            # Print buffered versions to HUD
+            fps = timing.fps_buffered
+            ms_per_frame = timing.ms_per_frame_buffered
             debug.hud.print(f"|\n+- FPS: {fps:0.1f}, frame period: {ms_per_frame:d}ms")
 
         def debug_window_size() -> None:
