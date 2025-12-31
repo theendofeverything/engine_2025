@@ -160,26 +160,27 @@ class Game:
 
     def update_animations(self) -> None:
         """Update animations based on the frame count."""
-        debug = self.debug
-        hud = self.debug.hud
         timing = self.timing
-        heading = "|\n+- loop() -> update_animations()"
-        hud.print(heading)
         # Video frames always advance
         timing.video_ticks.update()
-        hud.print(f"| +- frames: {timing.video_ticks.frames}")
-        for counter in timing.video_ticks.counter.values():
-            hud.print(f"| +- {counter}")
         if not timing.is_paused:
-            # Game grames only advance if the game is not paused
+            # Game frames only advance if the game is not paused
             timing.game_ticks.update()
+
+        def debug_ticks() -> None:
+            hud = self.debug.hud
+            heading = "|\n+- loop() -> update_animations()"
+            hud.print(heading)
+            hud.print(f"| +- video_ticks.frames: {timing.video_ticks.frames}")
+            hud.print("| +- video_ticks.counter dict:")
+            for counter in timing.video_ticks.counter.values():
+                hud.print(f"|    +- {counter}")
+            paused = "--Paused--" if timing.is_paused else ""
+            hud.print(f"| +- game_ticks.frames: {timing.game_ticks.frames} {paused}")
+            hud.print("| +- game_ticks.counter dict:")
             for counter in timing.game_ticks.counter.values():
-                hud.print(f"| +- {counter}")
-        else:
-            debug.snapshots["game_ticks_counter"] = heading
-            debug.snapshots["game_ticks_counter"] += " -- game TickCounters at last pause"
-            for counter in timing.game_ticks.counter.values():
-                debug.snapshots["game_ticks_counter"] += f"\n|  +- {counter}"
+                hud.print(f"|    +- {counter}")
+        debug_ticks()
 
     def reset_art(self) -> None:
         """Clear out old artwork: application and debug."""
