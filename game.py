@@ -160,13 +160,26 @@ class Game:
 
     def update_animations(self) -> None:
         """Update animations based on the frame count."""
+        debug = self.debug
         hud = self.debug.hud
         timing = self.timing
+        heading = "|\n+- loop() -> update_animations()"
+        hud.print(heading)
+        # Video frames always advance
+        timing.video_ticks.update()
+        hud.print(f"| +- frames: {timing.video_ticks.frames}")
+        for counter in timing.video_ticks.counter.values():
+            hud.print(f"| +- {counter}")
         if not timing.is_paused:
-            timing.ticks.update()
-        hud.print("|\n+- loop() -> update_animations()")
-        hud.print(f"| +- frames: {timing.ticks.frames}")
-        hud.print(f"| +- {timing.ticks.t1}")
+            # Game grames only advance if the game is not paused
+            timing.game_ticks.update()
+            for counter in timing.game_ticks.counter.values():
+                hud.print(f"| +- {counter}")
+        else:
+            debug.snapshots["game_ticks_counter"] = heading
+            debug.snapshots["game_ticks_counter"] += " -- game TickCounters at last pause"
+            for counter in timing.game_ticks.counter.values():
+                debug.snapshots["game_ticks_counter"] += f"\n|  +- {counter}"
 
     def reset_art(self) -> None:
         """Clear out old artwork: application and debug."""
@@ -192,9 +205,9 @@ class Game:
             timing = self.timing
             # # Old: use get_fps() -- it averages every 10 frames
             # fps = timing.clock.get_fps()
-            if timing.ticks.hud_fps.is_period:
+            if timing.video_ticks.counter["hud_fps"].is_period:
                 # Update buffered milliseconds per frame once every period (30 frames).
-                # See Ticks.hud_fps and Ticks.update() for period.
+                # See Ticks.counter["hud_fps"] and Ticks.update() for period.
                 timing.update_buffered_ms_per_frame()
             # Print buffered versions to HUD
             fps = timing.fps_buffered

@@ -11,7 +11,8 @@ from .buffer_value import BufferInt
 class Timing:
     """All time-related game instance attributes."""
     clock:                  pygame.time.Clock = pygame.time.Clock()
-    ticks:                  Ticks = Ticks()             # Track frames for clocking animations
+    video_ticks:            Ticks = Ticks(clock="video")  # Track video frames to clock HUD FPS
+    game_ticks:             Ticks = Ticks(clock="game")   # Track game frames to clock animations
     is_paused:              bool = False                # Track if game is paused
     ms_per_frame:           int = 16                    # Initial value for debug HUD
     _ms_per_frame_buffer:   BufferInt = BufferInt()     # Buffered value

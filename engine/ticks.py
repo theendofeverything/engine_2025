@@ -14,34 +14,60 @@ from dataclasses import dataclass, field
 class Ticks:
     """Count frames for clocking animations.
 
-    >>> ticks = Ticks()
+    frames (int):
+        For instance video_ticks, this counter increments on every iteration of the game loop.
+        For instance game_ticks, this counter only increments on every iteration if game not paused.
+
+    API:
+    - In the 'Ticks.__post_init__()':
+        - Define all the video frame TickCounters in dict 'video_ticks.counter'
+        - Define all the game frame TickCounters in dict 'game_ticks.counter'
+    - Call 'ticks.update()' to update all TickCounters.
+        - Each TickCounter will look at 'Ticks.video_frames' or 'Ticks.game_frames' and decide
+          whether to increment.
+
+    >>> ticks = Ticks(clock="game")
     >>> print(ticks)
-    Ticks(frames=0, t1=TickCounter(ticks=..., period=3, count=0, name='t1'), ...)
+    Ticks(clock='game', frames=0,
+            counter={'period_3':
+                        TickCounter(ticks=..., period=3, count=0, name='period_3')})
     >>> for i in range(6):
     ...     ticks.update()
-    ...     print(ticks)
-    Ticks(frames=1, t1=TickCounter(ticks=..., period=3, count=0, name='t1'), ...)
-    Ticks(frames=2, t1=TickCounter(ticks=..., period=3, count=0, name='t1'), ...)
-    Ticks(frames=3, t1=TickCounter(ticks=..., period=3, count=1, name='t1'), ...)
-    Ticks(frames=4, t1=TickCounter(ticks=..., period=3, count=1, name='t1'), ...)
-    Ticks(frames=5, t1=TickCounter(ticks=..., period=3, count=1, name='t1'), ...)
-    Ticks(frames=6, t1=TickCounter(ticks=..., period=3, count=2, name='t1'), ...)
+    ...     print(f"frames: {ticks.frames}")
+    ...     print(f"\t{ticks.counter['period_3']}")
+    frames: 1
+        "period_3": count=0 (ticks every 3 frames)
+    frames: 2
+        "period_3": count=0 (ticks every 3 frames)
+    frames: 3
+        "period_3": count=1 (ticks every 3 frames)
+    frames: 4
+        "period_3": count=1 (ticks every 3 frames)
+    frames: 5
+        "period_3": count=1 (ticks every 3 frames)
+    frames: 6
+        "period_3": count=2 (ticks every 3 frames)
     """
-    # game: Game
-    frames: int = 0                                     # Count number of frames
-    t1: TickCounter = field(init=False)                 # Count number of thing 1
-    hud_fps: TickCounter = field(init=False)            # Tick to update FPS in HUD
+    clock:      str                                     # "video" or "game"
+    frames:     int = 0                                 # Count number of "video" or "game" frames
+    counter:  dict[str, TickCounter] = field(init=False)  # Dict of "video" or "game" TickCounters
 
     def __post_init__(self) -> None:
-        # Thing 1 has a period of 3 frames
-        self.t1 = TickCounter(self, period=3, name="t1")
-        self.hud_fps = TickCounter(self, period=30, name="hud_fps")
+        match self.clock:
+            case "video":
+                self.counter = {
+                        "hud_fps": TickCounter(self, period=30, name="hud_fps"),
+                        }
+            case "game":
+                self.counter = {
+                        "period_3": TickCounter(self, period=3, name="period_3"),
+                        }
 
     def update(self) -> None:
-        """Update the ticks"""
+        """Update the tick counters"""
         self.frames += 1
-        self.t1.update()
-        self.hud_fps.update()
+        for counter in self.counter.values():
+            counter.update()
 
 
 @dataclass
@@ -53,7 +79,7 @@ class TickCounter:
     name: str = "NameMe"
 
     def __str__(self) -> str:
-        return f"{self.name}({self.period} frames): {self.count}"
+        return f"\"{self.name}\": count={self.count} (ticks every {self.period} frames)"
 
     @property
     def is_period(self) -> bool:
