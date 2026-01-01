@@ -51,6 +51,10 @@
 * [x] Simplify debug HUD variable snapshots
 * [x] Create a BufferInt to buffer the display of FPS in the HUD.
 * [x] Add animation to the artwork: see 'Art.randomize_line' and 'Game.draw_a_cross'.
+* [ ] Replace code using 'pygame.display'
+    * Use the pygame-ce version: 'window = pygame.Window', 'window_surface = window.get_surface()'
+    * Then 'pygame.display.flip()' becomes 'window.flip()'
+    * Then 'pygame.display.get_window_size()' becomes 'game.renderer.window.size'
 * [ ] Control the speed of the animation using a TickCounter.
 * [ ] Change the structure of Ticks to be a dict of TickCounters.
 * [ ] Add a playable character (something the user can move around).
@@ -125,12 +129,14 @@ class Game:
         #   On WINDOWSIZECHANGED events, the window size and the display surface size will
         #   automatically adjust to the new size value. It is not necessary to create a new
         #   window_surface with the new window size. See handle_windowsizechanged_events.
-        self.renderer = Renderer(
-                game=self,
-                window_surface=pygame.display.set_mode(  # Get a window from the OS
-                    size=window_size,
-                    flags=pygame.RESIZABLE
-                    ))
+        # Old pygame style:
+        # self.renderer = Renderer(
+        #         game=self,
+        #         window_surface=pygame.display.set_mode(  # Get a window from the OS
+        #             size=window_size,
+        #             flags=pygame.RESIZABLE
+        #             ))
+        self.renderer = Renderer(game=self)
 
         # Handle all user interface events in ui.py (keyboard, mouse, panning, zoom)
         self.ui = UI(game=self, panning=Panning())

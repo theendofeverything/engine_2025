@@ -140,15 +140,13 @@ class UI:
         game.coord_sys.pcs_origin.x += translation.x
         game.coord_sys.pcs_origin.y += translation.y
         log.debug(f"Event WINDOWSIZECHANGED, new size: ({event.x}, {event.y})")
-        log.debug(f"... pygame.display.get_window_size(): "
-                  f"{pygame.display.get_window_size()}")
-        log.debug(f"... pygame.display.get_surface().get_size(): "
-                  # f"{pygame.display.get_surface().get_size()}")
-                  # I proved to myself that the window_surface I obtained when instantiating the
-                  # Renderer is the same surface I get from pygame.display.get_surface()
-                  # I replaced pygame.display.get_surface() with the following to avoid this linting
-                  # error when using pygame-ce:
-                  # error: Item "None" of "Surface | None" has no attribute "get_size"  [union-attr]
+        # log.debug(f"... pygame.display.get_window_size(): "
+        #           f"{pygame.display.get_window_size()}")
+        log.debug(f"... game.renderer.window.size: {game.renderer.window.size}")
+        # NOTE: from pygame-ce docs:
+        # Don't use window.get_surface() when using hardware rendering
+        # log.debug(f"... pygame.display.get_surface().get_size(): "
+        log.debug(f"... game.renderer.window_surface.get_size(): "
                   f"{game.renderer.window_surface.get_size()}")
 
     def handle_mousewheel_events(self,

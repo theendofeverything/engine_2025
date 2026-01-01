@@ -1,6 +1,6 @@
 """Renderer holds all game rendering code.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import pygame
 from .drawing_shapes import Line2D
 from .colors import Colors
@@ -10,7 +10,13 @@ from .colors import Colors
 class Renderer:
     """Renderer."""
     game:                   "Game"
-    window_surface:         pygame.Surface
+    window:                 pygame.Window = pygame.Window()
+    window_surface:         pygame.Surface = field(init=False)
+
+    def __post_init__(self) -> None:
+        # NOTE: from pygame-ce docs:
+        # Don't use window.get_surface() when using hardware rendering
+        self.window_surface = self.window.get_surface()
 
     def render_all(self) -> None:
         """Called from the game loop."""
@@ -19,7 +25,8 @@ class Renderer:
         self.render_shapes()
         if game.debug.hud.is_visible:
             self.render_debug_hud()
-        pygame.display.flip()
+        # pygame.display.flip()
+        self.window.flip()
 
     def render_shapes(self) -> None:
         """Render GCS shapes to the screen."""
