@@ -142,6 +142,8 @@ class Game:
 
     def run(self, log: logging.Logger) -> None:
         """Run the game."""
+        using_pygame_ce = getattr(pygame, "IS_CE", False)
+        log.debug(f"{'Pygame CE' if using_pygame_ce else 'Pygame'}")
         while True:
             self.loop(log)
 
@@ -196,9 +198,16 @@ class Game:
         """Most of the values to display in the HUD are printed in this function."""
 
         debug = self.debug
-        debug.hud.print(f"{'debug_top_values()':<60} {'debug.hud.font_size:':<22}"
+        using_pygame_ce = getattr(pygame, "IS_CE", False)
+        pygame_version = f"pygame{'-ce' if using_pygame_ce else ''} {pygame.version.ver}"
+        sdl_version = f"SDL {pygame.version.SDL}"
+        debug.hud.print(f"{'debug_top_values()':<30}"
+                        f"{pygame_version:<30}"
+                        f"{'debug.hud.font_size:':<22}"
                         f"{debug.hud.font_size.value}")
-        debug.hud.print(f"{'|':<60} {'debug.art.is_visible:':<22}"
+        debug.hud.print(f"{'|':<30}"
+                        f"{sdl_version:<30}"
+                        f"{'debug.art.is_visible:':<22}"
                         f"{debug.art.is_visible} ('d' to toggle)")
 
         def debug_fps() -> None:
