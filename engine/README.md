@@ -5,7 +5,85 @@ Use pygame to create an application.
 Folder `engine` is my 2D engine Python package. `game.py` is a starting point
 for writing a Game in the `game.py` file.
 
+# Why
+
+This started out from a desire to make a plotting application. See
+private repo https://github.com/theendofeverything/pygame-kata-2025_11_17.
+
+It ended up being my first time implementing coordinate transforms where I felt
+I really understood all of the underlying math. So I decided to keep going on
+the graphics engine part.
+
+# Roadmap
+
+I started out only doing 2D graphics, but now that I understand the math, I
+realize it isn't a big leap to turn this into a 3D engine.
+
+I have a basic UI to build on top of. Now I am working on getting more graphics
+onto the screen.
+
+# Docs in `doc`
+
+These docs are context for future me to remember the workflow, house-keeping
+miscellany of developing a Python project.
+
+- [Coordinate transform math](doc/coordinate_transforms.md)
+- [Dataclasses](doc/dataclasses.md)
+- [Environment Variables](doc/env_vars.md)
+- [Python str format specifiers](doc/format_specifiers.md)
+- [Hotload (TODO)](doc/hotload.md)
+- [Python pattern matching](doc/pattern_matching.md)
+- [Pygame docs](doc/pygame_docs.md)
+- [Python linters](doc/python_linters.md)
+- [Type hints](doc/type_hints.md)
+- [Unit Tests](doc/unit_tests.md)
+- [Vim](doc/vim.md)
+
+# Math
+
+The coordinate transforms use matrices as the transform operators. The matrix
+dimensions are one larger than the number of spatial dimensions to use
+homogeneous coordinates for translation. See
+[doc/coordinate_transforms.md](doc/coordinate_transforms.md).
+
+
 # Setup
+
+## Set up for a project using the engine
+
+If I just want to make a project that uses the engine, I:
+
+1. clone the `engine_2025` repo
+2. create my project
+3. link the `setup` script
+4. run the `setup` script
+5. enter my Python virtual environment:
+    - either enter one I already made
+    - or make a new virtual environment and install the packages from the
+      `requirements.txt` file
+
+Steps 1-4:
+
+```
+$ git clone github:theendofeverything/engine_2025.git
+$ mkdir my_project && cd my_project
+$ ln -rs ../engine_2025/setup.sh .
+$ ./setup.sh
+```
+
+Details on what this script does are in section [Engine structure](README.md#engine-structure).
+
+If the packages are not installed yet: see [Virtual environment](README.md#virtual-environment).
+
+If you already know how to set up a Python virtual environment, just activate
+your virtual environment it and do the final step to install the required
+packages:
+
+Step 5:
+
+```
+(my_virtual_environment) $ pip install -r requirements.txt
+```
 
 ## Virtual environment
 
@@ -30,13 +108,20 @@ $ pydev
 
 ## pip install
 
-Install `pygame-ce` (for talking to the OS).
+Install all packages necessary for development (running the game, testing, and
+linting):
 
 ```
-(pydev) $ pip install pygame-ce
+(pydev) $ pip install -r requirements.txt
 ```
 
-Then launch the application:
+Details on the packages are in section [pip install manually](README.md#pip-install-manually).
+
+# Run
+
+## Run the game
+
+Launch the application:
 
 ```
 (pydev) $ make run
@@ -65,18 +150,7 @@ During development, I alter the `run` recipe to put the window at upper right:
 - `Ctrl_-`: Decrease debug HUD font
 - Resize the window with a mouse click-drag
 
-## Optional setup
-
-- Install `pytest` to run the doctests.
-- Install the linters `pycodestyle`, `pylint`, and `mypy`.
-
-### Unit tests
-
-Install `pytest` (to run the doctests):
-
-```
-(pydev) $ pip install pytest
-```
+## Run tests
 
 Run the tests:
 
@@ -90,58 +164,9 @@ This does:
 (pydev) $ pytest --doctest-modules --verbose
 ```
 
-### Linters
+## Run the linters
 
-Install `pycodestyle`:
-
-```
-(pydev) $ pip install pycodestyle
-```
-
-Test pycodestyle:
-
-```
-(pydev) $ pycodestyle --max-line-length=100 .
-```
-
-Install `pylint` and `mypy`:
-
-```
-(pydev) $ pip install pylint
-(pydev) $ pip install mypy
-```
-
-*Note: `pylint` and `mypy` come with `Python`, but these versions are out of
-date and will cause errors.*
-
-- Run the above `pip install` to get the updated versions. (This also updates
-  several other packages.)
-- Close and reopen the shell for these changes to take effect (otherwise you
-  will get mystery linting errors).
-- *Remember to reactivate your virtual environment after opening a new shell!*
-
-Test `pylint`:
-
-```
-(pydev) $ pylint .
-```
-
-**Note**: you need to have already installed either `pygame` or `pygame-ce`,
-otherwise you will get this error:
-
-```
-game.py:65:0: E0401: Unable to import 'pygame' (import-error)
-```
-
-Test `mypy`:
-
-```
-$ mypy --strict .
-```
-
-If all of the above are running without error, you have everything set up correctly.
-
-Run the linters using the Makefile recipe:
+Lint:
 
 ```
 $ make lint
@@ -156,37 +181,15 @@ $ mypy --strict .
 $ flake8 --max-complexity 10 --max-line-length 100 --extend-ignore F821 .
 ```
 
-# Why
-
-This started out from a desire to make a plotting application. See
-private repo https://github.com/theendofeverything/pygame-kata-2025_11_17.
-
-It ended up being my first time implementing coordinate transforms where I felt
-I really understood all of the underlying math. So I decided to keep going on
-the graphics engine part.
-
-# Roadmap
-
-I started out only doing 2D graphics, but now that I understand the math, I
-realize it isn't a big leap to turn this into a 3D engine.
-
-I have a basic UI to build on top of. Now I am working on getting more graphics
-onto the screen.
-
-# Math
-
-The coordinate transforms use matrices as the transform operators. The matrix
-dimensions are one larger than the number of spatial dimensions to use
-homogeneous coordinates for translation. See
-[doc/coordinate_transforms.md](doc/coordinate_transforms.md).
-
 # Python code
 
 ## Engine structure
 
-The Python project follows a simple structure. The project is essentially flat
-with an entry point in `main.py`, the game in `game.py`, and all engine code
-residing in the `engine/` folder.
+The Python project follows a simple structure. The project is essentially flat:
+
+- an entry point in `main.py`
+- the game in `game.py`
+- all engine code in the `engine/` folder
 
 For now, I am re-using the engine code in other projects by making symbolic
 links. This is handled by `setup.sh` which copies the files from a local clone
@@ -310,17 +313,100 @@ starting point for writing your actual `game.py`.
 Class `Game` contains the top-level game code. It is instantiated in `main.py`
 where `Game().run()` launches the application.
 
-# Docs in `doc`
+# Appendix
 
-These docs are context for future me to remember the workflow, house-keeping
-miscellany of developing a Python project.
+## pip install manually
 
-- [Coordinate transform math](doc/coordinate_transforms.md)
-- [Dataclasses](doc/dataclasses.md)
-- [Python str format specifiers](doc/format_specifiers.md)
-- [Python pattern matching](doc/pattern_matching.md)
-- [Pygame docs](doc/pygame_docs.md)
-- [Python linters](doc/python_linters.md)
-- [Type hints](doc/type_hints.md)
-- [Unit Tests](doc/unit_tests.md)
-- [Vim](doc/vim.md)
+*If you want to see what specific packages are required for development, the
+following manual install guide is helpful.*
+
+Install `pygame-ce` (for talking to the OS).
+
+```
+(pydev) $ pip install pygame-ce
+```
+
+Then launch the application:
+
+```
+(pydev) $ make run
+```
+
+The rest of the packages are only required for developing the engine:
+
+- Install `pytest` to run the doctests.
+- Install the linters `pycodestyle`, `pylint`, and `mypy`.
+
+### Unit tests
+
+Install `pytest` (to run the doctests):
+
+```
+(pydev) $ pip install pytest
+```
+
+Run the tests:
+
+```
+(pydev) $ make tests
+```
+
+See how to [control pytest behavior](doc/unit_tests.md#control-pytest-behavior).
+
+### Linters
+
+Install `pycodestyle`:
+
+```
+(pydev) $ pip install pycodestyle
+```
+
+Test pycodestyle:
+
+```
+(pydev) $ pycodestyle --max-line-length=100 .
+```
+
+Install `pylint` and `mypy`:
+
+```
+(pydev) $ pip install pylint
+(pydev) $ pip install mypy
+```
+
+*Note: `pylint` and `mypy` come with `Python`, but these versions are out of
+date and will cause errors.*
+
+- Run the above `pip install` to get the updated versions. (This also updates
+  several other packages.)
+- Close and reopen the shell for these changes to take effect (otherwise you
+  will get mystery linting errors).
+- *Remember to reactivate your virtual environment after opening a new shell!*
+
+Test `pylint`:
+
+```
+(pydev) $ pylint .
+```
+
+**Note**: you need to have already installed either `pygame` or `pygame-ce`,
+otherwise you will get this error:
+
+```
+game.py:65:0: E0401: Unable to import 'pygame' (import-error)
+```
+
+Test `mypy`:
+
+```
+$ mypy --strict .
+```
+
+If all of the above are running without error, you have everything set up correctly.
+
+Run the linters using the Makefile recipe:
+
+```
+$ make lint
+```
+

@@ -25,7 +25,7 @@ Create a `.pytest.ini` file:
 
 ```
 [pytest]
-doctest_optionflags = NORMALIZE_WHITEPSPACE
+doctest_optionflags = NORMALIZE_WHITESPACE ELLIPSIS
 ```
 
 Alternatively, you can use comments directly in the code to apply options to

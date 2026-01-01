@@ -16,6 +16,7 @@ else
     ln -rs ../${repo}/engine/ .
     ln -rs ../${repo}/main.py .
     ln -rs ../${repo}/Makefile .
+    ln -rs ../${repo}/requirements.txt .
     ln -rs ../${repo}/.mypy.ini .
     ln -rs ../${repo}/.pylintrc .
     ln -rs ../${repo}/.pytest.ini .
