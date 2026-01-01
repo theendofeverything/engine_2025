@@ -6,13 +6,20 @@ then
     echo "pwd: $PWD"
     exit 1
 else
-    ln -rs ../${repo}/doc/ .
-    ln -rs ../${repo}/fonts/ .
+    # Create an empty 'doc/' folder for the project
+    mkdir -p doc
+    # Create a 'font/' folder for the project
+    mkdir -p fonts
+    # Link to the font used in the debug HUD
+    ln -rs ../${repo}/fonts/ProggyClean.ttf fonts/
+    # Link to the engine, entry point, make recipes, and Python config files
     ln -rs ../${repo}/engine/ .
-    ln -rs ../${repo}/Makefile .
     ln -rs ../${repo}/main.py .
+    ln -rs ../${repo}/Makefile .
     ln -rs ../${repo}/.mypy.ini .
     ln -rs ../${repo}/.pylintrc .
     ln -rs ../${repo}/.pytest.ini .
+    # Copy in a starting point for the game code
+    touch README.md
     cp -i ../${repo}/game.py .
 fi

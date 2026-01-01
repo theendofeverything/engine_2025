@@ -1,4 +1,7 @@
 # Python linters
+- pycodestyle: https://pycodestyle.pycqa.org/en/latest/
+- pylint: https://pylint.readthedocs.io/en/stable/
+- mypy: https://mypy.readthedocs.io/en/stable/
 
 ## mypy - type checking
 

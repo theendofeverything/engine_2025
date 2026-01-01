@@ -10,12 +10,12 @@ class Colors:
 
     Use as a name-spaced constant:
     >>> Colors.text
-    (255, 255, 255, 255)
+    Color(255, 255, 255, 255)
 
     Or create an instance and use as a constant:
     >>> colors = Colors()
     >>> colors.text
-    (255, 255, 255, 255)
+    Color(255, 255, 255, 255)
     """
     background:     Color = Color(30, 60, 90)
     line:           Color = Color(120, 150, 60)

@@ -235,6 +235,8 @@ class Game:
         for cross in crosses:
             for line in cross.lines:
                 # Randomize the line before appending it
+                # TODO: Store the randomized values in a buffer that only updates when clocked, then
+                # add the values from the buffer here.
                 wiggle_line = self.art.randomize_line(line, wiggle=0.01)
                 self.art.lines.append(wiggle_line)
 
