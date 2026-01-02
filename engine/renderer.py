@@ -12,11 +12,20 @@ class Renderer:
     game:                   "Game"
     window:                 pygame.Window = pygame.Window()
     window_surface:         pygame.Surface = field(init=False)
+    is_fullscreen:          bool = False
 
     def __post_init__(self) -> None:
         # NOTE: from pygame-ce docs:
         # Don't use window.get_surface() when using hardware rendering
         self.window_surface = self.window.get_surface()
+
+    def toggle_fullscreen(self) -> None:
+        """Toggle between windowed mode and fullscreen."""
+        self.is_fullscreen = not self.is_fullscreen
+        if self.is_fullscreen:
+            self.window.set_fullscreen(desktop=True)
+        else:
+            self.window.set_windowed()
 
     def render_all(self) -> None:
         """Called from the game loop."""
@@ -25,7 +34,6 @@ class Renderer:
         self.render_shapes()
         if game.debug.hud.is_visible:
             self.render_debug_hud()
-        # pygame.display.flip()
         self.window.flip()
 
     def render_shapes(self) -> None:

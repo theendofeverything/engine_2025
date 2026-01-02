@@ -140,12 +140,9 @@ class UI:
         game.coord_sys.pcs_origin.x += translation.x
         game.coord_sys.pcs_origin.y += translation.y
         log.debug(f"Event WINDOWSIZECHANGED, new size: ({event.x}, {event.y})")
-        # log.debug(f"... pygame.display.get_window_size(): "
-        #           f"{pygame.display.get_window_size()}")
         log.debug(f"... game.renderer.window.size: {game.renderer.window.size}")
         # NOTE: from pygame-ce docs:
         # Don't use window.get_surface() when using hardware rendering
-        # log.debug(f"... pygame.display.get_surface().get_size(): "
         log.debug(f"... game.renderer.window_surface.get_size(): "
                   f"{game.renderer.window_surface.get_size()}")
 
@@ -214,6 +211,9 @@ class UI:
             case pygame.K_c:
                 log.debug("User pressed 'c' to clear debug snapshot artwork.")
                 game.debug.art.reset_snapshots()
+            case pygame.K_F11:
+                log.debug("User pressed 'F12' to toggle fullscreen.")
+                game.renderer.toggle_fullscreen()
             case pygame.K_F12:
                 log.debug("User pressed 'F12' to toggle debug HUD.")
                 game.debug.hud.is_visible = not game.debug.hud.is_visible

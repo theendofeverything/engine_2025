@@ -5,6 +5,7 @@
 * [x] Fill the screen with a color
     * This required that I:
         * store the Surface returned by pygame.display.set_mode in the Game
+            * Update 2026-01-01: No. Use pygame-ce instead of pygame and create a pygame.Window.
         * pass the Game to loop()
 * [x] Draw something on the screen
     * I drew a line using pygame.draw.line()
@@ -51,7 +52,7 @@
 * [x] Simplify debug HUD variable snapshots
 * [x] Create a BufferInt to buffer the display of FPS in the HUD.
 * [x] Add animation to the artwork: see 'Art.randomize_line' and 'Game.draw_a_cross'.
-* [ ] Replace code using 'pygame.display'
+* [x] Replace code using 'pygame.display'
     * Use the pygame-ce version: 'window = pygame.Window', 'window_surface = window.get_surface()'
     * Then 'pygame.display.flip()' becomes 'window.flip()'
     * Then 'pygame.display.get_window_size()' becomes 'game.renderer.window.size'
@@ -121,35 +122,33 @@ class Game:
         pygame.font.init()
         self.debug_font = "fonts/ProggyClean.ttf"
 
-        # Set the window size
-        window_size = (60*16, 60*9)
-
         # Handle rendering in renderer.py
         # Note: The window size is just an initial value.
-        #   On WINDOWSIZECHANGED events, the window size and the display surface size will
-        #   automatically adjust to the new size value. It is not necessary to create a new
-        #   window_surface with the new window size. See handle_windowsizechanged_events.
-        # Old pygame style:
-        # self.renderer = Renderer(
-        #         game=self,
-        #         window_surface=pygame.display.set_mode(  # Get a window from the OS
-        #             size=window_size,
-        #             flags=pygame.RESIZABLE
-        #             ))
+        #   On WINDOWSIZECHANGED events, the window size and the software rendering
+        #   Surface size will automatically adjust to the new size value.
+        #   It is not necessary to create a new window_surface with the new window size.
+        #   See handle_windowsizechanged_events.
         self.renderer = Renderer(game=self)
+        self.renderer.window.title = "Example game"
+        self.renderer.window.size = (60*16, 60*9)
+        self.renderer.window.resizable = True
+        # Additional window settings used during development:
+        self.renderer.window.always_on_top = True
+        self.renderer.window.position = (950, 0)
+        # self.renderer.window.opacity = 0.8              # This is neat
+        self.renderer.toggle_fullscreen()
 
         # Handle all user interface events in ui.py (keyboard, mouse, panning, zoom)
         self.ui = UI(game=self, panning=Panning())
 
         # Set the GCS to fit the window size and center the GCS origin in the window.
         self.coord_sys = CoordinateSystem(
-                window_size=Vec2D.from_tuple(window_size),
+                window_size=Vec2D.from_tuple(self.renderer.window.size),
                 panning=self.ui.panning)
 
     def run(self, log: logging.Logger) -> None:
         """Run the game."""
-        using_pygame_ce = getattr(pygame, "IS_CE", False)
-        log.debug(f"{'Pygame CE' if using_pygame_ce else 'Pygame'}")
+        log.debug(f"Window supports OpenGL: {self.renderer.window.opengl}")
         while True:
             self.loop(log)
 
