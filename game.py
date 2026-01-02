@@ -78,8 +78,10 @@ from engine.renderer import Renderer
 from engine.geometry_types import Point2D, Vec2D
 from engine.drawing_shapes import Cross
 from engine.colors import Colors
+from engine.entity import Entity
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class Game:
     """Top-level game code.
@@ -104,7 +106,8 @@ class Game:
          art=Art(...),
          renderer=Renderer(...),
          ui=UI(...),
-         coord_sys=CoordinateSystem(...))
+         coord_sys=CoordinateSystem(...),
+         entities={...})
     """
     # Instance variables defined in the implicit __init__()
     debug:      Debug = Debug()     # Display debug prints in HUD and overlay debug art
@@ -115,6 +118,7 @@ class Game:
     renderer:   Renderer = field(init=False)
     ui:         UI = field(init=False)                      # Keyboard, mouse, panning, zoom
     coord_sys:  CoordinateSystem = field(init=False)        # Track state of PCS and GCS
+    entities:   dict[str, Entity] = field(init=False)   # Game characters like the player
 
     def __post_init__(self) -> None:
         # Load pygame
@@ -146,9 +150,14 @@ class Game:
                 window_size=Vec2D.from_tuple(self.renderer.window.size),
                 panning=self.ui.panning)
 
+        # Create entities (like the Player)
+        self.entities = {}
+        self.entities["cross"] = Entity()
+
     def run(self, log: logging.Logger) -> None:
         """Run the game."""
         log.debug(f"Window supports OpenGL: {self.renderer.window.opengl}")
+        log.debug(f"Entities: {self.entities}")
         while True:
             self.loop(log)
 

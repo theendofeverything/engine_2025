@@ -213,6 +213,31 @@ class CoordinateSystem:
         return Point2D(self.window_size.x/2, self.window_size.y/2)
 ```
 
+A final common pitfall is to get `AttributeError`:
+
+```python
+@dataclass
+class Game:
+    ...
+    entities:   dict[str, Entity] = field(init=False)   # Game characters like the player
+    ...
+    def __post_init__(self) -> None:
+        self.entities["cross"] = Entity()
+```
+
+This is missing a crucial piece. We get this error:
+
+```
+AttributeError: 'Game' object has no attribute 'entities'
+```
+
+I need to create the dict before I can start assigning entries to it:
+
+```python
+        self.entities = {}  # <-------------- DON'T FORGET THIS!!!!
+        self.entities["cross"] = Entity()
+```
+
 ## Printing classes
 
 Use the `__str__()` method for custom printing. This is helpful for debugging.
