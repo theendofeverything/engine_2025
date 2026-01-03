@@ -215,9 +215,12 @@ class Game:
 
     def update_entities(self) -> None:
         """Update the state of all entities based on counters and events."""
+        keys = self.ui.keys
         timing = self.timing
+        art = self.art
         for entity in self.entities.values():
-            entity.update(timing)
+            entity.update(timing, keys)
+            entity.draw(art)
 
         def debug_entities() -> None:
             hud = self.debug.hud

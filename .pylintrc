@@ -15,6 +15,9 @@ max-module-lines=700
 # List of note tags to take in consideration, separated by a comma.
 notes=TODO
 
+[MAIN]
+max-branches=14
+
 [STRING]
 
 # This flag controls whether inconsistent-quotes generates a warning when the

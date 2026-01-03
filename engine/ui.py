@@ -45,17 +45,44 @@ class UIMouse:
 
 
 @dataclass
+class UIKeys:
+    """Track key up/down."""
+    left_arrow:     bool = False
+    right_arrow:    bool = False
+    up_arrow:       bool = False
+    down_arrow:     bool = False
+
+
+@dataclass
 class UI:
     """Handle user interface events."""
     game:           "Game"
     panning:        Panning                             # Track panning state
     mouse:          UIMouse = UIMouse()                 # Track mouse button down/up
+    keys:           UIKeys = UIKeys()                   # Track key up/down
 
     def handle_events(self, log: logging.Logger) -> None:
         """Handle events."""
         self.consume_event_queue(log)
         self.debug_mouse()
+        self.debug_keys()
         self.update_panning()
+
+    def debug_keys(self) -> None:
+        """Debug key presses for game controls."""
+        hud = self.game.debug.hud
+        keys = self.keys
+        hud.print(f"|\n+- UI -> Keys ({FILE})")
+        keys_pressed = ""
+        if keys.left_arrow:
+            keys_pressed += "LEFT"
+        if keys.right_arrow:
+            keys_pressed += "RIGHT"
+        if keys.up_arrow:
+            keys_pressed += "UP"
+        if keys.down_arrow:
+            keys_pressed += "DOWN"
+        hud.print(f"|  +- keys: {keys_pressed}")
 
     def debug_mouse(self) -> None:
         """Debug mouse position and buttons."""
@@ -122,6 +149,7 @@ class UI:
             match event.type:
                 case pygame.QUIT: sys.exit()
                 case pygame.KEYDOWN: self.handle_keydown_events(event, kmod, log)
+                case pygame.KEYUP: self.handle_keyup_events(event)
                 case pygame.WINDOWSIZECHANGED: self.handle_windowsizechanged_events(event, log)
                 case pygame.MOUSEBUTTONDOWN: self.handle_mousebutton_down_events(event, log)
                 case pygame.MOUSEBUTTONUP: self.handle_mousebutton_up_events(event, log)
@@ -200,6 +228,18 @@ class UI:
             case _:
                 pass
 
+    def handle_keyup_events(self, event: pygame.event.Event) -> None:
+        """Handle keyup events (keyboard key releases)."""
+        match event.key:
+            case pygame.K_LEFT:
+                self.keys.left_arrow = False
+            case pygame.K_RIGHT:
+                self.keys.right_arrow = False
+            case pygame.K_UP:
+                self.keys.up_arrow = False
+            case pygame.K_DOWN:
+                self.keys.down_arrow = False
+
     def handle_keydown_events(self,
                               event: pygame.event.Event,
                               kmod: int,
@@ -235,6 +275,14 @@ class UI:
                 if kmod & pygame.KMOD_CTRL:
                     game.debug.hud.font_size.decrease()
                     log.debug(f"User pressed Ctrl_-. Font size: {game.debug.hud.font_size.value}.")
+            case pygame.K_LEFT:
+                self.keys.left_arrow = True
+            case pygame.K_RIGHT:
+                self.keys.right_arrow = True
+            case pygame.K_UP:
+                self.keys.up_arrow = True
+            case pygame.K_DOWN:
+                self.keys.down_arrow = True
 
     def log_unused_events(self, event: pygame.event.Event, log: logging.Logger) -> None:
         """Log events that I have not found a use for yet."""

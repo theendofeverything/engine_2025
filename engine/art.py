@@ -32,3 +32,11 @@ class Art:
                           line.end.y + random.uniform(-1*wiggle, wiggle)
                           )
                       )
+
+    def draw_lines(self, points: list[Point2D]) -> None:
+        """Draw lines given a list of points."""
+        # Draw lines between pairs of points
+        for i in range(len(points)-1):
+            self.lines.append(Line2D(points[i], points[i+1]))
+        # Draw line from last point back to first point
+        self.lines.append(Line2D(points[-1], points[0]))
