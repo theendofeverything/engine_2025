@@ -57,28 +57,32 @@ class Entity:
         self.set_initial_points()
         art.draw_lines(self.points)
 
-    def update(self, timing: Timing, keys: UIKeys) -> None:
+    def update(self, timing: Timing, ui_keys: UIKeys) -> None:
         """Update entity state based on the Timing -> Ticks and UI -> UIKeys."""
         if not timing.is_paused:
-            # TODO: Use counter for wigging animation
-            # counter = timing.ticks['game'].counters[self.tick_counter_name]
-            self.move(keys)
+            self.move(ui_keys)
+            self.animate(timing)
 
-    def move(self, keys: UIKeys) -> None:
+    def move(self, ui_keys: UIKeys) -> None:
         """Move the entity based on UI.keys"""
         origin = self.origin
         speed = 0.01
-        if keys.left_arrow:
-            origin.x -= speed
-        if keys.right_arrow:
-            origin.x += speed
-        if keys.up_arrow:
-            origin.y += speed
-        if keys.down_arrow:
-            origin.y -= speed
+        if ui_keys.left_arrow:  origin.x -= speed
+        if ui_keys.right_arrow: origin.x += speed
+        if ui_keys.up_arrow:    origin.y += speed
+        if ui_keys.down_arrow:  origin.y -= speed
+
+    def animate(self, timing: Timing) -> None:
+        """Animate the entity.
+
+        Animation speed is clocked by Timing.ticks['game'].counters[counter_name].
+        """
+        # Use counter for wigging animation
+        counter = timing.ticks['game'].counters[self.tick_counter_name]
+        origin = self.origin
         # TODO: This works! Change this to wiggling.
-        # if counter.is_period:
-        #     origin.x += 0.01
-        # For TickCounterWithClock:
+        if counter.is_period:
+            origin.x += 0.01
+        # # For TickCounterWithClock:
         # if counter.clocked:
         #     origin.x += 0.01

@@ -362,7 +362,8 @@ class Matrix2DH:
                          translation=Vec2D(
                              x=s*(-d*t.x + c*t.y),
                              y=s*(b*t.x - a*t.y)
-                             ))
+                             )
+                         )
 
     def multiply_vec(self, v: Vec2D) -> Vec2D:
         """Multiply matrix by 2D vector in homogeneous coordinates.

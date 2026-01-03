@@ -41,7 +41,7 @@ class Cross:
                     Line2D(start=Point2D(self.origin.x + r, self.origin.y - r),
                            end=Point2D(self.origin.x - r, self.origin.y + r),
                            color=self.color
-                           )
+                           ),
                     ]
         else:
             self.lines = [
@@ -52,5 +52,5 @@ class Cross:
                     Line2D(start=Point2D(self.origin.x, self.origin.y - r),
                            end=Point2D(self.origin.x, self.origin.y + r),
                            color=self.color
-                           )
+                           ),
                     ]

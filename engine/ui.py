@@ -149,7 +149,7 @@ class UI:
             match event.type:
                 case pygame.QUIT: sys.exit()
                 case pygame.KEYDOWN: self.handle_keydown_events(event, kmod, log)
-                case pygame.KEYUP: self.handle_keyup_events(event)
+                case pygame.KEYUP: self.handle_keyup_events(event, log)
                 case pygame.WINDOWSIZECHANGED: self.handle_windowsizechanged_events(event, log)
                 case pygame.MOUSEBUTTONDOWN: self.handle_mousebutton_down_events(event, log)
                 case pygame.MOUSEBUTTONUP: self.handle_mousebutton_up_events(event, log)
@@ -228,18 +228,16 @@ class UI:
             case _:
                 pass
 
-    def handle_keyup_events(self, event: pygame.event.Event) -> None:
+    def handle_keyup_events(self, event: pygame.event.Event, log: logging.Logger) -> None:
         """Handle keyup events (keyboard key releases)."""
+        log.debug(f"Keyup: {event}")
         match event.key:
-            case pygame.K_LEFT:
-                self.keys.left_arrow = False
-            case pygame.K_RIGHT:
-                self.keys.right_arrow = False
-            case pygame.K_UP:
-                self.keys.up_arrow = False
-            case pygame.K_DOWN:
-                self.keys.down_arrow = False
+            case pygame.K_LEFT:     self.keys.left_arrow = False
+            case pygame.K_RIGHT:    self.keys.right_arrow = False
+            case pygame.K_UP:       self.keys.up_arrow = False
+            case pygame.K_DOWN:     self.keys.down_arrow = False
 
+    # pylint: disable=too-many-branches
     def handle_keydown_events(self,
                               event: pygame.event.Event,
                               kmod: int,
@@ -275,14 +273,10 @@ class UI:
                 if kmod & pygame.KMOD_CTRL:
                     game.debug.hud.font_size.decrease()
                     log.debug(f"User pressed Ctrl_-. Font size: {game.debug.hud.font_size.value}.")
-            case pygame.K_LEFT:
-                self.keys.left_arrow = True
-            case pygame.K_RIGHT:
-                self.keys.right_arrow = True
-            case pygame.K_UP:
-                self.keys.up_arrow = True
-            case pygame.K_DOWN:
-                self.keys.down_arrow = True
+            case pygame.K_LEFT:     self.keys.left_arrow = True
+            case pygame.K_RIGHT:    self.keys.right_arrow = True
+            case pygame.K_UP:       self.keys.up_arrow = True
+            case pygame.K_DOWN:     self.keys.down_arrow = True
 
     def log_unused_events(self, event: pygame.event.Event, log: logging.Logger) -> None:
         """Log events that I have not found a use for yet."""

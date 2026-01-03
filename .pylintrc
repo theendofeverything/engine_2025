@@ -16,7 +16,7 @@ max-module-lines=700
 notes=TODO
 
 [MAIN]
-max-branches=14
+# max-branches=14
 
 [STRING]
 

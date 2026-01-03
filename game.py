@@ -215,11 +215,11 @@ class Game:
 
     def update_entities(self) -> None:
         """Update the state of all entities based on counters and events."""
-        keys = self.ui.keys
+        ui_keys = self.ui.keys
         timing = self.timing
         art = self.art
         for entity in self.entities.values():
-            entity.update(timing, keys)
+            entity.update(timing, ui_keys)
             entity.draw(art)
 
         def debug_entities() -> None:
@@ -293,8 +293,12 @@ class Game:
         """Draw a cross in the GCS."""
         # Create artwork that uses lines
         crosses: list[Cross] = [
-            Cross(origin=Point2D(-0.1, 0.1), size=0.2, rotate45=True, color=Colors.line)
-            ]
+                Cross(origin=Point2D(-0.1, 0.1),
+                      size=0.2,
+                      rotate45=True,
+                      color=Colors.line
+                      ),
+                ]
         # Append line artwork to art.lines
         for cross in crosses:
             for line in cross.lines:
@@ -308,9 +312,14 @@ class Game:
         """Draw two crosses in the GCS to help me debug zooming about a point."""
         # Create debug artwork that uses lines
         crosses: list[Cross] = [
-            Cross(origin=Point2D(0, 0), size=0.1, color=Colors.line_debug),
-            Cross(origin=Point2D(0.5, 0.5), size=0.1, rotate45=True, color=Colors.line_debug)
-            ]
+                Cross(origin=Point2D(0, 0),
+                      size=0.1,
+                      color=Colors.line_debug),
+                Cross(origin=Point2D(0.5, 0.5),
+                      size=0.1,
+                      rotate45=True,
+                      color=Colors.line_debug),
+                ]
         # Copy the line artwork to debug.art.lines
         for cross in crosses:
             for line in cross.lines:
