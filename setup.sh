@@ -20,6 +20,7 @@ else
     ln -rs ../${repo}/.mypy.ini .
     ln -rs ../${repo}/.pylintrc .
     ln -rs ../${repo}/.pytest.ini .
+    ln -rs ../${repo}/tox.ini .
     # Copy in a starting point for the game code
     touch README.md
     cp -i ../${repo}/game.py .

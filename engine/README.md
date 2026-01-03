@@ -217,6 +217,7 @@ copy in as symbolic links are marked with an asterisk (`*`).
 ├── game.py <------------------ TOP LEVEL GAME CODE (the only editable file)
 ├── *main.py <----------------- ENTRY POINT
 ├── *Makefile <---------------- RECIPES FOR RUNNING, LINTING, TESTING, AND TAGGING
+├── *tox.ini <-    ------------ LINTING CONFIGURATION
 ├── *.mypy.ini <--------------- LINTING CONFIGURATION
 ├── *.pylintrc <--------------- LINTING CONFIGURATION
 ├── *.pytest.ini <------------- TESTING CONFIGURATION
@@ -259,6 +260,7 @@ local file they link to).
 ├── game.py
 ├── main.py -> ../engine_2025/main.py
 ├── Makefile -> ../engine_2025/Makefile
+├── tox.ini -> ../engine_2025/tox.ini
 ├── .mypy.ini -> ../engine_2025/.mypy.ini
 ├── .pylintrc -> ../engine_2025/.pylintrc
 ├── .pytest.ini -> ../engine_2025/.pytest.ini
