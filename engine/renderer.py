@@ -10,14 +10,18 @@ from .colors import Colors
 class Renderer:
     """Renderer."""
     game:                   "Game"
-    window:                 pygame.Window = pygame.Window()
+    window:                 pygame.Window = field(init=False)
     window_surface:         pygame.Surface = field(init=False)
     is_fullscreen:          bool = False
 
     def __post_init__(self) -> None:
+        """Get an OS window and a handle to the window's surface for software rendering."""
+        # pygame.Window() created here to prevent Vim omnicompletion from opening a window.
+        self.window = pygame.Window()                   # OS Window
+
         # NOTE: from pygame-ce docs:
         # Don't use window.get_surface() when using hardware rendering
-        self.window_surface = self.window.get_surface()
+        self.window_surface = self.window.get_surface()  # Handle to window's surface
 
     def toggle_fullscreen(self) -> None:
         """Toggle between windowed mode and fullscreen."""

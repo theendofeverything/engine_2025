@@ -25,6 +25,7 @@ User actions:
     Press Ctrl_-: Decrease debug HUD font.
 """
 import sys                  # Exit with sys.exit()
+import pathlib
 import logging
 from dataclasses import dataclass
 import pygame
@@ -32,6 +33,8 @@ from .geometry_types import Vec2D, Point2D
 from .panning import Panning
 from .drawing_shapes import Line2D
 from .colors import Colors
+
+FILE = pathlib.Path(__file__).name
 
 
 @dataclass
@@ -58,7 +61,7 @@ class UI:
         """Debug mouse position and buttons."""
         debug = self.game.debug
         coord_sys = self.game.coord_sys
-        debug.hud.print("|\n+- UI -> Mouse:")
+        debug.hud.print(f"|\n+- UI -> Mouse ({FILE})")
 
         def debug_mouse_position() -> None:
             """Display mouse position in GCS and PCS."""
@@ -72,7 +75,7 @@ class UI:
             mouse_pcs = coord_sys.xfm(
                     mouse_gcs,
                     coord_sys.matrix.gcs_to_pcs)
-            debug.hud.print(f"|  +- {mouse_gcs} GCS, {mouse_pcs.fmt(0.0)} PCS")
+            debug.hud.print(f"|  +- mouse.get_pos(): {mouse_gcs} GCS, {mouse_pcs.fmt(0.0)} PCS")
         debug_mouse_position()
 
         def debug_mouse_buttons() -> None:
@@ -95,7 +98,7 @@ class UI:
         coord_sys = self.game.coord_sys
         debug = self.game.debug
         panning = self.panning
-        debug.hud.print(f"|\n+- UI -> Panning: {panning.is_active}")
+        debug.hud.print(f"|\n+- UI -> Panning: {panning.is_active} ({FILE})")
         debug.hud.print(f"|        +- .start: {panning.start.fmt(0.0)}")
         debug.hud.print(f"|        +- .end: {panning.end.fmt(0.0)}")
         debug.hud.print(f"|        +- .vector: {panning.vector.fmt(0.0)}")

@@ -57,15 +57,25 @@
     * Then 'pygame.display.flip()' becomes 'window.flip()'
     * Then 'pygame.display.get_window_size()' becomes 'game.renderer.window.size'
 * [ ] Control the speed of the animation using a TickCounter.
-* [ ] Change the structure of Ticks to be a dict of TickCounters.
+* [ ] Change the structure of Tick to be a dict of TickCounters.
 * [ ] Add a playable character (something the user can move around).
 * [ ] Add collision detection.
+* [ ] Make window opacity user-controllable
 * [ ] Improve debug HUD:
     * [ ] Provide ability to color debug HUD text to make it easier to notice special values.
     * [ ] Put a transparent background behind the debug hud so that it is easier to read.
+    * [ ] Standardize HUD formatting:
+        * [ ] Use left-aligned formatting to create tables
+        * [ ] Make a syntax for displaying a tree structure of data
+    * [ ] Make HUD interactive:
+        * [ ] Keyboard/mouse interactions to collapse/expand tree nodes
+* [ ] Improve frame rate metrics:
+    * [ ] Display average FPS instead of displaying one value every 30 frames
+    * [ ] Display the percentage of the game loop period that is utilized
 """
 
 from dataclasses import dataclass, field
+import pathlib
 import logging
 import pygame
 from engine.debug import Debug
@@ -79,6 +89,8 @@ from engine.geometry_types import Point2D, Vec2D
 from engine.drawing_shapes import Cross
 from engine.colors import Colors
 from engine.entity import Entity
+
+FILE = pathlib.Path(__file__).name
 
 
 # pylint: disable=too-many-instance-attributes
@@ -140,7 +152,7 @@ class Game:
         self.renderer.window.always_on_top = True
         self.renderer.window.position = (950, 0)
         # self.renderer.window.opacity = 0.8              # This is neat
-        self.renderer.toggle_fullscreen()
+        # self.renderer.toggle_fullscreen()               # Start in fullscreen
 
         # Handle all user interface events in ui.py (keyboard, mouse, panning, zoom)
         self.ui = UI(game=self, panning=Panning())
@@ -152,7 +164,7 @@ class Game:
 
         # Create entities (like the Player)
         self.entities = {}
-        self.entities["cross"] = Entity()
+        self.entities["cross"] = Entity(tick_counter_name="period_3")
 
     def run(self, log: logging.Logger) -> None:
         """Run the game."""
@@ -165,38 +177,57 @@ class Game:
         """Loop until the user quits."""
         # Update debug
         self.debug.hud.reset()                          # Clear the debug HUD
-        self.debug_top_values()                         # Load debug HUD with top values
+        self.debug_hud_begin()                          # Load first values in debug HUD
         self.reset_art()                                # Clear old art
         self.ui.handle_events(log)                      # Handle all user events
-        self.update_animations()                        # Advance animation ticks
+        self.update_frame_counters()                    # Advance frame-based ticks
+        self.update_entities()                          #
         self.draw_remaining_art()                       # Draw any remaining art not already drawn
         self.debug.display_snapshots_in_hud()           # Print snapshots in HUD last
         self.renderer.render_all()                      # Render all art and HUD
         self.timing.maintain_framerate(fps=60)          # Run at 60 FPS
 
-    def update_animations(self) -> None:
-        """Update animations based on the frame count."""
+    def update_frame_counters(self) -> None:
+        """Update the frame tick counters (animations are clocked by frame ticks)."""
         timing = self.timing
         # Video frames always advance
-        timing.video_ticks.update()
+        timing.ticks["video"].update()
         if not timing.is_paused:
             # Game frames only advance if the game is not paused
-            timing.game_ticks.update()
+            timing.ticks["game"].update()
 
         def debug_ticks() -> None:
             hud = self.debug.hud
-            heading = "|\n+- loop() -> update_animations()"
+            heading = f"|\n+- Timing -> Tick ({FILE})"
             hud.print(heading)
-            hud.print(f"| +- video_ticks.frames: {timing.video_ticks.frames}")
-            hud.print("| +- video_ticks.counter dict:")
-            for counter in timing.video_ticks.counter.values():
-                hud.print(f"|    +- {counter}")
-            paused = "--Paused--" if timing.is_paused else ""
-            hud.print(f"| +- game_ticks.frames: {timing.game_ticks.frames} {paused}")
-            hud.print("| +- game_ticks.counter dict:")
-            for counter in timing.game_ticks.counter.values():
-                hud.print(f"|    +- {counter}")
+            hud.print("|  +- ticks['video']")
+            hud.print(f"|     +- frames: {timing.ticks['video'].frames}")
+            hud.print("|     +- counters dict:")
+            for counter in timing.ticks["video"].counters.values():
+                hud.print(f"|        +- {counter}")
+            paused = "--Paused--" if timing.is_paused else "(<Space> to pause)"
+            hud.print("|  +- ticks['game']")
+            hud.print(f"|     +- frames: {timing.ticks['game'].frames} {paused}")
+            hud.print("|     +- counters dict:")
+            for counter in timing.ticks["game"].counters.values():
+                hud.print(f"|        +- {counter}")
         debug_ticks()
+
+    def update_entities(self) -> None:
+        """Update the state of all entities based on counters and events."""
+        timing = self.timing
+        for entity in self.entities.values():
+            entity.update(timing)
+
+        def debug_entities() -> None:
+            hud = self.debug.hud
+            heading = f"|\n+- Entities ({FILE})"
+            hud.print(heading)
+            for entity, entity_value in self.entities.items():
+                hud.print(f"|  +- {entity}:")
+                for attr, attr_value in entity_value.__dict__.items():
+                    hud.print(f"|     +- {attr}: {attr_value}")
+        debug_entities()
 
     def reset_art(self) -> None:
         """Clear out old artwork: application and debug."""
@@ -208,45 +239,52 @@ class Game:
         self.draw_a_cross()                             # Draw application artwork
         self.draw_debug_crosses()                       # Draw debug artwork
 
-    def debug_top_values(self) -> None:
-        """Most of the values to display in the HUD are printed in this function."""
-
+    def debug_hud_begin(self) -> None:
+        """The first values displayed in the HUD are printed in this function."""
         debug = self.debug
+        debug_hud = f"Debug HUD ({FILE})"
+        # Version values
         using_pygame_ce = getattr(pygame, "IS_CE", False)
         pygame_version = f"pygame{'-ce' if using_pygame_ce else ''} {pygame.version.ver}"
         sdl_version = f"SDL {pygame.version.SDL}"
-        debug.hud.print(f"{'debug_top_values()':<30}"
-                        f"{pygame_version:<30}"
-                        f"{'debug.hud.font_size:':<22}"
-                        f"{debug.hud.font_size.value}")
-        debug.hud.print(f"{'|':<30}"
-                        f"{sdl_version:<30}"
-                        f"{'debug.art.is_visible:':<22}"
-                        f"{debug.art.is_visible} ('d' to toggle)")
+        # Debug values
+        debug_hud_font_size = f"debug.hud.font_size:      {debug.hud.font_size.value}"
+        debug_art_is_visible = f"debug.hud.art.is_visible: {debug.art.is_visible} ('d' to toggle)"
+        debug.hud.print(f"{debug_hud:<25}"
+                        f"{pygame_version:<25}"
+                        f"{debug_hud_font_size:<25}")
+        debug.hud.print(f"{'---------':<25}"
+                        f"{sdl_version:<25}"
+                        f"{debug_art_is_visible:<25}")
 
         def debug_fps() -> None:
             """Display frame duration in milliseconds and rate in FPS."""
             timing = self.timing
             # # Old: use get_fps() -- it averages every 10 frames
             # fps = timing.clock.get_fps()
-            if timing.video_ticks.counter["hud_fps"].is_period:
+            # if timing.ticks["video"].counters["hud_fps"].clocked:
+            if timing.ticks["video"].counters["hud_fps"].is_period:
                 # Update buffered milliseconds per frame once every period (30 frames).
-                # See Ticks.counter["hud_fps"] and Ticks.update() for period.
+                # See Tick.counters["hud_fps"] and Tick.update() for period.
                 timing.update_buffered_ms_per_frame()
             # Print buffered versions to HUD
             fps = timing.fps_buffered
             ms_per_frame = timing.ms_per_frame_buffered
-            debug.hud.print(f"|\n+- FPS: {fps:0.1f}, frame period: {ms_per_frame:d}ms")
+            debug.hud.print(f"|\n+- Video frames ({FILE})")
+            debug.hud.print(f"|   +- FPS: {fps:0.1f}")
+            debug.hud.print(f"|   +- Period: {ms_per_frame:d}ms")
 
         def debug_window_size() -> None:
             """Display window size."""
-            debug.hud.print("|\n+- OS window (in pixels)")
+            debug.hud.print(f"|\n+- OS window (in pixels) ({FILE})")
             debug.hud.print(f"|  +- window_size: {self.coord_sys.window_size.fmt(0.0)}")
             debug.hud.print(f"|  +- window_center: {self.coord_sys.window_center.fmt(0.0)}")
 
         debug_fps()
         debug_window_size()
-        debug.hud.print("\nLocals")                     # Local debug prints (e.g., from UI)
+        debug.hud.print("\n------")
+        debug.hud.print(f"Locals ({FILE})")         # Local debug prints (e.g., from UI)
+        debug.hud.print("------")
 
     def draw_a_cross(self) -> None:
         """Draw a cross in the GCS."""

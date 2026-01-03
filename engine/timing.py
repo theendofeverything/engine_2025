@@ -1,9 +1,9 @@
 """Timing is a helper struct to organize Game. It contains all things relating to time: game clock,
 frame period.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import pygame
-from .ticks import Ticks
+from .tick import Tick, TickCounter
 from .buffer_value import BufferInt
 
 
@@ -11,14 +11,30 @@ from .buffer_value import BufferInt
 class Timing:
     """All time-related game instance attributes."""
     clock:                  pygame.time.Clock = pygame.time.Clock()
-    video_ticks:            Ticks = Ticks(clock="video")  # Track video frames to clock HUD FPS
-    game_ticks:             Ticks = Ticks(clock="game")   # Track game frames to clock animations
+    ticks:                  dict[str, Tick] = field(init=False)  # TickCounters for game and video
     is_paused:              bool = False                # Track if game is paused
     ms_per_frame:           int = 16                    # Initial value for debug HUD
     _ms_per_frame_buffer:   BufferInt = BufferInt()     # Buffered value
 
     def __post_init__(self) -> None:
         self.update_buffered_ms_per_frame()
+        self.ticks = {}
+        self.ticks["game"] = Tick()
+        self.ticks["video"] = Tick()
+        for name, tick in self.ticks.items():
+            match name:
+                case "video":
+                    tick.counters = {
+                            "hud_fps": TickCounter(tick, period=30),
+                            }
+                case "game":
+                    tick.counters = {
+                            "period_3": TickCounter(tick, period=3),
+                            }
+        # Assign each tick_counter dict key to its TickCounter.name for display in the debug HUD.
+        for tick in self.ticks.values():
+            for name, tick_counter in tick.counters.items():
+                tick_counter.name = name
 
     def update_buffered_ms_per_frame(self) -> None:
         """Update the buffered value to hold the initial value of milliseconds per frame."""
