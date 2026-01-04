@@ -242,7 +242,13 @@ class Game:
             for entity, entity_value in self.entities.items():
                 hud.print(f"|  +- {entity}:")
                 for attr, attr_value in entity_value.__dict__.items():
-                    hud.print(f"|     +- {attr}: {attr_value}")
+                    # Catch points to print them with desired precision
+                    if attr == "points":
+                        hud.print(f"|     +- {attr}:")
+                        for point in attr_value:
+                            hud.print(f"|        +- !{point.fmt(0.3)}")
+                    else:
+                        hud.print(f"|     +- {attr}: {attr_value}")
         debug_entities()
 
     def reset_art(self) -> None:
