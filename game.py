@@ -175,14 +175,16 @@ class Game:
 
     def loop(self, log: logging.Logger) -> None:
         """Loop until the user quits."""
-        # Update debug
+        # Prologue: reset debug
         self.debug.hud.reset()                          # Clear the debug HUD
         self.debug_hud_begin()                          # Load first values in debug HUD
+        # Game
         self.reset_art()                                # Clear old art
         self.ui.handle_events(log)                      # Handle all user events
-        self.update_frame_counters()                    # Advance frame-based ticks
         self.update_entities()                          #
         self.draw_remaining_art()                       # Draw any remaining art not already drawn
+        # Epilogue: update debug HUD, display, and timing
+        self.update_frame_counters()                    # Advance frame-based ticks
         self.debug.display_snapshots_in_hud()           # Print snapshots in HUD last
         self.renderer.render_all()                      # Render all art and HUD
         self.timing.maintain_framerate(fps=60)          # Run at 60 FPS
