@@ -12,6 +12,31 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 
+# NOT USED
+@dataclass
+class TickCounter:
+    """Count the ticks. Each tick marks one period of something longer than one frame."""
+    tick: Tick
+    period: int
+    count: int = 0
+    name: str = "NameMe"
+
+    def __str__(self) -> str:
+        return f"\"{self.name}\": count={self.count} (ticks every {self.period} frames)"
+
+    @property
+    def is_period(self) -> bool:
+        """True when a whole number of periods has elapsed."""
+        frames = self.tick.frames
+        return (frames % self.period) == 0
+
+    def update(self) -> None:
+        """Update the counter if a whole number of periods has elapsed."""
+        if self.is_period:
+            self.count += 1
+
+
+# NOT USED
 @dataclass
 class Tick:
     """Count frames for clocking animations.
@@ -71,29 +96,6 @@ class Tick:
         tick.frames += 1
         for tick_counter in tick.counters.values():
             tick_counter.update()
-
-
-@dataclass
-class TickCounter:
-    """Count the ticks. Each tick marks one period of something longer than one frame."""
-    tick: Tick
-    period: int
-    count: int = 0
-    name: str = "NameMe"
-
-    def __str__(self) -> str:
-        return f"\"{self.name}\": count={self.count} (ticks every {self.period} frames)"
-
-    @property
-    def is_period(self) -> bool:
-        """True when a whole number of periods has elapsed."""
-        frames = self.tick.frames
-        return (frames % self.period) == 0
-
-    def update(self) -> None:
-        """Update the counter if a whole number of periods has elapsed."""
-        if self.is_period:
-            self.count += 1
 
 
 # NOT USED

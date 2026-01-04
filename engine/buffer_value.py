@@ -60,7 +60,7 @@ Example:
     'Game' uses 'Ticks' to check when to update the buffered values.
     'Game' updates the buffer with 'timing.update_buffered_ms_per_frame()':
 
-            if timing.ticks.counter["hud_fps"].is_period:
+            if timing.frame_counters["video"].clocked_events["hud_fps"].is_period:
                 timing.update_buffered_ms_per_frame()
 """
 

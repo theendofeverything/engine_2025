@@ -164,7 +164,7 @@ class Game:
 
         # Create entities (like the Player)
         self.entities = {}
-        self.entities["cross"] = Entity(tick_counter_name="period_3")
+        self.entities["cross"] = Entity(clocked_event_name="period_3")
 
     def run(self, log: logging.Logger) -> None:
         """Run the game."""
@@ -188,29 +188,40 @@ class Game:
         self.timing.maintain_framerate(fps=60)          # Run at 60 FPS
 
     def update_frame_counters(self) -> None:
-        """Update the frame tick counters (animations are clocked by frame ticks)."""
+        """Update the frame tick counters (animations are clocked by frame ticks).
+
+        Video frames always update.
+        Game frames only update if the game is not paused.
+        """
         timing = self.timing
+        for frame_counter in timing.frame_counters.values():
+            frame_counter.update()
         # Video frames always advance
-        timing.ticks["video"].update()
-        if not timing.is_paused:
-            # Game frames only advance if the game is not paused
-            timing.ticks["game"].update()
+        # timing.ticks["video"].update()
+        # if not timing.is_paused:
+        #     # Game frames only advance if the game is not paused
+        #     timing.ticks["game"].update()
 
         def debug_ticks() -> None:
             hud = self.debug.hud
             heading = f"|\n+- Timing -> Tick ({FILE})"
             hud.print(heading)
-            hud.print("|  +- ticks['video']")
-            hud.print(f"|     +- frames: {timing.ticks['video'].frames}")
-            hud.print("|     +- counters dict:")
-            for counter in timing.ticks["video"].counters.values():
-                hud.print(f"|        +- {counter}")
-            paused = "--Paused--" if timing.is_paused else "(<Space> to pause)"
-            hud.print("|  +- ticks['game']")
-            hud.print(f"|     +- frames: {timing.ticks['game'].frames} {paused}")
-            hud.print("|     +- counters dict:")
-            for counter in timing.ticks["game"].counters.values():
-                hud.print(f"|        +- {counter}")
+            # Video frame counters
+            hud.print("|  +- frame_counters['video']")
+            hud.print(f"|     +- frame_count: {timing.frame_counters['video'].frame_count}")
+            hud.print("|     +- clocked_events:")
+            for clocked_event in timing.frame_counters["video"].clocked_events.values():
+                hud.print(f"|        +- {clocked_event}")
+            # Game frame counters
+            if timing.frame_counters["game"].is_paused:
+                paused = "--Paused--"
+            else:
+                paused = "(<Space> to pause)"
+            hud.print("|  +- frame_counters['game']")
+            hud.print(f"|     +- frame_count: {timing.frame_counters['game'].frame_count} {paused}")
+            hud.print("|     +- clocked_events:")
+            for clocked_event in timing.frame_counters["game"].clocked_events.values():
+                hud.print(f"|        +- {clocked_event}")
         debug_ticks()
 
     def update_entities(self) -> None:
@@ -266,7 +277,7 @@ class Game:
             # # Old: use get_fps() -- it averages every 10 frames
             # fps = timing.clock.get_fps()
             # if timing.ticks["video"].counters["hud_fps"].clocked:
-            if timing.ticks["video"].counters["hud_fps"].is_period:
+            if timing.frame_counters["video"].clocked_events["hud_fps"].is_period:
                 # Update buffered milliseconds per frame once every period (30 frames).
                 # See Tick.counters["hud_fps"] and Tick.update() for period.
                 timing.update_buffered_ms_per_frame()

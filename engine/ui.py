@@ -260,8 +260,10 @@ class UI:
                 game.debug.hud.is_visible = not game.debug.hud.is_visible
             case pygame.K_SPACE:
                 log.debug("User pressed 'Space' to toggle pause.")
-                game.timing.is_paused = not game.timing.is_paused
-                game.debug.snapshots["pause"] = f"game.timing.is_paused: {game.timing.is_paused}"
+                game.timing.frame_counters["game"].toggle_pause()
+                game_is_paused = game.timing.frame_counters["game"].is_paused
+                game.debug.snapshots["pause"] = ("game.timing.frame_counters['game'].is_paused: "
+                                                 f"{game_is_paused}")
             case pygame.K_d:
                 log.debug("User pressed 'd' to toggle debug art overlay.")
                 game.debug.art.is_visible = not game.debug.art.is_visible

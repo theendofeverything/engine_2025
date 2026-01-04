@@ -24,14 +24,14 @@ class Entity:
         draw:
         update:
 
-    >>> entity = Entity(tick_counter_name = "period_3")
+    >>> entity = Entity(clocked_event_name = "period_3")
     >>> entity
-    Entity(tick_counter_name='period_3',
+    Entity(clocked_event_name='period_3',
             origin=Point2D(x=0, y=0),
             size=0.2,
             points=[])
     """
-    tick_counter_name:  str                             # Match name of tick_counter dict key
+    clocked_event_name:  str                            # Match name of clocked_events dict key
     origin:             Point2D = Point2D(0, 0)
     size:               float = 0.2
     points:             list[Point2D] = field(init=False)
@@ -59,7 +59,7 @@ class Entity:
 
     def update(self, timing: Timing, ui_keys: UIKeys) -> None:
         """Update entity state based on the Timing -> Ticks and UI -> UIKeys."""
-        if not timing.is_paused:
+        if not timing.frame_counters["game"].is_paused:
             self.move(ui_keys)
             self.animate(timing)
 
@@ -75,13 +75,13 @@ class Entity:
     def animate(self, timing: Timing) -> None:
         """Animate the entity.
 
-        Animation speed is clocked by Timing.ticks['game'].counters[counter_name].
+        Animation speed is clocked by Timing.frame_counters['game'].clocked_events[event_name].
         """
         # Use counter for wigging animation
-        counter = timing.ticks['game'].counters[self.tick_counter_name]
+        clocked_event = timing.frame_counters["game"].clocked_events[self.clocked_event_name]
         origin = self.origin
         # TODO: This works! Change this to wiggling.
-        if counter.is_period:
+        if clocked_event.is_period:
             origin.x += 0.01
         # # For TickCounterWithClock:
         # if counter.clocked:
