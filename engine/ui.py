@@ -82,7 +82,7 @@ class UI:
             keys_pressed += "UP"
         if keys.down_arrow:
             keys_pressed += "DOWN"
-        hud.print(f"|  +- keys: {keys_pressed}")
+        hud.print(f"|  +- arrow keys: {keys_pressed}")
 
     def debug_mouse(self) -> None:
         """Debug mouse position and buttons."""
