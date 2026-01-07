@@ -117,6 +117,24 @@ class FrameCounter:
         "period_2": event_count=1 (clocked every 2 frames)
     frame_count: 4
         "period_2": event_count=2 (clocked every 2 frames)
+
+    Compare with a period of 1 (event clocked every video frame) to convince myself this works as it
+    should.
+    >>> frame_counter = FrameCounter()
+    >>> frame_counter.clocked_events = {"period_1": ClockedEvent(
+    ... frame_counter, period=1, event_name="period_1")}
+    >>> for i in range(4):
+    ...     frame_counter.update()
+    ...     print(f"frame_count: {frame_counter.frame_count}")
+    ...     print(f"\t{frame_counter.clocked_events['period_1']}")
+    frame_count: 1
+        "period_1": event_count=1 (clocked every 1 frames)
+    frame_count: 2
+        "period_1": event_count=2 (clocked every 1 frames)
+    frame_count: 3
+        "period_1": event_count=3 (clocked every 1 frames)
+    frame_count: 4
+        "period_1": event_count=4 (clocked every 1 frames)
     """
     frame_count: int = 0
     is_paused: bool = False
@@ -159,6 +177,14 @@ class Timing:
                             period=30
                             )
                 case "game":
+                    frame_counter.clocked_events["period_1"] = ClockedEvent(
+                            frame_counter,
+                            period=1
+                            )
+                    frame_counter.clocked_events["period_2"] = ClockedEvent(
+                            frame_counter,
+                            period=2
+                            )
                     frame_counter.clocked_events["period_3"] = ClockedEvent(
                             frame_counter,
                             period=3

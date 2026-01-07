@@ -56,9 +56,9 @@ class Entity:
     >>> entity = Entity(clocked_event_name = "period_3")
     >>> entity
     Entity(clocked_event_name='period_3',
-            origin=Point2D(x=0, y=0),
-            amount_excited=0.01,
-            size=0.2,
+            origin=Point2D(x=..., y=...),
+            amount_excited=AmountExcited(low=..., high=...),
+            size=...,
             points=[Point2D(...), ...Point2D(...)],
             _is_moving=False)
     """
