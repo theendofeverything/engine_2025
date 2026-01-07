@@ -165,7 +165,11 @@ class Game:
 
         # Create entities (like the Player)
         self.entities = {}
+        self.entities["player"] = Entity(clocked_event_name="period_1")
         self.entities["cross"] = Entity(clocked_event_name="period_1")
+        # Track entity name for debugging
+        for name, entity in self.entities.items():
+            entity.entity_name = name
 
     def run(self, log: logging.Logger) -> None:
         """Run the game."""

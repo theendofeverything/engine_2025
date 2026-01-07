@@ -1,10 +1,10 @@
 """Entities are things like the Player that track their own state.
 
-TODO: How do I want to set this up?
-- Start with making a character that is a wiggling cross.
-- Then try a wiggling triangle.
+TODO: How do I want to set up entity artwork?
 - Make methods like "from_cross", "from_lines", "from_points" to provide different ways of making
   entity art.
+- [x] Start with making a character that is a wiggling cross.
+- [ ] Then try a wiggling triangle.
 """
 
 from dataclasses import dataclass, field
@@ -24,6 +24,8 @@ class AmountExcited:
     high: float = 0.015                                 # High excitement
 
 
+# TODO: Create "Player" by checking entity name or create a new class for Player that uses Entity by
+# composition?
 @dataclass
 class Entity:
     """Any character in the game, such as the player.
@@ -62,7 +64,8 @@ class Entity:
             points=[Point2D(...), ...Point2D(...)],
             _is_moving=False)
     """
-    clocked_event_name:  str                            # Match name of clocked_events dict key
+    clocked_event_name: str                             # Match name of clocked_events dict key
+    entity_name:        str = "NameMe"                  # Match name of entities dict key
     origin:             Point2D = Point2D(0, 0)
     amount_excited:     AmountExcited = AmountExcited()
     size:               float = 0.2
