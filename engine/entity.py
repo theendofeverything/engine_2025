@@ -18,6 +18,13 @@ from .ui import UIKeys
 
 
 @dataclass
+class AmountExcited:
+    """How excited the entity animation is"""
+    low: float = 0.004                                  # Low excitement
+    high: float = 0.015                                 # High excitement
+
+
+@dataclass
 class Entity:
     """Any character in the game, such as the player.
 
@@ -57,7 +64,7 @@ class Entity:
     """
     clocked_event_name:  str                            # Match name of clocked_events dict key
     origin:             Point2D = Point2D(0, 0)
-    amount_excited:     float = 0.01                    # How excited the entity animation is
+    amount_excited:     AmountExcited = AmountExcited()
     size:               float = 0.2
     points:             list[Point2D] = field(init=False)
     _is_moving:         bool = False
@@ -120,7 +127,10 @@ class Entity:
             # This works! Change this to wiggling.
             # origin = self.origin
             # origin.x += 0.01
-            amount_excited = self.amount_excited
+            if self.is_moving:
+                amount_excited = self.amount_excited.high
+            else:
+                amount_excited = self.amount_excited.low
             for point in self.points:
                 point.x += random.uniform(-1*amount_excited, amount_excited)
                 point.y += random.uniform(-1*amount_excited, amount_excited)
