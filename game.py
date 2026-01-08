@@ -165,8 +165,14 @@ class Game:
 
         # Create entities (like the Player)
         self.entities = {}
-        self.entities["player"] = Entity(clocked_event_name="period_1")
-        self.entities["cross"] = Entity(clocked_event_name="period_1")
+        self.entities["player"] = Entity(
+                clocked_event_name="period_n",
+                # origin=Point2D(0, 0),
+                )
+        self.entities["cross"] = Entity(
+                # clocked_event_name="period_1",
+                # origin=Point2D(0, 0.1),
+                )
         # Track entity name for debugging
         for name, entity in self.entities.items():
             entity.entity_name = name
@@ -258,8 +264,10 @@ class Game:
 
     def draw_remaining_art(self) -> None:
         """Update art and debug art"""
-        self.draw_a_cross()                             # Draw application artwork
-        self.draw_debug_crosses()                       # Draw debug artwork
+        draw_more_stuff = True
+        if draw_more_stuff:
+            self.draw_a_cross()                             # Draw application artwork
+            self.draw_debug_crosses()                       # Draw debug artwork
 
     def debug_hud_begin(self) -> None:
         """The first values displayed in the HUD are printed in this function."""

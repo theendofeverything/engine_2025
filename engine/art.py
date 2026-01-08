@@ -1,6 +1,7 @@
 """Art is comprised of vertices."""
 from dataclasses import dataclass, field
 import random
+from pygame.color import Color
 from .drawing_shapes import Line2D
 from .geometry_types import Point2D
 
@@ -33,10 +34,10 @@ class Art:
                           )
                       )
 
-    def draw_lines(self, points: list[Point2D]) -> None:
+    def draw_lines(self, points: list[Point2D], color: Color) -> None:
         """Draw lines given a list of points."""
         # Draw lines between pairs of points
         for i in range(len(points)-1):
-            self.lines.append(Line2D(points[i], points[i+1]))
+            self.lines.append(Line2D(points[i], points[i+1], color))
         # Draw line from last point back to first point
-        self.lines.append(Line2D(points[-1], points[0]))
+        self.lines.append(Line2D(points[-1], points[0], color))

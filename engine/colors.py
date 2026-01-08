@@ -19,6 +19,7 @@ class Colors:
     """
     background:     Color = Color(30, 60, 90)
     line:           Color = Color(120, 150, 60)
+    line_player:    Color = Color(120, 150, 255)
     line_debug:     Color = Color(200, 50, 50)
     text:           Color = Color(255, 255, 255)
     panning:        Color = Color(255, 200, 200)

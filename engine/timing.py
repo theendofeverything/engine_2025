@@ -25,6 +25,10 @@ The clocked events maintain:
 
 TODO: come up with a strategy for resetting FrameCounter.frame_count and ClockedEvent.event_count
 when these numbers get very large.
+
+TODO: update_buffered_ms_per_frame() is overly complicated because I am giving control over updating
+to the Game. Game should be responsible for making this if it wants it. Not Timing. Get
+update_buffered_ms_per_frame out of Timing.
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
@@ -177,6 +181,10 @@ class Timing:
                             period=30
                             )
                 case "game":
+                    frame_counter.clocked_events["every_frame"] = ClockedEvent(
+                            frame_counter,
+                            period=1
+                            )
                     frame_counter.clocked_events["period_1"] = ClockedEvent(
                             frame_counter,
                             period=1
@@ -188,6 +196,10 @@ class Timing:
                     frame_counter.clocked_events["period_3"] = ClockedEvent(
                             frame_counter,
                             period=3
+                            )
+                    frame_counter.clocked_events["period_n"] = ClockedEvent(
+                            frame_counter,
+                            period=20
                             )
         # Assign each clocked_event dict key to its ClockedEvent.event_name
         # for display in the debug HUD.

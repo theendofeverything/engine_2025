@@ -238,6 +238,75 @@ I need to create the dict before I can start assigning entries to it:
         self.entities["cross"] = Entity()
 ```
 
+## Mutable default values are shared across instances
+
+See https://docs.python.org/3/library/dataclasses.html#mutable-default-values
+
+The following is true for ANY class, not just a dataclass:
+
+Default member variable values are stored in class attributes.
+
+Default member variable values are stored in class attributes.
+
+What? Consider this:
+
+```python
+@dataclass
+class Entity:
+    ...
+    origin:             Point2D = Point2D(0, 0)
+    ...
+```
+
+Instances of `Entity` will all share the same `origin`: if I update `origin`
+for one instance, all instances get the new `origin`. It is a class attribute,
+not an instance attribute. Why? Because I gave it a default value.
+
+Note that if I explicitly assign `origin` when I create the instance, `origin` will be distinct.
+
+```python
+        self.entities = {}
+        self.entities["player"] = Entity(
+                origin=Point2D(0, 0),
+                )
+        self.entities["cross"] = Entity(
+                origin=Point2D(0, 0),
+                )
+```
+
+But that is not a good fix. It is a trap for the user.
+
+One way to avoid this is to to say we don't want the user to assign a value by
+using `field(init=False)`, and then we assign it in the `__post_init__()`:
+
+
+```python
+@dataclass
+class Entity:
+    ...
+    origin:             Point2D = field(init=False)
+    ...
+
+    def __post_init__(self) -> None:
+        self.origin = Point2D(0, 0)
+```
+
+Alternatively, to avoid the `__post_init__()`, use `default_factory` and define
+a `lambda` that says what to use as the default.
+
+```python
+@dataclass
+class Entity:
+    ...
+    origin:             Point2D = field(default_factory=lambda: Point2D(0, 0))
+    ...
+```
+
+This is saying, "hey, if no default value is given, here is a function (the
+`lambda`) you can call. The function is simple, it just calls `Point2D(0, 0)`.
+This forces us to get an instance attribute rather than a class attribute for
+`origin`.
+
 ## Printing classes
 
 Use the `__str__()` method for custom printing. This is helpful for debugging.

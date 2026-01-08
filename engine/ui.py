@@ -122,17 +122,21 @@ class UI:
                 - read "<--" as "thing-on-left uses thing-on-right"
                 - panning.vector = panning.end - panning.start
         """
-        coord_sys = self.game.coord_sys
         debug = self.game.debug
         panning = self.panning
-        debug.hud.print(f"|\n+- UI -> Panning: {panning.is_active} ({FILE})")
-        debug.hud.print(f"|        +- .start: {panning.start.fmt(0.0)}")
-        debug.hud.print(f"|        +- .end: {panning.end.fmt(0.0)}")
-        debug.hud.print(f"|        +- .vector: {panning.vector.fmt(0.0)}")
-        debug.hud.print("|           +- Panning updates the coord_sys:")
-        debug.hud.print(f"|              +- coord_sys.pcs_origin:  {coord_sys.pcs_origin}")
-        debug.hud.print(f"|              +- coord_sys.translation: {coord_sys.translation} = "
-                        "pcs_origin + .vector")
+
+        def debug_panning() -> None:
+            coord_sys = self.game.coord_sys
+            debug.hud.print(f"|\n+- UI -> Panning: {panning.is_active} ({FILE})")
+            debug.hud.print(f"|        +- .start: {panning.start.fmt(0.0)}")
+            debug.hud.print(f"|        +- .end: {panning.end.fmt(0.0)}")
+            debug.hud.print(f"|        +- .vector: {panning.vector.fmt(0.0)}")
+            debug.hud.print("|           +- Panning updates the coord_sys:")
+            debug.hud.print(f"|              +- coord_sys.pcs_origin:  {coord_sys.pcs_origin}")
+            debug.hud.print(f"|              +- coord_sys.translation: {coord_sys.translation} = "
+                            "pcs_origin + .vector")
+        show_panning_in_hud = False
+        if show_panning_in_hud: debug_panning()
         if panning.is_active:
             mouse_pos = pygame.mouse.get_pos()
             panning.end = Point2D.from_tuple(mouse_pos)

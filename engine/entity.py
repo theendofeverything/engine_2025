@@ -1,5 +1,6 @@
 """Entities are things like the Player that track their own state.
 
+TODO: Separate my "player" and "cross" entities (they overlap right now)
 TODO: How do I want to set up entity artwork?
 - Make methods like "from_cross", "from_lines", "from_points" to provide different ways of making
   entity art.
@@ -20,8 +21,19 @@ from .ui import UIKeys
 @dataclass
 class AmountExcited:
     """How excited the entity animation is"""
-    low: float = 0.004                                  # Low excitement
-    high: float = 0.015                                 # High excitement
+    low: float = 0.010                                  # Low excitement
+    high: float = 0.050                                 # High excitement
+
+
+@dataclass
+class Movement:
+    """Entity movement data: speed and up/down/left/right, and whether or not it is moving."""
+    speed:  float = 0.01
+    up:     bool = False
+    down:   bool = False
+    left:   bool = False
+    right:  bool = False
+    is_moving:  bool = False
 
 
 # TODO: Create "Player" by checking entity name or create a new class for Player that uses Entity by
@@ -64,22 +76,21 @@ class Entity:
             points=[Point2D(...), ...Point2D(...)],
             _is_moving=False)
     """
-    clocked_event_name: str                             # Match name of clocked_events dict key
+    clocked_event_name: str = "every_frame"             # Match name of clocked_events dict key
     entity_name:        str = "NameMe"                  # Match name of entities dict key
-    origin:             Point2D = Point2D(0, 0)
-    amount_excited:     AmountExcited = AmountExcited()
+    origin:             Point2D = field(default_factory=lambda: Point2D(0, 0))
+    # pylint: disable=unnecessary-lambda
+    amount_excited:     AmountExcited = field(default_factory=lambda: AmountExcited())
     size:               float = 0.2
-    points:             list[Point2D] = field(init=False)
-    _is_moving:         bool = False
-
-    def __post_init__(self) -> None:
-        # self.points = []
-        self.set_initial_points()
+    # points:             list[Point2D] = field(init=False)
+    points:             list[Point2D] = field(default_factory=list)
+    movement:           Movement = Movement()
 
     def set_initial_points(self) -> None:
         """Set the artwork vertices back to their non-wiggle values, plus any movement offset."""
         self.points = []
         # TODO: decouple line color from shape description?
+        # I ignore this color anyway and assign it in self.draw()
         cross = Cross(
                 origin=self.origin,
                 size=self.size,
@@ -91,28 +102,42 @@ class Entity:
 
     def update(self, timing: Timing, ui_keys: UIKeys) -> None:
         """Update entity state based on the Timing -> Ticks and UI -> UIKeys."""
+        entity_name = self.entity_name
+        if entity_name == "player":
+            self.set_player_movement(ui_keys)
+        else:
+            self.movement.up = False
         if not timing.frame_counters["game"].is_paused:
-            self.move(ui_keys)
+            self.move()
             self.animate(timing)
 
     @property
     def is_moving(self) -> bool:
         """True if entity is moving."""
-        return self._is_moving
+        return self.movement.is_moving
 
-    def move(self, ui_keys: UIKeys) -> None:
-        """Move the entity based on UI.keys"""
-        origin = self.origin
-        speed = 0.01
-        left = ui_keys.left_arrow
-        right = ui_keys.right_arrow
-        up = ui_keys.up_arrow
-        down = ui_keys.down_arrow
-        if left:  origin.x -= speed
-        if right: origin.x += speed
-        if up:    origin.y += speed
-        if down:  origin.y -= speed
-        self._is_moving = (left or right or up or down)
+    def set_player_movement(self, ui_keys: UIKeys) -> None:
+        """Update movement state based on UI input from arrow keys."""
+        movement = self.movement
+        movement.up = ui_keys.up_arrow
+        movement.down = ui_keys.down_arrow
+        movement.left = ui_keys.left_arrow
+        movement.right = ui_keys.right_arrow
+
+    def move(self) -> None:
+        """Move the entity based on movement state"""
+        movement = self.movement
+        if self.entity_name == "player":
+            origin = self.origin
+            if movement.up:    origin.y += movement.speed
+            if movement.down:  origin.y -= movement.speed
+            if movement.right: origin.x += movement.speed
+            if movement.left:  origin.x -= movement.speed
+        # Update movement state
+        movement.is_moving = (movement.up or movement.down or movement.left or movement.right)
+        # If moving, update points
+        if movement.is_moving:
+            self.set_initial_points()
 
     def animate(self, timing: Timing) -> None:
         """Animate the entity.
@@ -121,10 +146,6 @@ class Entity:
         """
         # Use counter for wiggling animation
         clocked_event = timing.frame_counters["game"].clocked_events[self.clocked_event_name]
-        # For a shimmering effect, restore initial points here (on every frame).
-        # shimmer = False
-        # if shimmer:
-        #     self.set_initial_points()
         if clocked_event.is_period:
             self.set_initial_points()
             # This works! Change this to wiggling.
@@ -135,9 +156,15 @@ class Entity:
             else:
                 amount_excited = self.amount_excited.low
             for point in self.points:
+                # TODO: instead of adjusting points here, adjust the amounts to offset each point.
+                # Then we always apply those offsets in set_initial_points().
                 point.x += random.uniform(-1*amount_excited, amount_excited)
                 point.y += random.uniform(-1*amount_excited, amount_excited)
 
     def draw(self, art: Art) -> None:
         """Draw entity in the GCS. Game must call update() before draw()."""
-        art.draw_lines(self.points)
+        if self.entity_name == "player":
+            color = Colors.line_player
+        else:
+            color = Colors.line_debug
+        art.draw_lines(self.points, color)
