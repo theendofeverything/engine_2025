@@ -176,7 +176,7 @@ class Game:
         self.entities = {}
         self.entities["player"] = Entity(
                 clocked_event_name="period_n",
-                # origin=Point2D(0, 0),
+                # origin=Point2D(0.5, 0),
                 )
         self.entities["cross"] = Entity(
                 # clocked_event_name="period_1",
