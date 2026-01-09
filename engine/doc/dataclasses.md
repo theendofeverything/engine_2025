@@ -258,11 +258,14 @@ class Entity:
     ...
 ```
 
+The above is ALMOST NEVER what you want to do!
+
 Instances of `Entity` will all share the same `origin`: if I update `origin`
 for one instance, all instances get the new `origin`. It is a class attribute,
 not an instance attribute. Why? Because I gave it a default value.
 
-Note that if I explicitly assign `origin` when I create the instance, `origin` will be distinct.
+Note that if the caller explicitly assigns `origin` when instantiating Entity,
+`origin` *will* be distinct!
 
 ```python
         self.entities = {}
@@ -274,7 +277,7 @@ Note that if I explicitly assign `origin` when I create the instance, `origin` w
                 )
 ```
 
-But that is not a good fix. It is a trap for the user.
+But that is not a good fix. It is a trap for the user. In fact, this behavior is also a trap to the lib developer: if you only ever exercise the lib code by instantiating with values for `origin`, you would never catch that `origin` is (otherwise) going to behave like a class variable!
 
 One way to avoid this is to to say we don't want the user to assign a value by
 using `field(init=False)`, and then we assign it in the `__post_init__()`:
@@ -291,7 +294,10 @@ class Entity:
         self.origin = Point2D(0, 0)
 ```
 
-Alternatively, to avoid the `__post_init__()`, use `default_factory` and define
+But this prevents the caller from providing `origin`. So this should only be
+used for values we specifically want the lib code to calculate.
+
+The solution you want to use most of the time is a `default_factory` and define
 a `lambda` that says what to use as the default.
 
 ```python
@@ -306,6 +312,24 @@ This is saying, "hey, if no default value is given, here is a function (the
 `lambda`) you can call. The function is simple, it just calls `Point2D(0, 0)`.
 This forces us to get an instance attribute rather than a class attribute for
 `origin`.
+
+To recap: the moment you instantiate a class more than once, you may find that
+some instance variables are actually class variables because your instances
+seem to share values. In this regard, the above two fixes are equivalent (`__post_init__()` vs `default_factory`).
+
+The `default_factory` style makes it a single line:
+
+```
+    amount_excited:     AmountExcited = field(default_factory=lambda: AmountExcited())
+    origin:             Point2D = field(default_factory=lambda: Point2D(0, 0))
+```
+
+And `default_factory` has the added benefit that the caller can still provide
+this argument if they so choose.
+
+The `__post_init__` style setting `field(init=False)` prevents the caller from
+providing this argument. Reserve initializing members in `__post_init__` for
+the members that are calculated by the library.
 
 ## Printing classes
 
