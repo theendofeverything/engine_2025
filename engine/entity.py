@@ -22,14 +22,14 @@ from .ui import UIKeys
 @dataclass
 class AmountExcited:
     """How excited the entity animation is"""
-    low: float = 0.010                                  # Low excitement
-    high: float = 0.050                                 # High excitement
+    low: float = 0.005                                  # Low excitement
+    high: float = 0.020                                 # High excitement
 
 
 @dataclass
 class Movement:
     """Entity movement data: speed and up/down/left/right, and whether or not it is moving."""
-    speed:  float = 0.01
+    speed:  float = 0.015
     up:     bool = False
     down:   bool = False
     left:   bool = False
@@ -48,6 +48,14 @@ class Artwork:
     def __post_init__(self) -> None:
         self.points = []
         self.point_offsets = []
+
+    @property
+    def animated_points(self) -> list[Point2D]:
+        """Animate points by adding point offsets to artwork points."""
+        points: list[Point2D] = []
+        for point, offset in zip(self.points, self.point_offsets):
+            points.append(Point2D(point.x + offset.x, point.y + offset.y))
+        return points
 
 
 # Create "Player" by checking entity name.
@@ -142,14 +150,6 @@ class Entity:
             #     point.x += random.uniform(-1*amount_excited, amount_excited)
             #     point.y += random.uniform(-1*amount_excited, amount_excited)
 
-    @property
-    def points(self) -> list[Point2D]:
-        """Artwork points offset by their animation offsets."""
-        points: list[Point2D] = []
-        for point, offset in zip(self.artwork.points, self.artwork.point_offsets):
-            points.append(Point2D(point.x + offset.x, point.y + offset.y))
-        return points
-
     # TODO: pull this out to a Player class
     def set_player_movement(self, ui_keys: UIKeys) -> None:
         """Update movement state based on UI input from arrow keys."""
@@ -210,4 +210,4 @@ class Entity:
             color = Colors.line_player
         else:
             color = Colors.line_debug
-        art.draw_lines(self.points, color)
+        art.draw_lines(self.artwork.animated_points, color)
