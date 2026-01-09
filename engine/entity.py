@@ -11,6 +11,7 @@ TODO: How do I want to set up entity artwork?
 from dataclasses import dataclass, field
 import random
 from .geometry_types import Point2D
+# from .drawing_shapes import Shape, Cross
 from .drawing_shapes import Cross
 from .timing import Timing
 from .colors import Colors
@@ -36,8 +37,22 @@ class Movement:
     is_moving:  bool = False
 
 
-# TODO: Create "Player" by checking entity name or create a new class for Player that uses Entity by
-# composition?
+# Next: integrate Artwork into Entity, then start using shape: Shape
+@dataclass
+class Artwork:
+    """Entity points and the offsets to each point that are used in animation."""
+    # shape:          Shape
+    points:         list[Point2D] = field(default_factory=list)
+    # point_offsets:  list[Point2D] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.points = []
+        # self.point_offsets = []
+
+
+# Create "Player" by checking entity name.
+# TODO: Instead, try creating a new class for Player that uses Entity by composition.
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class Entity:
     """Any character in the game, such as the player.
@@ -67,14 +82,24 @@ class Entity:
                              v
     Game.Art ────▶ Entity.draw()
 
+    The entity has a basic shape, defined in Art.
+    The shape is made of points. For now, we render the entity by connecting all points with lines.
+
+    To give Entities a bit of life, we move those points a bit each frame (by default we move those
+    points every frame, but we can also choose to wait a whole number of frames by selecting one of
+    ClockedEvents from the Timing FrameCounters.).
+
+    The amount to move each point is stored in an array of point_offsets.
+
     >>> entity = Entity(clocked_event_name = "period_3")
     >>> entity
     Entity(clocked_event_name='period_3',
-            origin=Point2D(x=..., y=...),
-            amount_excited=AmountExcited(low=..., high=...),
-            size=...,
-            points=[Point2D(...), ...Point2D(...)],
-            _is_moving=False)
+        entity_name='...',
+        origin=Point2D(...),
+        amount_excited=AmountExcited(...),
+        size=...,
+        points=[],...,
+        movement=Movement(...))
     """
     clocked_event_name: str = "every_frame"             # Match name of clocked_events dict key
     entity_name:        str = "NameMe"                  # Match name of entities dict key
@@ -82,10 +107,13 @@ class Entity:
     # pylint: disable=unnecessary-lambda
     amount_excited:     AmountExcited = field(default_factory=lambda: AmountExcited())
     size:               float = 0.2
-    # points:             list[Point2D] = field(init=False)
+    # artwork:            Artwork = Artwork()
     points:             list[Point2D] = field(default_factory=list)
+    point_offsets:      list[Point2D] = field(default_factory=list)
     movement:           Movement = Movement()
 
+    # def set_initial_points(self) -> None:
+    #     self.points = []
     def set_initial_points(self) -> None:
         """Set the artwork vertices back to their non-wiggle values, plus any movement offset."""
         self.points = []

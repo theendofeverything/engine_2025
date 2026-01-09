@@ -1,9 +1,31 @@
 """Shape primitives.
 """
 from dataclasses import dataclass, field
+from enum import Enum, auto
 from pygame import Color
 from .colors import Colors
 from .geometry_types import Point2D
+
+
+class Shape(Enum):
+    """Shape primitives for Entity artwork.
+
+    Basic Enum behavior:
+    >>> shape = Shape.CROSS
+    >>> shape
+    <Shape.CROSS: 1>
+    >>> print(shape)
+    Shape.CROSS
+    >>> type(Shape.CROSS)
+    <enum 'Shape'>
+
+    Using the Enum to select a shape to instantiate
+    TODO: finish figuring out how to use this enum to select a shape!
+    shapes = {}
+    shapes[Shape.CROSS] = lambda: Cross()
+    print(shapes[Shape.CROSS]()) # Need args here!
+    """
+    CROSS = auto()
 
 
 @dataclass

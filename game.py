@@ -56,9 +56,18 @@
     * Use the pygame-ce version: 'window = pygame.Window', 'window_surface = window.get_surface()'
     * Then 'pygame.display.flip()' becomes 'window.flip()'
     * Then 'pygame.display.get_window_size()' becomes 'game.renderer.window.size'
-* [ ] Control the speed of the animation using a TickCounter.
-* [ ] Change the structure of Tick to be a dict of TickCounters.
-* [ ] Add a playable character (something the user can move around).
+* [ ] Set up a Makefile recipe to run doctests only for the active Vim buffer
+* [x] Control the speed of the animation using a ClockedEvent.
+    * [ ] Animation state persists across frames, even when the Entity is moving
+* [x] Change the structure of Timing for counting frames:
+    * Timing has a dict of FrameCounters with keys 'game' and 'video'
+    * Each FrameCounter has a dict of ClockedEvents.
+    * Each ClockedEvent tracks whether its period has elapsed
+    * [ ] If the FrameCounter is paused when a ClockedEvent has a whole number of frames, Entities
+      using the ClockedEvent do not keep getting clocked on every video frame (how did I set this
+      up?)
+* [x] Add a playable character (something the user can move around).
+* [ ] Use enum.Flag for tracking entity movement up/down/left/right
 * [ ] Add collision detection.
 * [ ] Make window opacity user-controllable
 * [ ] Improve debug HUD:
