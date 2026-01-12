@@ -37,7 +37,7 @@ class Movement:
     is_moving:  bool = False
 
 
-# Next: use point_offsets, then start using shape: Shape
+# Next: use shape: Shape
 @dataclass
 class Artwork:
     """Entity points and the offsets to each point that are used in animation."""

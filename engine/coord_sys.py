@@ -109,6 +109,17 @@ class CoordinateSystem:
                      scaling=CoordinateSystemScalingFactors(coord_sys=...),
                      matrix=CoordinateSystemMatrices(coord_sys=...))
 
+    API (TODO: finish writing this section)
+
+    xfm(Vec2D, Matrix2DH) -> Vec2D:
+        Transform vector between coordinate systems using a Matrix2DH from
+        CoordinateSystemMatrices.
+        >>> coord_sys = CoordinateSystem(window_size=Vec2D(20*16, 20*9), panning=Panning())
+        >>> coord_sys.xfm(Vec2D(20*16, 20*9), coord_sys.matrix.pcs_to_gcs)
+        Vec2D(x=1.0, y=-0.5625)
+
+        See xfm() docstring for explanation and more examples.
+
     Attributes:
         window_size (Vec2D):
             The size of the OS window in pixels.

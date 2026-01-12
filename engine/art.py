@@ -31,7 +31,8 @@ class Art:
                       end=Point2D(
                           line.end.x + random.uniform(-1*wiggle, wiggle),
                           line.end.y + random.uniform(-1*wiggle, wiggle)
-                          )
+                          ),
+                      color=line.color
                       )
 
     def draw_lines(self, points: list[Point2D], color: Color) -> None:

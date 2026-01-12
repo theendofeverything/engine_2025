@@ -307,7 +307,7 @@ class UI:
         vector to the PCS origin. Be careful of the minus sign!
         """
         game = self.game
-        debug = True
+        debug = False
         mouse_pos = pygame.mouse.get_pos()
         mouse_p = Point2D.from_tuple(mouse_pos)
         # Mark the original mouse location in GCS
@@ -339,7 +339,8 @@ class UI:
         offset_p = Vec2D(x=game.coord_sys.scaling.gcs_to_pcs*offset_g.x,
                          y=game.coord_sys.scaling.gcs_to_pcs*offset_g.y)
         # Note: although this is in PCS, the offset is fractional: (float, float)
-        game.debug.snapshots["offset_p"] = f"UI -> _zoom() | offset_p: {offset_p}GCS"
+        if debug:
+            game.debug.snapshots["offset_p"] = f"UI -> _zoom() | offset_p: {offset_p}GCS"
         # Change the PCS origin to move the GCS origin by that offset (keep zoom about the mouse)
         # I don't understand why I have to subtract the x-offset, but this is what works.
         game.coord_sys.pcs_origin.x -= offset_p.x

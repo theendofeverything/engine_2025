@@ -18,6 +18,7 @@ class Colors:
     Color(255, 255, 255, 255)
     """
     background:     Color = Color(30, 60, 90)
+    background_lines: Color = Color(60, 90, 120)
     line:           Color = Color(120, 150, 60)
     line_player:    Color = Color(120, 150, 255)
     line_debug:     Color = Color(200, 50, 50)

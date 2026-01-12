@@ -275,8 +275,9 @@ class Game:
         """Update art and debug art"""
         draw_more_stuff = True
         if draw_more_stuff:
-            self.draw_a_cross()                             # Draw application artwork
-            self.draw_debug_crosses()                       # Draw debug artwork
+            # self.draw_a_cross()                       # Draw application artwork
+            self.draw_background()                      # Draw application artwork
+            self.draw_debug_crosses()                   # Draw debug artwork
 
     def debug_hud_begin(self) -> None:
         """The first values displayed in the HUD are printed in this function."""
@@ -314,16 +315,52 @@ class Game:
             debug.hud.print(f"|   +- Period: {ms_per_frame:d}ms")
 
         def debug_window_size() -> None:
-            """Display window size."""
+            """Display window size and center."""
             debug.hud.print(f"|\n+- OS window (in pixels) ({FILE})")
-            debug.hud.print(f"|  +- window_size: {self.coord_sys.window_size.fmt(0.0)}")
-            debug.hud.print(f"|  +- window_center: {self.coord_sys.window_center.fmt(0.0)}")
+            coord_sys: CoordinateSystem = self.coord_sys
+            # Size
+            window_size: Vec2D = coord_sys.window_size
+            gcs_window_size: Vec2D = coord_sys.xfm(v=window_size, mat=coord_sys.matrix.pcs_to_gcs)
+            debug.hud.print(f"|  +- window_size: {window_size.fmt(0.0)} PCS"
+                            f", {gcs_window_size} GCS")
+
+            # Center
+            window_center: Point2D = coord_sys.window_center
+            gcs_window_center: Vec2D = coord_sys.xfm(
+                    v=window_center.as_vec(),
+                    mat=coord_sys.matrix.pcs_to_gcs)
+            debug.hud.print(f"|  +- window_center: {window_center.fmt(0.0)} PCS"
+                            f", {gcs_window_center} GCS")
 
         debug_fps()
         debug_window_size()
         debug.hud.print("\n------")
         debug.hud.print(f"Locals ({FILE})")         # Local debug prints (e.g., from UI)
         debug.hud.print("------")
+
+    def draw_background(self) -> None:
+        """Draw some animated shapes in the background."""
+        coord_sys = self.coord_sys
+        crosses: list[Cross] = []
+        # Put a cross every 0.1 units.
+        # 2 GCS units
+        # ---------         = 10 crosses
+        # 0.2 units/cross
+        dist = 0.2  # GCS units
+        num_crosses = round(coord_sys.gcs_width / dist)
+        x_start = -1*coord_sys.gcs_width/2
+        for i in range(num_crosses):
+            crosses.append(Cross(
+                origin=Point2D(x_start + i*dist, 0),
+                size=0.1,
+                rotate45=False,
+                color=Colors.background_lines))
+        # Append line artwork to art.lines
+        for cross in crosses:
+            for line in cross.lines:
+                # Randomize the line before appending it
+                wiggle_line = self.art.randomize_line(line, wiggle=0.005)
+                self.art.lines.append(wiggle_line)
 
     def draw_a_cross(self) -> None:
         """Draw a cross in the GCS."""
@@ -339,19 +376,17 @@ class Game:
         for cross in crosses:
             for line in cross.lines:
                 # Randomize the line before appending it
-                # TODO: Store the randomized values in a buffer that only updates when clocked, then
-                # add the values from the buffer here.
                 wiggle_line = self.art.randomize_line(line, wiggle=0.01)
                 self.art.lines.append(wiggle_line)
 
     def draw_debug_crosses(self) -> None:
-        """Draw two crosses in the GCS to help me debug zooming about a point."""
+        """Draw a debug cross at the origin and at the player."""
         # Create debug artwork that uses lines
         crosses: list[Cross] = [
                 Cross(origin=Point2D(0, 0),
                       size=0.1,
                       color=Colors.line_debug),
-                Cross(origin=Point2D(0.5, 0.5),
+                Cross(origin=self.entities["player"].origin,
                       size=0.1,
                       rotate45=True,
                       color=Colors.line_debug),
