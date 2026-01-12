@@ -84,6 +84,7 @@
 """
 
 from dataclasses import dataclass, field
+import random
 import pathlib
 import logging
 import pygame
@@ -339,44 +340,42 @@ class Game:
         debug.hud.print("------")
 
     def draw_background(self) -> None:
-        """Draw some animated shapes in the background."""
+        """Draw some animated shapes in the background.
+
+        TODO: make these animated shapes Entities so that I can give the a persistent state: slow
+        down their animation speeds and assign different amount sof drift to each dependent on the
+        location of the player character.
+        """
         coord_sys = self.coord_sys
         crosses: list[Cross] = []
-        # Put a cross every 0.1 units.
+        # Put a cross every 0.2 units.
+        #
+        # Example:
         # 2 GCS units
         # ---------         = 10 crosses
         # 0.2 units/cross
-        dist = 0.2  # GCS units
-        num_crosses = round(coord_sys.gcs_width / dist)
-        x_start = -1*coord_sys.gcs_width/2
-        for i in range(num_crosses):
-            crosses.append(Cross(
-                origin=Point2D(x_start + i*dist, 0),
-                size=0.1,
-                rotate45=False,
-                color=Colors.background_lines))
-        # Append line artwork to art.lines
+        dist = Vec2D(x=0.2, y=0.3)
+        num_crosses_x = round(coord_sys.gcs_width / dist.x)
+        num_crosses_y = round(coord_sys.gcs_width / dist.y)
+        start = Point2D(x=-1*coord_sys.gcs_width/2,
+                        y=-1*coord_sys.gcs_width/2)
+        drift_amt = random.uniform(0.002, 0.05)
+        drift = Vec2D(x=random.uniform(-1*drift_amt, drift_amt),
+                      y=random.uniform(-1*drift_amt, drift_amt))
+        # Drift each cross a random amount and append randomized line artwork to art.lines
+        for i in range(num_crosses_x):
+            for j in range(num_crosses_y):
+                crosses.append(Cross(
+                    origin=Point2D(start.x + i*dist.x + drift.x, start.y + j*dist.y + drift.y),
+                    size=0.1,
+                    rotate45=False,
+                    color=Colors.background_lines))
+        # Append randomized line artwork to art.lines
+        wiggle = 0.005
         for cross in crosses:
             for line in cross.lines:
                 # Randomize the line before appending it
-                wiggle_line = self.art.randomize_line(line, wiggle=0.005)
-                self.art.lines.append(wiggle_line)
-
-    def draw_a_cross(self) -> None:
-        """Draw a cross in the GCS."""
-        # Create artwork that uses lines
-        crosses: list[Cross] = [
-                Cross(origin=Point2D(-0.1, 0.1),
-                      size=0.2,
-                      rotate45=True,
-                      color=Colors.line
-                      ),
-                ]
-        # Append line artwork to art.lines
-        for cross in crosses:
-            for line in cross.lines:
-                # Randomize the line before appending it
-                wiggle_line = self.art.randomize_line(line, wiggle=0.01)
+                wiggle_line = self.art.randomize_line(line, wiggle)
                 self.art.lines.append(wiggle_line)
 
     def draw_debug_crosses(self) -> None:
