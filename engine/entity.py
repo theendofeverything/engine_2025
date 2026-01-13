@@ -42,6 +42,9 @@ class Speed:
     down:   float = 0.0
     left:   float = 0.0
     right:  float = 0.0
+    accel:  float = 0.003
+    slide:  float = 0.0015
+    abs_max: float = 0.02
 
 
 # TODO: replace speed with speed_max
@@ -49,8 +52,8 @@ class Speed:
 @dataclass
 class Movement:
     """Entity movement data: speed and up/down/left/right, and whether or not it is moving."""
-    speed:  float = 0.015
-    is_going: IsGoing = field(default_factory=lambda: IsGoing())
+    speed:      Speed = field(default_factory=lambda: Speed())
+    is_going:   IsGoing = field(default_factory=lambda: IsGoing())
     is_moving:  bool = False
 
 
@@ -214,15 +217,32 @@ class Entity:
             origin = self.origin
             # TODO: instead of modifying origin, ALWAYS add speed and just modify speed
             # And then this has to update based on elapsed time, not number of frames
-            if is_going.up:    origin.y += movement.speed
-            if is_going.down:  origin.y -= movement.speed
-            if is_going.right: origin.x += movement.speed
-            if is_going.left:  origin.x -= movement.speed
+            # Update speed: increase if controller is going that way, decrease if not
+            if is_going.up:    movement.speed.up += movement.speed.accel
+            else:    movement.speed.up -= movement.speed.slide
+            if is_going.down:  movement.speed.down += movement.speed.accel
+            else:    movement.speed.down -= movement.speed.slide
+            if is_going.right: movement.speed.right += movement.speed.accel
+            else:    movement.speed.right -= movement.speed.slide
+            if is_going.left:  movement.speed.left += movement.speed.accel
+            else:    movement.speed.left -= movement.speed.slide
+            # Clamp speeds
+            movement.speed.up = min(movement.speed.up, movement.speed.abs_max)
+            movement.speed.up = max(movement.speed.up, 0)
+            movement.speed.down = min(movement.speed.down, movement.speed.abs_max)
+            movement.speed.down = max(movement.speed.down, 0)
+            movement.speed.right = min(movement.speed.right, movement.speed.abs_max)
+            movement.speed.right = max(movement.speed.right, 0)
+            movement.speed.left = min(movement.speed.left, movement.speed.abs_max)
+            movement.speed.left = max(movement.speed.left, 0)
+            # Update position
+            origin.y += movement.speed.up - movement.speed.down
+            origin.x += movement.speed.right - movement.speed.left
         # Update movement state
         movement.is_moving = (is_going.up or is_going.down or is_going.left or is_going.right)
         # If moving, update points
-        if movement.is_moving:
-            self._reset_points()
+        self._reset_points()
+        # if movement.is_moving:
 
     def draw(self, art: Art) -> None:
         """Draw entity in the GCS. Game must call update() before draw()."""

@@ -342,6 +342,7 @@ class Game:
         debug.hud.print(f"Locals ({FILE})")         # Local debug prints (e.g., from UI)
         debug.hud.print("------")
 
+    # TODO: framerate tanks when I zoom out too far -- zooming increases number of crosses! Why?
     def draw_background_crosses(self) -> None:
         """Draw some animated shapes in the background.
 
@@ -372,7 +373,8 @@ class Game:
                     origin=Point2D(start.x + i*dist.x + drift.x, start.y + j*dist.y + drift.y),
                     size=0.1,
                     rotate45=False,
-                    color=Colors.background_lines))
+                    color=Colors.line))
+                    # color=Colors.background_lines))
         # Append randomized line artwork to art.lines
         wiggle = 0.005
         for cross in crosses:
