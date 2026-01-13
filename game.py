@@ -247,6 +247,9 @@ class Game:
         ui_keys = self.ui.keys
         timing = self.timing
         art = self.art
+        # TODO: give the player movement inertia.
+        # TODO: make the red cross (slowly) follow the player around. Adust movement by adusting
+        # speed vector, not direct movement (to simulate inertia).
         for entity in self.entities.values():
             entity.update(timing, ui_keys)
             entity.draw(art)
@@ -277,8 +280,8 @@ class Game:
         draw_more_stuff = True
         if draw_more_stuff:
             # self.draw_a_cross()                       # Draw application artwork
-            self.draw_background()                      # Draw application artwork
-            self.draw_debug_crosses()                   # Draw debug artwork
+            self.draw_background_crosses()                      # Draw application artwork
+            # self.draw_debug_crosses()                   # Draw debug artwork
 
     def debug_hud_begin(self) -> None:
         """The first values displayed in the HUD are printed in this function."""
@@ -339,7 +342,7 @@ class Game:
         debug.hud.print(f"Locals ({FILE})")         # Local debug prints (e.g., from UI)
         debug.hud.print("------")
 
-    def draw_background(self) -> None:
+    def draw_background_crosses(self) -> None:
         """Draw some animated shapes in the background.
 
         TODO: make these animated shapes Entities so that I can give the a persistent state: slow

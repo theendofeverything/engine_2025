@@ -27,13 +27,30 @@ class AmountExcited:
 
 
 @dataclass
-class Movement:
-    """Entity movement data: speed and up/down/left/right, and whether or not it is moving."""
-    speed:  float = 0.015
+class IsGoing:
+    """Store True/False information on up/down/left/right."""
     up:     bool = False
     down:   bool = False
     left:   bool = False
     right:  bool = False
+
+
+@dataclass
+class Speed:
+    """Store speed information on up/down/left/right."""
+    up:     float = 0.0
+    down:   float = 0.0
+    left:   float = 0.0
+    right:  float = 0.0
+
+
+# TODO: replace speed with speed_max
+# TODO: use speed = Speed() to store the speed in the four directions.
+@dataclass
+class Movement:
+    """Entity movement data: speed and up/down/left/right, and whether or not it is moving."""
+    speed:  float = 0.015
+    is_going: IsGoing = field(default_factory=lambda: IsGoing())
     is_moving:  bool = False
 
 
@@ -154,10 +171,10 @@ class Entity:
     def set_player_movement(self, ui_keys: UIKeys) -> None:
         """Update movement state based on UI input from arrow keys."""
         movement = self.movement
-        movement.up = ui_keys.up_arrow
-        movement.down = ui_keys.down_arrow
-        movement.left = ui_keys.left_arrow
-        movement.right = ui_keys.right_arrow
+        movement.is_going.up = ui_keys.up_arrow
+        movement.is_going.down = ui_keys.down_arrow
+        movement.is_going.left = ui_keys.left_arrow
+        movement.is_going.right = ui_keys.right_arrow
 
     def _reset_points(self) -> None:
         """Set the artwork vertices back to their non-wiggle values, plus any movement offset."""
@@ -179,7 +196,7 @@ class Entity:
         if entity_name == "player":
             self.set_player_movement(ui_keys)
         else:
-            self.movement.up = False
+            self.movement.is_going.up = False
         if not timing.frame_counters["game"].is_paused:
             self.move()
             self.animate(timing)
@@ -192,14 +209,17 @@ class Entity:
     def move(self) -> None:
         """Move the entity based on movement state"""
         movement = self.movement
+        is_going = movement.is_going
         if self.entity_name == "player":
             origin = self.origin
-            if movement.up:    origin.y += movement.speed
-            if movement.down:  origin.y -= movement.speed
-            if movement.right: origin.x += movement.speed
-            if movement.left:  origin.x -= movement.speed
+            # TODO: instead of modifying origin, ALWAYS add speed and just modify speed
+            # And then this has to update based on elapsed time, not number of frames
+            if is_going.up:    origin.y += movement.speed
+            if is_going.down:  origin.y -= movement.speed
+            if is_going.right: origin.x += movement.speed
+            if is_going.left:  origin.x -= movement.speed
         # Update movement state
-        movement.is_moving = (movement.up or movement.down or movement.left or movement.right)
+        movement.is_moving = (is_going.up or is_going.down or is_going.left or is_going.right)
         # If moving, update points
         if movement.is_moving:
             self._reset_points()
