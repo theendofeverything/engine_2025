@@ -247,7 +247,6 @@ class Game:
         ui_keys = self.ui.keys
         timing = self.timing
         art = self.art
-        # TODO: give the player movement inertia.
         # TODO: make the red cross (slowly) follow the player around. Adust movement by adusting
         # speed vector, not direct movement (to simulate inertia).
         for entity in self.entities.values():
@@ -342,9 +341,13 @@ class Game:
         debug.hud.print(f"Locals ({FILE})")         # Local debug prints (e.g., from UI)
         debug.hud.print("------")
 
-    # TODO: framerate tanks when I zoom out too far -- zooming increases number of crosses! Why?
     def draw_background_crosses(self) -> None:
         """Draw some animated shapes in the background.
+
+        Note: Framerate tanks when I zoom out too far -- zooming increases number of crosses because
+        gcs_width changes. My temporary fix here is to clamp the max number of crosses, but I have a
+        new problem that the origins of the crosses changes when I zoom. That is the problem with
+        attempting to just draw these without any persistent state.
 
         TODO: make these animated shapes Entities so that I can give the a persistent state: slow
         down their animation speeds and assign different amount sof drift to each dependent on the
@@ -358,9 +361,10 @@ class Game:
         # 2 GCS units
         # ---------         = 10 crosses
         # 0.2 units/cross
-        dist = Vec2D(x=0.2, y=0.3)
-        num_crosses_x = round(coord_sys.gcs_width / dist.x)
-        num_crosses_y = round(coord_sys.gcs_width / dist.y)
+        dist = Vec2D(x=0.2, y=0.4)
+        # Limit the crosses to a 4x4 to avoid framerate tanking when zoomed way out.
+        num_crosses_x = round(min(coord_sys.gcs_width, 4) / dist.x)
+        num_crosses_y = round(min(coord_sys.gcs_width, 4) / dist.y)
         start = Point2D(x=-1*coord_sys.gcs_width/2,
                         y=-1*coord_sys.gcs_width/2)
         drift_amt = random.uniform(0.002, 0.05)
@@ -373,8 +377,7 @@ class Game:
                     origin=Point2D(start.x + i*dist.x + drift.x, start.y + j*dist.y + drift.y),
                     size=0.1,
                     rotate45=False,
-                    color=Colors.line))
-                    # color=Colors.background_lines))
+                    color=Colors.line))  # color=Colors.background_lines))
         # Append randomized line artwork to art.lines
         wiggle = 0.005
         for cross in crosses:
