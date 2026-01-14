@@ -41,6 +41,7 @@ Entity Documentation (WIP)
 
 from dataclasses import dataclass, field
 import random
+from enum import Enum, auto
 from .geometry_types import Point2D, Vec2D
 # from .drawing_shapes import Shape, Cross
 from .drawing_shapes import Cross
@@ -145,6 +146,26 @@ class Artwork:
         return points
 
 
+class EntityType(Enum):
+    """Categorize entities by type.
+
+    >>> entity_type = EntityType.PLAYER
+    >>> entity_type
+    <EntityType.PLAYER: 1>
+    >>> entity_type = EntityType.BACKGROUND_ART
+    >>> entity_type
+    <EntityType.BACKGROUND_ART: 2>
+    >>> entity_type = EntityType.NPC
+    >>> entity_type
+    <EntityType.NPC: 3>
+    """
+
+    PLAYER = auto()
+    BACKGROUND_ART = auto()
+    NPC = auto()
+
+
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class Entity:
     """Any character in the game, such as the player.
@@ -153,6 +174,8 @@ class Entity:
     - starts with "player": it is a player
     - starts with "bgnd" it is background art
     - starts with "enemy" it is an enemy
+
+    TODO: change entity_name from string to enum
 
     API:
         is_moving():
@@ -163,20 +186,22 @@ class Entity:
         draw(art: Art):
             Connects lines between all points, including connecting last to first.
 
-    >>> entity = Entity(clocked_event_name = "period_3")
+    >>> entity = Entity(entity_type=EntityType.BACKGROUND_ART, clocked_event_name = "period_3")
     >>> entity
-    Entity(clocked_event_name='period_3',
+    Entity(entity_type=<EntityType...>,
         entity_name='...',
+        clocked_event_name='period_3',
         origin=Point2D(...),
         amount_excited=AmountExcited(...),
         size=...,
         artwork=Artwork(...),
         movement=Movement(...))
     """
-    clocked_event_name: str = "every_frame"             # Match name of clocked_events dict key
+    entity_type:        EntityType
     entity_name:        str = "NameMe"                  # Match name of entities dict key
-    origin:             Point2D = field(default_factory=lambda: Point2D(0, 0))
+    clocked_event_name: str = "every_frame"             # Match name of clocked_events dict key
     # pylint: disable=unnecessary-lambda
+    origin:             Point2D = field(default_factory=lambda: Point2D(0, 0))
     amount_excited:     AmountExcited = field(default_factory=lambda: AmountExcited())
     size:               float = 0.2
     artwork:            Artwork = field(default_factory=lambda: Artwork())

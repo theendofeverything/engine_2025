@@ -98,7 +98,7 @@ from engine.renderer import Renderer
 from engine.geometry_types import Point2D, Vec2D
 from engine.drawing_shapes import Cross
 from engine.colors import Colors
-from engine.entity import Entity
+from engine.entity import Entity, EntityType
 
 FILE = pathlib.Path(__file__).name
 
@@ -176,14 +176,16 @@ class Game:
         # Create entities (like the Player)
         self.entities = {}
         self.entities["player"] = Entity(
+                entity_type=EntityType.PLAYER,
                 clocked_event_name="period_3",
                 # origin=Point2D(0.5, 0),
                 )
         self.entities["cross"] = Entity(
+                entity_type=EntityType.NPC,
                 # clocked_event_name="period_1",
                 # origin=Point2D(0, 0.1),
                 )
-        # Entities track their own name
+        # Entities track their own name for display in the debug HUD
         for name, entity in self.entities.items():
             entity.entity_name = name
 
