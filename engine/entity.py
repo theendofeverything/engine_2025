@@ -6,6 +6,37 @@ TODO: How do I want to set up entity artwork?
   entity art.
 - [x] Start with making a character that is a wiggling cross.
 - [ ] Then try a wiggling triangle.
+
+Entity Documentation (WIP)
+--------------------------
+    The entity has a basic shape, defined in Art.
+    The shape is made of points. For now, we render the entity by connecting all points with lines.
+
+    To give Entities a bit of life, we move those points a bit each frame (by default we move those
+    points every frame, but we can also choose to wait a whole number of frames by selecting one of
+    ClockedEvents from the Timing FrameCounters.).
+
+    So animations are done by adding a small random wiggle to each point.
+    The amount to move each point is stored in an array of point_offsets.
+    The animation is clocked by a clocked_event
+    (the period of the animation is some whole number of game frame periods).
+
+    TODO: finish drawing this
+                            loop()
+                             |
+                             v
+                            update_entities()
+                             |
+                             v
+    Game.Timing ─▶ Entity.update() -> Paused? --┐
+                                        |       |
+                                       YES      NO
+                             ┌─---------┘       |
+                             |                  Entity.move()
+                             |
+                             v
+    Game.Art ────▶ Entity.draw()
+
 """
 
 from dataclasses import dataclass, field
@@ -47,14 +78,50 @@ class Speed:
     abs_max: float = 0.02
 
 
-# TODO: replace speed with speed_max
-# TODO: use speed = Speed() to store the speed in the four directions.
 @dataclass
 class Movement:
     """Entity movement data: speed and up/down/left/right, and whether or not it is moving."""
+    # pylint: disable=unnecessary-lambda
     speed:      Speed = field(default_factory=lambda: Speed())
     is_going:   IsGoing = field(default_factory=lambda: IsGoing())
     is_moving:  bool = False
+
+    def update_speed(self) -> None:
+        """Update speed. Used in Entity.move()."""
+        movement = self
+        is_going = movement.is_going
+        # To update speed: increase if controller is going that way, decrease if not.
+        # TODO: update based on elapsed time, not number of frames.
+        # TODO: refactor speed update to avoid repetition (every direction has the same thing done
+        # to it).
+        if is_going.up:
+            movement.speed.up += movement.speed.accel
+        else:
+            movement.speed.up -= movement.speed.slide
+
+        if is_going.down:
+            movement.speed.down += movement.speed.accel
+        else:
+            movement.speed.down -= movement.speed.slide
+
+        if is_going.right:
+            movement.speed.right += movement.speed.accel
+        else:
+            movement.speed.right -= movement.speed.slide
+
+        if is_going.left:
+            movement.speed.left += movement.speed.accel
+        else:
+            movement.speed.left -= movement.speed.slide
+        # Clamp speeds
+        movement.speed.up = min(movement.speed.up, movement.speed.abs_max)
+        movement.speed.up = max(movement.speed.up, 0)
+        movement.speed.down = min(movement.speed.down, movement.speed.abs_max)
+        movement.speed.down = max(movement.speed.down, 0)
+        movement.speed.right = min(movement.speed.right, movement.speed.abs_max)
+        movement.speed.right = max(movement.speed.right, 0)
+        movement.speed.left = min(movement.speed.left, movement.speed.abs_max)
+        movement.speed.left = max(movement.speed.left, 0)
 
 
 # Next: use shape: Shape
@@ -78,11 +145,14 @@ class Artwork:
         return points
 
 
-# Create "Player" by checking entity name.
-# TODO: Instead, try creating a new class for Player that uses Entity by composition.
 @dataclass
 class Entity:
     """Any character in the game, such as the player.
+
+    Tell entities apart based on the 'entity_name':
+    - starts with "player": it is a player
+    - starts with "bgnd" it is background art
+    - starts with "enemy" it is an enemy
 
     API:
         is_moving():
@@ -92,34 +162,6 @@ class Entity:
             elapsed) and the entity moves (if keys are pressed).
         draw(art: Art):
             Connects lines between all points, including connecting last to first.
-
-    The entity has a basic shape, defined in Art.
-    The shape is made of points. For now, we render the entity by connecting all points with lines.
-
-    To give Entities a bit of life, we move those points a bit each frame (by default we move those
-    points every frame, but we can also choose to wait a whole number of frames by selecting one of
-    ClockedEvents from the Timing FrameCounters.).
-
-    So animations are done by adding a small random wiggle to each point.
-    The amount to move each point is stored in an array of point_offsets.
-    The animation is clocked by a clocked_event
-    (the period of the animation is some whole number of game frame periods).
-
-    TODO: finish drawing this
-                            loop()
-                             |
-                             v
-                            update_entities()
-                             |
-                             v
-    Game.Timing ─▶ Entity.update() -> Paused? --┐
-                                        |       |
-                                       YES      NO
-                             ┌─---------┘       |
-                             |                  Entity.move()
-                             |
-                             v
-    Game.Art ────▶ Entity.draw()
 
     >>> entity = Entity(clocked_event_name = "period_3")
     >>> entity
@@ -170,7 +212,6 @@ class Entity:
             #     point.x += random.uniform(-1*amount_excited, amount_excited)
             #     point.y += random.uniform(-1*amount_excited, amount_excited)
 
-    # TODO: pull this out to a Player class
     def set_player_movement(self, ui_keys: UIKeys) -> None:
         """Update movement state based on UI input from arrow keys."""
         movement = self.movement
@@ -215,26 +256,8 @@ class Entity:
         is_going = movement.is_going
         if self.entity_name == "player":
             origin = self.origin
-            # TODO: instead of modifying origin, ALWAYS add speed and just modify speed
-            # And then this has to update based on elapsed time, not number of frames
-            # Update speed: increase if controller is going that way, decrease if not
-            if is_going.up:    movement.speed.up += movement.speed.accel
-            else:    movement.speed.up -= movement.speed.slide
-            if is_going.down:  movement.speed.down += movement.speed.accel
-            else:    movement.speed.down -= movement.speed.slide
-            if is_going.right: movement.speed.right += movement.speed.accel
-            else:    movement.speed.right -= movement.speed.slide
-            if is_going.left:  movement.speed.left += movement.speed.accel
-            else:    movement.speed.left -= movement.speed.slide
-            # Clamp speeds
-            movement.speed.up = min(movement.speed.up, movement.speed.abs_max)
-            movement.speed.up = max(movement.speed.up, 0)
-            movement.speed.down = min(movement.speed.down, movement.speed.abs_max)
-            movement.speed.down = max(movement.speed.down, 0)
-            movement.speed.right = min(movement.speed.right, movement.speed.abs_max)
-            movement.speed.right = max(movement.speed.right, 0)
-            movement.speed.left = min(movement.speed.left, movement.speed.abs_max)
-            movement.speed.left = max(movement.speed.left, 0)
+            # Instead of modifying origin, modify speed.
+            movement.update_speed()
             # Update position
             origin.y += movement.speed.up - movement.speed.down
             origin.x += movement.speed.right - movement.speed.left

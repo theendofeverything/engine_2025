@@ -183,7 +183,7 @@ class Game:
                 # clocked_event_name="period_1",
                 # origin=Point2D(0, 0.1),
                 )
-        # Track entity name for debugging
+        # Entities track their own name
         for name, entity in self.entities.items():
             entity.entity_name = name
 
