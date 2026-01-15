@@ -113,6 +113,33 @@ code organization.
 
 # Common issues when using a dataclass
 
+## Class name not defined yet
+
+This is not specific to dataclasses but I didn't know where else to put it.
+
+I often find myself in this pattern where I need the class name itself as a
+type annotation before the class name is defined. In this case, I am using the
+class name (`Entity`) within itself as the type of a dict value:
+
+```python
+@dataclass
+class Entity:
+    entities:           dict[str, Entity]             # Give each entity access to all others
+```
+
+That gives me this error:
+
+```
+engine/entity.py|205 col 34| E0602: Undefined variable 'Entity' (undefined-variable)
+```
+
+I can avoid the error by putting the name `Entity` in quotes: `"Entity"` or by
+importing `annotations`:
+
+```python
+from __future__ import annotations
+```
+
 ## No explicit `__init__()`
 
 Do not write an `__init__()`. Python will let you do it, but you will lose the

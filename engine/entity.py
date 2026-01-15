@@ -39,17 +39,22 @@ Entity Documentation (WIP)
 
 """
 
+from __future__ import annotations
 from dataclasses import dataclass, field
+import pathlib
 import random
 from enum import Enum, auto
 from .geometry_types import Point2D, Vec2D
 # from .drawing_shapes import Shape, Cross
-from .drawing_shapes import Cross
+from .drawing_shapes import Cross, Line2D
 from .timing import Timing
 from .colors import Colors
 from .art import Art
 from .ui import UIKeys
+from .debug import Debug
 
+
+FILE = pathlib.Path(__file__).name
 
 @dataclass
 class AmountExcited:
@@ -186,9 +191,12 @@ class Entity:
         draw(art: Art):
             Connects lines between all points, including connecting last to first.
 
-    >>> entity = Entity(entity_type=EntityType.BACKGROUND_ART, clocked_event_name = "period_3")
+    >>> entities: dict[str, "Entity"] = {}
+    >>> entity = Entity(debug=Debug(), entities=entities, entity_type=EntityType.BACKGROUND_ART,
+    ... clocked_event_name = "period_3")
     >>> entity
-    Entity(entity_type=<EntityType...>,
+    Entity(debug=Debug(hud=..., art=...), entities={},
+        entity_type=<EntityType...>,
         entity_name='...',
         clocked_event_name='period_3',
         origin=Point2D(...),
@@ -197,6 +205,8 @@ class Entity:
         artwork=Artwork(...),
         movement=Movement(...))
     """
+    debug:              Debug
+    entities:           dict[str, Entity]               # Give each entity access to all others
     entity_type:        EntityType
     entity_name:        str = "NameMe"                  # Match name of entities dict key
     clocked_event_name: str = "every_frame"             # Match name of clocked_events dict key
@@ -237,14 +247,6 @@ class Entity:
             #     point.x += random.uniform(-1*amount_excited, amount_excited)
             #     point.y += random.uniform(-1*amount_excited, amount_excited)
 
-    def set_player_movement(self, ui_keys: UIKeys) -> None:
-        """Update movement state based on UI input from arrow keys."""
-        movement = self.movement
-        movement.is_going.up = ui_keys.up_arrow
-        movement.is_going.down = ui_keys.down_arrow
-        movement.is_going.left = ui_keys.left_arrow
-        movement.is_going.right = ui_keys.right_arrow
-
     def _reset_points(self) -> None:
         """Set the artwork vertices back to their non-wiggle values, plus any movement offset."""
         self.artwork.points = []
@@ -259,13 +261,68 @@ class Entity:
             self.artwork.points.append(Point2D(line.start.x, line.start.y))
             self.artwork.points.append(Point2D(line.end.x, line.end.y))
 
+    def player_update_from_ui(self, ui_keys: UIKeys) -> None:
+        """Update movement state based on UI input from arrow keys."""
+        movement = self.movement
+        movement.is_going.up = ui_keys.up_arrow
+        movement.is_going.down = ui_keys.down_arrow
+        movement.is_going.left = ui_keys.left_arrow
+        movement.is_going.right = ui_keys.right_arrow
+
+    def npc_update(self) -> None:
+        """Update movement state of NPC based on ?"""
+        # Find the player entity. For now just look for key "player".
+        if "player" in self.entities:
+            player = self.entities["player"]
+            aim = Vec2D.from_points(start=self.origin, end=player.origin)
+            movement = self.movement
+            #
+            # TODO: write up a table of NPC speed values and resulting aim vectors to understand why
+            # NPC keeps moving (it never considers itself locked in on the player).
+            #
+            # Floats: cannot compare against zero. Use epsilon to say "close enough".
+            # 0.2/100 = 0.002 
+            # epsilon = self.size/100
+            epsilon = 0
+            if (aim.x > epsilon):
+                movement.is_going.right = True
+                movement.is_going.left = False
+            elif aim.x < -1*epsilon:
+                movement.is_going.left = True
+                movement.is_going.right = False
+            else:
+                movement.is_going.left = False
+                movement.is_going.right = False
+            debug = True
+            if debug:
+                self.debug.hud.print(f"+- Entity.npc_update() ({FILE})")
+                self.debug.hud.print("|  +- Locals")
+                self.debug.hud.print(f"|     +- aim = {aim.fmt(0.6)}")
+                self.debug.hud.print(f"|     +- epsilon = size/100: {epsilon}")
+                self.debug.hud.print("|  +- Movement Attrs")
+                self.debug.hud.print(f"|     +- is_going.left: {movement.is_going.left}")
+                self.debug.hud.print(f"|     +- is_going.right: {movement.is_going.right}")
+                self.debug.hud.print(f"|     +- speed.accel: {movement.speed.accel}")
+                self.debug.hud.print(f"|     +- speed.slide: {movement.speed.slide}")
+                # LEFTOFF
+                self.debug.hud.print(f"|     +- speed.left: {movement.speed.left}")
+                self.debug.hud.print(f"|     +- speed.right: {movement.speed.right}")
+            self.debug.art.lines_gcs.append(
+                    Line2D(
+                        start=self.origin,
+                        end=player.origin,
+                        color=Colors.line_debug))
+
     def update(self, timing: Timing, ui_keys: UIKeys) -> None:
         """Update entity state based on the Timing -> Ticks and UI -> UIKeys."""
-        entity_name = self.entity_name
-        if entity_name == "player":
-            self.set_player_movement(ui_keys)
-        else:
-            self.movement.is_going.up = False
+        entity_type = self.entity_type
+        match entity_type:
+            case EntityType.PLAYER:
+                self.player_update_from_ui(ui_keys)
+            case EntityType.NPC:
+                self.npc_update()
+            case _:
+                pass
         if not timing.frame_counters["game"].is_paused:
             self.move()
             self.animate(timing)
@@ -279,18 +336,17 @@ class Entity:
         """Move the entity based on movement state"""
         movement = self.movement
         is_going = movement.is_going
-        if self.entity_name == "player":
-            origin = self.origin
-            # Instead of modifying origin, modify speed.
-            movement.update_speed()
-            # Update position
-            origin.y += movement.speed.up - movement.speed.down
-            origin.x += movement.speed.right - movement.speed.left
+        origin = self.origin
+        # Instead of modifying origin, modify speed.
+        movement.update_speed()
+        # Update position
+        origin.y += movement.speed.up - movement.speed.down
+        origin.x += movement.speed.right - movement.speed.left
+
         # Update movement state
         movement.is_moving = (is_going.up or is_going.down or is_going.left or is_going.right)
-        # If moving, update points
+        # Update points
         self._reset_points()
-        # if movement.is_moving:
 
     def draw(self, art: Art) -> None:
         """Draw entity in the GCS. Game must call update() before draw()."""

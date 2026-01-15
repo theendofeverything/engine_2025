@@ -34,6 +34,27 @@ Fix this problem with this one-liner:
 from __future__ import annotations
 ```
 
+That also fixes this error:
+
+```python
+@dataclass
+class Entity:
+    entities:           dict[str, Entity]             # Give each entity access to all others
+```
+
+I am trying to use the class name as a type annotation.
+That gives me this error:
+
+```
+engine/entity.py|205 col 34| E0602: Undefined variable 'Entity' (undefined-variable)
+```
+
+I can avoid the error by putting the name `Entity` in quotes: `"Entity"` or by adding
+
+```python
+from __future__ import annotations
+```
+
 ## mypy undefined name
 
 See [flake8 undefined name](#flake8-undefined-name).

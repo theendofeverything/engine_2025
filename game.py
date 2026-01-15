@@ -157,11 +157,13 @@ class Game:
         self.renderer = Renderer(game=self)
         self.renderer.window.title = "Example game"
         # self.renderer.window.size = (60*16, 60*9)
-        self.renderer.window.size = (60*16, 60*14)
+        # self.renderer.window.size = (60*16, 60*14)
+        self.renderer.window.size = (700, 450)
         self.renderer.window.resizable = True
         # Additional window settings used during development:
         self.renderer.window.always_on_top = True
-        self.renderer.window.position = (950, 0)
+        # self.renderer.window.position = (950, 0)
+        self.renderer.window.position = (0, 0)
         # self.renderer.window.opacity = 0.8              # This is neat
         # self.renderer.toggle_fullscreen()               # Start in fullscreen
 
@@ -176,11 +178,15 @@ class Game:
         # Create entities (like the Player)
         self.entities = {}
         self.entities["player"] = Entity(
+                debug=self.debug,
+                entities=self.entities,
                 entity_type=EntityType.PLAYER,
                 clocked_event_name="period_3",
                 # origin=Point2D(0.5, 0),
                 )
         self.entities["cross"] = Entity(
+                debug=self.debug,
+                entities=self.entities,
                 entity_type=EntityType.NPC,
                 # clocked_event_name="period_1",
                 # origin=Point2D(0, 0.1),
@@ -188,6 +194,10 @@ class Game:
         # Entities track their own name for display in the debug HUD
         for name, entity in self.entities.items():
             entity.entity_name = name
+
+        # Slow down the NPC
+        self.entities["cross"].movement.speed.accel /= 2
+        self.entities["cross"].movement.speed.slide /= 2
 
     def run(self, log: logging.Logger) -> None:
         """Run the game."""
@@ -222,9 +232,10 @@ class Game:
         for frame_counter in timing.frame_counters.values():
             frame_counter.update()
 
+        debug = False
         def debug_frame_counters() -> None:
             hud = self.debug.hud
-            heading = f"|\n+- Timing -> Tick ({FILE})"
+            heading = f"|\n+- Timing -> FrameCounter ({FILE})"
             hud.print(heading)
             # Video frame counters
             hud.print("|  +- frame_counters['video']")
@@ -242,7 +253,7 @@ class Game:
             hud.print("|     +- clocked_events:")
             for clocked_event in timing.frame_counters["game"].clocked_events.values():
                 hud.print(f"|        +- {clocked_event}")
-        debug_frame_counters()
+        if debug: debug_frame_counters()
 
     def update_entities(self) -> None:
         """Update the state of all entities based on counters and events."""
