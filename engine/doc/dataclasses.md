@@ -271,9 +271,13 @@ See https://docs.python.org/3/library/dataclasses.html#mutable-default-values
 
 The following is true for ANY class, not just a dataclass:
 
-Default member variable values are stored in class attributes.
-
-Default member variable values are stored in class attributes.
+```
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!Default member variable values are stored in class attributes.!!
+!!                                                              !!
+!!Default member variable values are stored in class attributes.!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+```
 
 What? Consider this:
 
