@@ -158,7 +158,7 @@ class Game:
         self.renderer.window.title = "Example game"
         # self.renderer.window.size = (60*16, 60*9)
         # self.renderer.window.size = (60*16, 60*14)
-        self.renderer.window.size = (700, 450)
+        self.renderer.window.size = (700, 700)
         self.renderer.window.resizable = True
         # Additional window settings used during development:
         self.renderer.window.always_on_top = True
@@ -290,7 +290,7 @@ class Game:
 
     def draw_remaining_art(self) -> None:
         """Update art and debug art"""
-        draw_more_stuff = False
+        draw_more_stuff = True
         if draw_more_stuff:
             # self.draw_a_cross()                       # Draw application artwork
             self.draw_background_crosses()                      # Draw application artwork

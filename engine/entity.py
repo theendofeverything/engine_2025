@@ -78,6 +78,7 @@ class Speed:
     """Store speed information on up/down/left/right."""
     vec:    Vec2D = field(default_factory=lambda: Vec2D(x=0.0, y=0.0))
     accel:  float = 0.003
+    accel_abs_max:  float = 0.003
     slide:  float = 0.0015
     abs_max: float = 0.02
 
@@ -87,28 +88,42 @@ class Movement:
     """Entity movement data: speed and up/down/left/right, and whether or not it is moving."""
     # pylint: disable=unnecessary-lambda
     speed:      Speed = field(default_factory=lambda: Speed())
-    is_going:   IsGoing = field(default_factory=lambda: IsGoing())
-    is_moving:  bool = False
+    is_force:   IsGoing = field(default_factory=lambda: IsGoing())
+    is_excited:  bool = False
+
+    def update_npc_speed(self) -> None:
+        """Placeholder for now. Do nothing. Code is in npc_update()."""
+        pass
 
     def update_speed(self) -> None:
         """Update speed. Used in Entity.move()."""
         movement = self
-        is_going = movement.is_going
-        # To update speed: increase if controller is going that way, decrease if not.
+        is_force = movement.is_force
+        # To update speed:
+        #   Increase by speed.accel if a force (controller or aim) is going that way.
+        #   Decrease by speed.slide if no force in that x or y component.
         # TODO: update based on elapsed time, not number of frames.
-        # TODO: refactor speed update to avoid repetition (every direction has the same thing done
-        # to it).
+        # TODO: refactor speed update to avoid repetition (x and y do the same things).
         # Adjust speed.vec.y based on forces up/down
-        if is_going.up:
+        if is_force.up:
             movement.speed.vec.y += movement.speed.accel
             # Clamp speed at max
             movement.speed.vec.y = min(movement.speed.vec.y, movement.speed.abs_max)
-        if is_going.down:
+        if is_force.down:
             movement.speed.vec.y -= movement.speed.accel
             # Clamp speed at max
             movement.speed.vec.y = max(movement.speed.vec.y, -1*movement.speed.abs_max)
+        # Adjust speed.vec.x based on forces right/left
+        if is_force.right:
+            movement.speed.vec.x += movement.speed.accel
+            # Clamp speed at max
+            movement.speed.vec.x = min(movement.speed.vec.x, movement.speed.abs_max)
+        if is_force.left:
+            movement.speed.vec.x -= movement.speed.accel
+            # Clamp speed at max
+            movement.speed.vec.x = max(movement.speed.vec.x, -1*movement.speed.abs_max)
         # If no force up/down, slide to a halt:
-        if (not is_going.up) and (not is_going.down):
+        if (not is_force.up) and (not is_force.down):
             if movement.speed.vec.y < 0:
                 movement.speed.vec.y += movement.speed.slide
                 # Speed approaches 0 from the left and stops at 0
@@ -117,17 +132,8 @@ class Movement:
                 movement.speed.vec.y -= movement.speed.slide
                 # Speed approaches 0 from the right and stops at 0
                 movement.speed.vec.y = max(movement.speed.vec.y, 0)
-        # Adjust speed.vec.x based on forces right/left
-        if is_going.right:
-            movement.speed.vec.x += movement.speed.accel
-            # Clamp speed at max
-            movement.speed.vec.x = min(movement.speed.vec.x, movement.speed.abs_max)
-        if is_going.left:
-            movement.speed.vec.x -= movement.speed.accel
-            # Clamp speed at max
-            movement.speed.vec.x = max(movement.speed.vec.x, -1*movement.speed.abs_max)
-        # If no force right/eft, slide to a halt:
-        if (not is_going.right) and (not is_going.left):
+        # If no force right/left, slide to a halt:
+        if (not is_force.right) and (not is_force.left):
             if movement.speed.vec.x < 0:
                 movement.speed.vec.x += movement.speed.slide
                 # Speed approaches 0 from the left and stops at 0
@@ -136,20 +142,6 @@ class Movement:
                 movement.speed.vec.x -= movement.speed.slide
                 # Speed approaches 0 from the right and stops at 0
                 movement.speed.vec.x = max(movement.speed.vec.x, 0)
-        # if is_going.right:
-        #     movement.speed.right += movement.speed.accel
-        # else:
-        #     movement.speed.right -= movement.speed.slide
-
-        # if is_going.left:
-        #     movement.speed.left += movement.speed.accel
-        # else:
-        #     movement.speed.left -= movement.speed.slide
-        # Clamp speeds
-        # movement.speed.right = min(movement.speed.right, movement.speed.abs_max)
-        # movement.speed.right = max(movement.speed.right, 0)
-        # movement.speed.left = min(movement.speed.left, movement.speed.abs_max)
-        # movement.speed.left = max(movement.speed.left, 0)
 
 
 # Next: use shape: Shape
@@ -205,7 +197,7 @@ class Entity:
     TODO: change entity_name from string to enum
 
     API:
-        is_moving():
+        is_excited():
             True if entity is moving.
         update(timing: Timing, ui_keys: UIKeys):
             If game is not paused, the entity animation updates (if the clocked_event period
@@ -258,7 +250,7 @@ class Entity:
         clocked_event = timing.frame_counters["game"].clocked_events[self.clocked_event_name]
         if clocked_event.is_period:
             # self._reset_points()
-            if self.is_moving:
+            if self.is_excited:
                 amount_excited = self.amount_excited.high
             else:
                 amount_excited = self.amount_excited.low
@@ -288,10 +280,10 @@ class Entity:
     def player_update_from_ui(self, ui_keys: UIKeys) -> None:
         """Update movement state based on UI input from arrow keys."""
         movement = self.movement
-        movement.is_going.up = ui_keys.up_arrow
-        movement.is_going.down = ui_keys.down_arrow
-        movement.is_going.left = ui_keys.left_arrow
-        movement.is_going.right = ui_keys.right_arrow
+        movement.is_force.up = ui_keys.up_arrow
+        movement.is_force.down = ui_keys.down_arrow
+        movement.is_force.left = ui_keys.left_arrow
+        movement.is_force.right = ui_keys.right_arrow
 
     def npc_update(self) -> None:
         """Update movement state of NPC based on ?"""
@@ -304,29 +296,40 @@ class Entity:
             # TODO: write up a table of NPC speed values and resulting aim vectors to understand why
             # NPC keeps moving (it never considers itself locked in on the player).
             #
-            # Floats: cannot compare against zero. Use epsilon to say "close enough".
-            # 0.2/100 = 0.002
-            # epsilon = self.size/100
-            epsilon = 0
-            if aim.x > epsilon:
-                movement.is_going.right = True
-                movement.is_going.left = False
-            elif aim.x < -1*epsilon:
-                movement.is_going.left = True
-                movement.is_going.right = False
+            if True:
+                # Floats: cannot compare against zero. Use epsilon to say "close enough".
+                # 0.2/100 = 0.002
+                # epsilon = self.size/100
+                # epsilon = 10*self.movement.speed.accel
+                epsilon = 0
+                if aim.x > epsilon:
+                    movement.speed.accel = movement.speed.accel_abs_max
+                    movement.is_force.right = True
+                    movement.is_force.left = False
+                elif aim.x < -1*epsilon:
+                    movement.speed.accel = movement.speed.accel_abs_max
+                    movement.is_force.left = True
+                    movement.is_force.right = False
+                else:
+                    # self.movement.speed.accel = self.movement.speed.accel/3
+                    movement.is_force.left = False
+                    movement.is_force.right = False
             else:
-                movement.is_going.left = False
-                movement.is_going.right = False
+                movement.speed.accel *= aim.x  # LEFTOFF: This gets set to zero right away!
+                movement.speed.vec.y += 0
+                movement.speed.vec.x += movement.speed.accel
+                # movement.speed.vec.x
+
             debug = True
 
             def debug_npc_motion() -> None:
                 self.debug.hud.print(f"+- Entity.npc_update() ({FILE})")
                 self.debug.hud.print("|  +- Locals")
                 self.debug.hud.print(f"|     +- aim = {aim.fmt(0.6)}")
-                self.debug.hud.print(f"|     +- epsilon = size/100: {epsilon}")
+                # self.debug.hud.print(f"|     +- epsilon = size/100: {epsilon}")
                 self.debug.hud.print("|  +- Movement Attrs")
-                self.debug.hud.print(f"|     +- is_going.left: {movement.is_going.left}")
-                self.debug.hud.print(f"|     +- is_going.right: {movement.is_going.right}")
+                self.debug.hud.print(f"|     +- is_force.left: {movement.is_force.left}")
+                self.debug.hud.print(f"|     +- is_force.right: {movement.is_force.right}")
                 self.debug.hud.print(f"|     +- speed.accel: {movement.speed.accel}")
                 self.debug.hud.print(f"|     +- speed.slide: {movement.speed.slide}")
                 # LEFTOFF
@@ -346,33 +349,42 @@ class Entity:
             case EntityType.PLAYER:
                 self.player_update_from_ui(ui_keys)
             case EntityType.NPC:
-                self.npc_update()
+                self.npc_update()  # Set NPC forces
             case _:
                 pass
         if not timing.frame_counters["game"].is_paused:
-            self.move()
+            self.move()     # Move player/NPR according to forces
             self.animate(timing)
 
     @property
-    def is_moving(self) -> bool:
+    def is_excited(self) -> bool:
         """True if entity is moving."""
-        return self.movement.is_moving
+        return self.movement.is_excited
 
     def move(self) -> None:
         """Move the entity based on movement state"""
         movement = self.movement
-        is_going = movement.is_going
+        is_force = movement.is_force
         origin = self.origin
         # Instead of modifying origin, modify speed.
-        movement.update_speed()
+        entity_type = self.entity_type
+        match entity_type:
+            case EntityType.PLAYER:
+                movement.update_speed()
+            case EntityType.NPC:
+                # movement.update_npc_speed()
+                # LEFTOFF: chnage to update_npc_speed()
+                movement.update_speed()
+            case _:
+                pass
         # Update position
         # origin.y += movement.speed.up - movement.speed.down
         origin.y += movement.speed.vec.y
         # origin.x += movement.speed.right - movement.speed.left
         origin.x += movement.speed.vec.x
 
-        # Update movement state
-        movement.is_moving = (is_going.up or is_going.down or is_going.left or is_going.right)
+        # Update excited state
+        movement.is_excited = (is_force.up or is_force.down or is_force.left or is_force.right)
 
     def draw(self, art: Art) -> None:
         """Draw entity in the GCS. Game must call update() before draw()."""

@@ -337,7 +337,7 @@ Then launch the application:
 The rest of the packages are only required for developing the engine:
 
 - Install `pytest` to run the doctests.
-- Install the linters `pycodestyle`, `pylint`, and `mypy`.
+- Install the linters `pycodestyle`, `pylint`, and `mypy`, and `flake8`.
 
 ### Unit tests
 
