@@ -283,6 +283,17 @@ class UI:
             case pygame.K_RIGHT:    self.keys.right_arrow = True
             case pygame.K_UP:       self.keys.up_arrow = True
             case pygame.K_DOWN:     self.keys.down_arrow = True
+            # TEMPORARY CODE FOR WORKING ON NPC MOTION
+            case pygame.K_k:
+                if kmod & pygame.KMOD_SHIFT:
+                    game.debug.hud.controls["k"] /= 2
+                else:
+                    game.debug.hud.controls["k"] *= 2
+            case pygame.K_b:
+                if kmod & pygame.KMOD_SHIFT:
+                    game.debug.hud.controls["b"] /= 2
+                else:
+                    game.debug.hud.controls["b"] *= 2
 
     def log_unused_events(self, event: pygame.event.Event, log: logging.Logger) -> None:
         """Log events that I have not found a use for yet."""

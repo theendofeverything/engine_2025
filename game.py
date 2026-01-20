@@ -290,7 +290,7 @@ class Game:
 
     def draw_remaining_art(self) -> None:
         """Update art and debug art"""
-        draw_more_stuff = True
+        draw_more_stuff = False
         if draw_more_stuff:
             # self.draw_a_cross()                       # Draw application artwork
             self.draw_background_crosses()                      # Draw application artwork
