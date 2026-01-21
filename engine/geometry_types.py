@@ -1,7 +1,7 @@
 """Geometry data types: points and vectors.
 """
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 FLOAT_PRINT_PRECISION = 0.2
 
@@ -56,6 +56,13 @@ class Point2D:
     def from_tuple(cls, position: tuple[float, float]) -> Point2D:
         """Create a point from a pygame event position (x, y)."""
         return cls(x=position[0], y=position[1])
+
+
+@dataclass
+class DirectedLineSeg2D:
+    """Two-dimensional directed line segment."""
+    start: Point2D = field(default_factory=lambda: Point2D(x=0.0, y=0.0))
+    end: Point2D = field(default_factory=lambda: Point2D(x=0.0, y=0.0))
 
 
 @dataclass
