@@ -170,36 +170,43 @@ class Timing:
     _ms_per_frame_buffer:   BufferInt = BufferInt()     # Buffered value
 
     def __post_init__(self) -> None:
+        """Add the default frame counters for debug.
+
+        After timing = Timing(), the Game should setup its own frame counters:
+
+        # Add a FrameCounter for the game.
+        self.timing.frame_counters["game"] = FrameCounter()
+        # Add ClockedEvents to the frame counter.
+        # Example:
+        frame_counter = self.timing.frame_counters["game"]
+        frame_counter.clocked_events["every_frame"] = ClockedEvent(
+                frame_counter,
+                period=1
+                )
+        frame_counter.clocked_events["period_1"] = ClockedEvent(
+                frame_counter,
+                period=1
+                )
+        frame_counter.clocked_events["period_2"] = ClockedEvent(
+                frame_counter,
+                period=2
+                )
+        frame_counter.clocked_events["period_n"] = ClockedEvent(
+                frame_counter,
+                period=20
+                )
+        # Make the key values accessible as "event_name" for debugging.
+        for name, clocked_event in frame_counter.clocked_events.items():
+            clocked_event.event_name = name
+        """
         self.frame_counters = {}
         self.frame_counters["video"] = FrameCounter()
-        self.frame_counters["game"] = FrameCounter()
         for name, frame_counter in self.frame_counters.items():
             match name:
                 case "video":
                     frame_counter.clocked_events["hud_fps"] = ClockedEvent(
                             frame_counter,
                             period=30
-                            )
-                case "game":
-                    frame_counter.clocked_events["every_frame"] = ClockedEvent(
-                            frame_counter,
-                            period=1
-                            )
-                    frame_counter.clocked_events["period_1"] = ClockedEvent(
-                            frame_counter,
-                            period=1
-                            )
-                    frame_counter.clocked_events["period_2"] = ClockedEvent(
-                            frame_counter,
-                            period=2
-                            )
-                    frame_counter.clocked_events["period_3"] = ClockedEvent(
-                            frame_counter,
-                            period=3
-                            )
-                    frame_counter.clocked_events["period_n"] = ClockedEvent(
-                            frame_counter,
-                            period=20
                             )
         # Assign each clocked_event dict key to its ClockedEvent.event_name
         # for display in the debug HUD.

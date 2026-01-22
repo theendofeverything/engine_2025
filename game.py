@@ -89,7 +89,7 @@ import pathlib
 import logging
 import pygame
 from engine.debug import Debug
-from engine.timing import Timing
+from engine.timing import Timing, FrameCounter, ClockedEvent
 from engine.art import Art
 from engine.ui import UI
 from engine.panning import Panning
@@ -175,7 +175,39 @@ class Game:
                 window_size=Vec2D.from_tuple(self.renderer.window.size),
                 panning=self.ui.panning)
 
+        #######################
+        # Create clocked events
+        #######################
+        # Add a FrameCounter for the game.
+        self.timing.frame_counters["game"] = FrameCounter()
+        # Add ClockedEvents to the frame counter.
+        frame_counter = self.timing.frame_counters["game"]
+        frame_counter.clocked_events["every_frame"] = ClockedEvent(
+                frame_counter,
+                period=1
+                )
+        frame_counter.clocked_events["period_1"] = ClockedEvent(
+                frame_counter,
+                period=1
+                )
+        frame_counter.clocked_events["period_2"] = ClockedEvent(
+                frame_counter,
+                period=2
+                )
+        frame_counter.clocked_events["period_3"] = ClockedEvent(
+                frame_counter,
+                period=3
+                )
+        frame_counter.clocked_events["period_n"] = ClockedEvent(
+                frame_counter,
+                period=20
+                )
+        for name, clocked_event in frame_counter.clocked_events.items():
+            clocked_event.event_name = name
+
+        ###################################
         # Create entities (like the Player)
+        ###################################
         self.entities = {}
         self.entities["player"] = Entity(
                 debug=self.debug,
@@ -232,7 +264,7 @@ class Game:
         for frame_counter in timing.frame_counters.values():
             frame_counter.update()
 
-        debug = False
+        debug = True
 
         def debug_frame_counters() -> None:
             hud = self.debug.hud
