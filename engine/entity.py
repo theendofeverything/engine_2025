@@ -97,6 +97,7 @@ class Movement:
     force:      Force = field(default_factory=lambda: Force())
     is_force:   IsGoing = field(default_factory=lambda: IsGoing())
     is_excited:  bool = False
+    follow_entity: str = ""  # Name of entity to follow
 
     def update_npc_speed(self, abs_terminal_velocity: float) -> None:
         """Update speed of the NPC based on the forces calculated for this frame."""
@@ -280,6 +281,46 @@ class Entity:
             self.artwork.points.append(Point2D(line.start.x, line.start.y))
             self.artwork.points.append(Point2D(line.end.x, line.end.y))
 
+    def update(self, timing: Timing, ui_keys: UIKeys) -> None:
+        """Update entity state based on the Timing -> Ticks and UI -> UIKeys.
+
+        I update forces regardless of whether the game is paused. This is for two reasons:
+            1) Forces do not accumulate, they are based on current state only. So the calculated
+               will appear "paused" if the current state is paused.
+            2) If I am debugging the force update code but skip the update because the game is
+               paused, then my debug code does not show up in the HUD (I have snapshots for this,
+               but then I need to clear the snapshot).
+        """
+        entity_type = self.entity_type
+        # LEFTOFF: switch to entity_i_follow_exists
+        player_exists = "player" in self.entities
+        movement = self.movement
+        if player_exists: player = self.entities["player"]
+        # Update the forces on the entity.
+        match entity_type:
+            case EntityType.PLAYER:
+                # Player forces come from UI inputs
+                self.update_player_forces_from_ui(ui_keys)
+                if not timing.frame_counters["game"].is_paused:
+                    movement.update_player_speed()
+                    self.update_player_position()
+            case EntityType.NPC:
+                # NPC forces come from displacement to player and NPC speed
+                follow_entity = self.movement.follow_entity
+                it_exists = follow_entity in self.entities
+                self.update_npc_forces(it_exists)
+                terminal_velocity = (
+                        self.entities[follow_entity].movement.speed.abs_max if player_exists else movement.speed.abs_max
+                        )
+                if not timing.frame_counters["game"].is_paused:
+                    movement.update_npc_speed(abs_terminal_velocity=terminal_velocity)
+                    self.update_npc_position()
+            case _:
+                pass
+        # Update animation
+        if not timing.frame_counters["game"].is_paused:
+            self.animate(timing)
+
     def update_player_forces_from_ui(self, ui_keys: UIKeys) -> None:
         """Update movement state based on UI input from arrow keys."""
         movement = self.movement
@@ -309,7 +350,7 @@ class Entity:
         movement.is_force.left = ui_keys.left_arrow
         movement.is_force.right = ui_keys.right_arrow
 
-    def update_npc_forces(self, player_exists: bool) -> None:
+    def update_npc_forces(self, entity_i_follow_exists: bool) -> None:
         """Update forces on the NPC.
 
         NPC forces are based on:
@@ -317,17 +358,17 @@ class Entity:
             - previous displacement from player (spring)
         """
         debug = True
-        if player_exists:
-            player = self.entities["player"]
-            # Calculate displacement vector (displacement of NPC from the player)
-            player_to_npc = DirectedLineSeg2D(start=player.origin, end=self.origin)
+        if entity_i_follow_exists:
+            entity = self.entities[self.movement.follow_entity]
+            # Calculate displacement vector (displacement of NPC from the entity)
+            player_to_npc = DirectedLineSeg2D(start=entity.origin, end=self.origin)
             if debug:
                 self.debug.art.lines_gcs.append(
                         Line2D(
                             start=player_to_npc.start,
                             end=player_to_npc.end,
                             color=Colors.line_debug))
-            # start = player.origin
+            # start = entity.origin
             # end = self.origin
             d = Vec2D.from_points(start=player_to_npc.start, end=player_to_npc.end)
             # Get velocity vector
@@ -335,23 +376,19 @@ class Entity:
             v = movement.speed.vec
             # Update forces
             # TODO: set up a better way to connect variables to user input from HUD
-            # k = 0.0003                                   # Spring constant
-            # b = 0.015                                  # Damping constant
-            k = self.debug.hud.controls["k"]
-            b = self.debug.hud.controls["b"]
+            controls = self.debug.hud.controls
             # fk(n) = -1*k*d(n-1)
-            force_spring = Force(vec=Vec2D(-k*d.x, 0))
+            force_spring = Force(vec=Vec2D(-controls["k"]*d.x, 0))
             # fb(n) = -1*b*v(n-1)
-            force_friction = Force(vec=Vec2D(-b*v.x, 0))
+            force_friction = Force(vec=Vec2D(-controls["b"]*v.x, 0))
             # ft(b) = fk(n) + fb(n)
             movement.force.vec.x = force_spring.vec.x + force_friction.vec.x
 
             # Update excited state:
             # Look excited if you feel forces acting on you
             force_feel = movement.speed.accel_abs_max/2  # Threshold for feeling force
-            force_x = movement.force.vec.x
-            force_y = movement.force.vec.y
-            movement.is_excited = (force_x > force_feel) or (force_y > force_feel)
+            force = movement.force.vec
+            movement.is_excited = (force.x > force_feel) or (force.y > force_feel)
 
             if debug:
                 hud = self.debug.hud
@@ -359,8 +396,8 @@ class Entity:
                 def debug_npc_forces() -> None:
                     hud.print(f"+- Entity.update() ({FILE})")
                     hud.print("|  +- Locals")
-                    hud.print(f"|     +- k:float = {k}")
-                    hud.print(f"|     +- b:float = {b}")
+                    hud.print(f"|     +- k:float = {controls['k']}")
+                    hud.print(f"|     +- b:float = {controls['b']}")
                     start = player_to_npc.start
                     end = player_to_npc.end
                     hud.print(f"|     +- d:Vec2D = {d.fmt(0.6)}: {start} to {end}")
@@ -368,48 +405,11 @@ class Entity:
                     hud.print("|  +- Movement Attrs")
                     hud.print(f"|     +- speed.vec: {movement.speed.vec.fmt(0.6)}")
                     hud.print(f"|     +- force.vec: {movement.force.vec.fmt(0.6)}")
-                    player_speed = player.movement.speed.vec
-                    player_accel = player.movement.speed.accel
-                    hud.print(f"|     +- player speed: {player_speed}")
-                    hud.print(f"|     +- player accel: {player_accel}")
+                    follow_speed = entity.movement.speed.vec
+                    follow_accel = entity.movement.speed.accel
+                    hud.print(f"|     +- follow_entity speed: {follow_speed}")
+                    hud.print(f"|     +- follow_entity accel: {follow_accel}")
                 debug_npc_forces()
-
-    def update(self, timing: Timing, ui_keys: UIKeys) -> None:
-        """Update entity state based on the Timing -> Ticks and UI -> UIKeys.
-
-        I update forces regardless of whether the game is paused. This is for two reasons:
-            1) Forces do not accumulate, they are based on current state only. So the calculated
-               will appear "paused" if the current state is paused.
-            2) If I am debugging the force update code but skip the update because the game is
-               paused, then my debug code does not show up in the HUD (I have snapshots for this,
-               but then I need to clear the snapshot).
-        """
-        entity_type = self.entity_type
-        player_exists = "player" in self.entities
-        movement = self.movement
-        if player_exists: player = self.entities["player"]
-        # Update the forces on the entity.
-        match entity_type:
-            case EntityType.PLAYER:
-                # Player forces come from UI inputs
-                self.update_player_forces_from_ui(ui_keys)
-                if not timing.frame_counters["game"].is_paused:
-                    movement.update_player_speed()
-                    self.update_player_position()
-            case EntityType.NPC:
-                # NPC forces come from displacement to player and NPC speed
-                self.update_npc_forces(player_exists)
-                terminal_velocity = (
-                        player.movement.speed.abs_max if player_exists else movement.speed.abs_max
-                        )
-                if not timing.frame_counters["game"].is_paused:
-                    movement.update_npc_speed(abs_terminal_velocity=terminal_velocity)
-                    self.update_npc_position()
-            case _:
-                pass
-        # Update animation
-        if not timing.frame_counters["game"].is_paused:
-            self.animate(timing)
 
     @property
     def is_excited(self) -> bool:

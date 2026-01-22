@@ -227,9 +227,12 @@ class Game:
         for name, entity in self.entities.items():
             entity.entity_name = name
 
-        # Slow down the NPC
-        self.entities["cross"].movement.speed.accel /= 2
-        self.entities["cross"].movement.speed.slide /= 2
+        # Set NPC to follow the player
+        self.entities["cross"].movement.follow_entity = "player"
+
+        # # Slow down the NPC
+        # self.entities["cross"].movement.speed.accel /= 2
+        # self.entities["cross"].movement.speed.slide /= 2
 
     def run(self, log: logging.Logger) -> None:
         """Run the game."""
@@ -299,21 +302,23 @@ class Game:
             entity.update(timing, ui_keys)
             entity.draw(art)
 
-        def debug_entities() -> None:
-            hud = self.debug.hud
-            heading = f"|\n+- Entities ({FILE})"
-            hud.print(heading)
-            for entity, entity_value in self.entities.items():
-                hud.print(f"|  +- {entity}:")
-                for attr, attr_value in entity_value.__dict__.items():
-                    # Catch points to print them with desired precision
-                    if attr == "points":
-                        hud.print(f"|     +- {attr}:")
-                        for point in attr_value:
-                            hud.print(f"|        +- !{point.fmt(0.3)}")
-                    else:
-                        hud.print(f"|     +- {attr}: {attr_value}")
-        debug_entities()
+        debug = False
+        if debug:
+            def debug_entities() -> None:
+                hud = self.debug.hud
+                heading = f"|\n+- Entities ({FILE})"
+                hud.print(heading)
+                for entity, entity_value in self.entities.items():
+                    hud.print(f"|  +- {entity}:")
+                    for attr, attr_value in entity_value.__dict__.items():
+                        # Catch points to print them with desired precision
+                        if attr == "points":
+                            hud.print(f"|     +- {attr}:")
+                            for point in attr_value:
+                                hud.print(f"|        +- !{point.fmt(0.3)}")
+                        else:
+                            hud.print(f"|     +- {attr}: {attr_value}")
+            debug_entities()
 
     def reset_art(self) -> None:
         """Clear out old artwork: application and debug."""
