@@ -302,22 +302,42 @@ class Game:
             entity.update(timing, ui_keys)
             entity.draw(art)
 
-        debug = False
+        debug = True
         if debug:
             def debug_entities() -> None:
                 hud = self.debug.hud
                 heading = f"|\n+- Entities ({FILE})"
                 hud.print(heading)
-                for entity, entity_value in self.entities.items():
-                    hud.print(f"|  +- {entity}:")
-                    for attr, attr_value in entity_value.__dict__.items():
-                        # Catch points to print them with desired precision
-                        if attr == "points":
-                            hud.print(f"|     +- {attr}:")
-                            for point in attr_value:
-                                hud.print(f"|        +- !{point.fmt(0.3)}")
-                        else:
-                            hud.print(f"|     +- {attr}: {attr_value}")
+
+                iterate_over_specific_entity_attrs = True
+                if iterate_over_specific_entity_attrs:
+                    # Only show these entity attrs:
+                    for name,entity in self.entities.items():
+                        hud.print(f"|     +- {name}")
+                        hud.print(f"|        +- name: {entity.entity_name}")
+                        hud.print(f"|        +- type: {entity.entity_type}")
+                        hud.print(f"|        +- clocked by: {entity.clocked_event_name}")
+                        hud.print(f"|        +- origin: {entity.origin}")
+                        hud.print(f"|        +- size: {entity.size}")
+                        hud.print(f"|        +- amount_excited: {entity.amount_excited}")
+                else:
+                    for entity, entity_value in self.entities.items():
+                        hud.print(f"|  +- {entity}:")
+                        for attr, attr_value in entity_value.__dict__.items():
+                            match attr:
+                                case "points":
+                                    # Catch points to print them with desired precision
+                                    hud.print(f"|     +- {attr}:")
+                                    for point in attr_value:
+                                        hud.print(f"|        +- !{point.fmt(0.3)}")
+                                case "debug":
+                                    # Do not iterate over the items in game.debug!
+                                    pass
+                                case "entities":
+                                    # Do not iterate over the items in game.entities!
+                                    pass
+                                case _:
+                                    hud.print(f"|     +- {attr}: {attr_value}")
             debug_entities()
 
     def reset_art(self) -> None:
