@@ -12,9 +12,9 @@ else
     mkdir -p fonts
     # Link to the font used in the debug HUD
     ln -rs ../${repo}/fonts/ProggyClean.ttf fonts/
-    # Link to the engine, entry point, make recipes, and Python config files
+    # Link to the engine, make recipes, and Python config files
+    # We must copy main.py, not link it. If we link it, then it constructs Game() from engine_2025.
     ln -rs ../${repo}/engine/ .
-    ln -rs ../${repo}/main.py .
     ln -rs ../${repo}/Makefile .
     ln -rs ../${repo}/requirements.txt .
     ln -rs ../${repo}/.mypy.ini .
@@ -23,5 +23,6 @@ else
     ln -rs ../${repo}/tox.ini .
     # Copy in a starting point for the game code
     touch README.md
+    cp -i ../${repo}/main.py .
     cp -i ../${repo}/game.py .
 fi
