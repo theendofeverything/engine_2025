@@ -208,6 +208,9 @@ class Game:
         ###################################
         # Create entities (like the Player)
         ###################################
+        # size: Use entity size as mass and include mass in the acceleration calc
+        # clocked_event_name: controls animation speed
+        # origin: set initial location
         self.entities = {}
         self.entities["player"] = Entity(
                 debug=self.debug,
@@ -222,7 +225,7 @@ class Game:
                 entity_type=EntityType.NPC,
                 clocked_event_name="period_3",
                 # clocked_event_name="period_1",
-                # origin=Point2D(0, 0.1),
+                origin=Point2D(0, 0.25),
                 )
         self.entities["cross2"] = Entity(
                 debug=self.debug,
@@ -231,23 +234,15 @@ class Game:
                 clocked_event_name="period_3",
                 size=0.15,
                 # clocked_event_name="period_1",
-                origin=Point2D(0, -0.1),
+                origin=Point2D(0, -0.5),
                 )
         # Entities track their own name for display in the debug HUD
         for name, entity in self.entities.items():
             entity.entity_name = name
 
-        # LEFTOFF: add y-movement to cross entities
-        # TODO: use entity size as mass and include mass in the acceleration calc
         # Set NPC to follow the player
         self.entities["cross1"].movement.follow_entity = "player"
         self.entities["cross2"].movement.follow_entity = "cross1"
-        self.entities["cross2"].amount_excited.high = 0.01
-        self.entities["cross2"].amount_excited.low = 0.002
-
-        # # Slow down the NPC
-        # self.entities["cross"].movement.speed.accel /= 2
-        # self.entities["cross"].movement.speed.slide /= 2
 
     def run(self, log: logging.Logger) -> None:
         """Run the game."""

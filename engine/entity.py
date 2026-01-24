@@ -77,8 +77,6 @@ class IsGoing:
 class Speed:
     """Store speed information on up/down/left/right."""
     vec:    Vec2D = field(default_factory=lambda: Vec2D(x=0.0, y=0.0))
-    accel:  float = 0.003
-    accel_abs_max:  float = 0.003
     slide:  float = 0.0015
     abs_max: float = 0.02
 
@@ -90,12 +88,20 @@ class Force:
 
 
 @dataclass
+class Accel:
+    """Acceleration vector of the entity."""
+    vec:        Vec2D = field(default_factory=lambda: Vec2D(x=0.003, y=0.003))
+    abs_max:    float = 0.003
+
+
+@dataclass
 class Movement:
     """Entity movement data: speed and up/down/left/right, and whether or not it is moving."""
     # pylint: disable=unnecessary-lambda
     speed:      Speed = field(default_factory=lambda: Speed())
     force:      Force = field(default_factory=lambda: Force())
-    mass:       float = 1  # LEFTOFF: tie mass back to size and add a scaling factor I can tune
+    accel:      Accel = field(default_factory=lambda: Accel())
+    mass:       float = field(init=False)  # Entity sets mass based on size in __post_init__()
     is_force:   IsGoing = field(default_factory=lambda: IsGoing())
     is_excited:  bool = False
     follow_entity: str = ""  # Name of entity to follow
@@ -103,13 +109,10 @@ class Movement:
     def update_npc_speed(self, abs_terminal_velocity: float) -> None:
         """Update speed of the NPC based on the forces calculated for this frame."""
         movement = self
+        a = movement.accel.vec
         # Update velocity: v(n) = v(n-1) + a(n) (acceleration is force, for now)
-        a = Vec2D(
-                movement.force.vec.x/movement.mass,
-                movement.force.vec.y/movement.mass
-                )
-        # movement.speed.vec.x += movement.force.vec.x
-        # movement.speed.vec.y += movement.force.vec.y
+        a.x = movement.force.vec.x/movement.mass
+        a.y = movement.force.vec.y/movement.mass
         movement.speed.vec.x += a.x
         movement.speed.vec.y += a.y
         # Impose a terminal velocity on NPC based on player's maximum speed
@@ -122,11 +125,22 @@ class Movement:
             movement.speed.vec.x = max(
                     movement.speed.vec.x,
                     -1*abs_terminal_velocity)
+        if movement.speed.vec.y > 0:
+            movement.speed.vec.y = min(
+                    movement.speed.vec.y,
+                    abs_terminal_velocity)
+        if movement.speed.vec.y < 0:
+            movement.speed.vec.y = max(
+                    movement.speed.vec.y,
+                    -1*abs_terminal_velocity)
 
     def update_player_speed(self) -> None:
         """Update player speed based on UI controls."""
         movement = self
         max_speed = movement.speed.abs_max
+        # TODO: use player mass to get acceleration from force
+        #       Then use player acceleration to get speed
+        #       Instead of "slide" find a way to encode inertia.
         force = movement.force.vec
         movement.speed.vec.y += force.y
         movement.speed.vec.x += force.x
@@ -237,7 +251,7 @@ class Entity:
     clocked_event_name: str = "every_frame"             # Match name of clocked_events dict key
     # pylint: disable=unnecessary-lambda
     origin:             Point2D = field(default_factory=lambda: Point2D(0, 0))
-    # TODO: make amount_excited proportional to size
+    # amount_excited is proportional to size in __post_init__()
     amount_excited:     AmountExcited = field(default_factory=lambda: AmountExcited())
     size:               float = 0.2
     artwork:            Artwork = field(default_factory=lambda: Artwork())
@@ -246,6 +260,10 @@ class Entity:
     def __post_init__(self) -> None:
         self._reset_points()
         self._initialize_point_offsets()
+        # Game can override these, but here are the defaults
+        self.movement.mass = self.size * 5  # e.g., if size is 0.2, mass is 1
+        self.amount_excited.high = self.size / 10
+        self.amount_excited.low = self.size / 40
 
     def _initialize_point_offsets(self) -> None:
         for _ in self.artwork.points:
@@ -338,14 +356,16 @@ class Entity:
         movement.force = Force()
         # Assign force (x,y) based on UI keys: -accel, 0, or accel
         force = movement.force.vec
+        accel = movement.accel.vec
+        mass = movement.mass
         if ui_keys.up_arrow:
-            force.y += movement.speed.accel
+            force.y += mass * accel.y
         if ui_keys.down_arrow:
-            force.y -= movement.speed.accel
+            force.y -= mass * accel.y
         if ui_keys.right_arrow:
-            force.x += movement.speed.accel
+            force.x += mass * accel.x
         if ui_keys.left_arrow:
-            force.x -= movement.speed.accel
+            force.x -= mass * accel.x
 
     def player_update_forces_from_ui_old(self, ui_keys: UIKeys) -> None:
         """Update movement state based on UI input from arrow keys."""
@@ -366,16 +386,16 @@ class Entity:
         if entity_i_follow_exists:
             entity = self.entities[self.movement.follow_entity]
             # Calculate displacement vector (displacement of NPC from the entity)
-            player_to_npc = DirectedLineSeg2D(start=entity.origin, end=self.origin)
+            from_entity_to_me = DirectedLineSeg2D(start=entity.origin, end=self.origin)
             if debug:
                 self.debug.art.lines_gcs.append(
                         Line2D(
-                            start=player_to_npc.start,
-                            end=player_to_npc.end,
+                            start=from_entity_to_me.start,
+                            end=from_entity_to_me.end,
                             color=Colors.line_debug))
             # start = entity.origin
             # end = self.origin
-            d = Vec2D.from_points(start=player_to_npc.start, end=player_to_npc.end)
+            d = Vec2D.from_points(start=from_entity_to_me.start, end=from_entity_to_me.end)
             # Get velocity vector
             movement = self.movement
             v = movement.speed.vec
@@ -383,15 +403,22 @@ class Entity:
             # TODO: set up a better way to connect variables to user input from HUD
             controls = self.debug.hud.controls
             # fk(n) = -1*k*d(n-1)
-            force_spring = Force(vec=Vec2D(-controls["k"]*d.x, 0))
+            force_spring = Force(
+                    vec=Vec2D(
+                        x=-controls["k"]*d.x,
+                        y=-controls["k"]*d.y))
             # fb(n) = -1*b*v(n-1)
-            force_friction = Force(vec=Vec2D(-controls["b"]*v.x, 0))
+            force_friction = Force(
+                    vec=Vec2D(
+                        x=-controls["b"]*v.x,
+                        y=-controls["b"]*v.y))
             # ft(b) = fk(n) + fb(n)
             movement.force.vec.x = force_spring.vec.x + force_friction.vec.x
+            movement.force.vec.y = force_spring.vec.y + force_friction.vec.y
 
             # Update excited state:
             # Look excited if you feel forces acting on you
-            force_feel = movement.speed.accel_abs_max/2  # Threshold for feeling force
+            force_feel = movement.mass * movement.accel.abs_max/2  # Threshold for feeling force
             force = movement.force.vec
             movement.is_excited = (
                     (force.x > force_feel) or (force.y > force_feel)
@@ -406,17 +433,19 @@ class Entity:
                     hud.print("|  +- Locals")
                     hud.print(f"|     +- k:float = {controls['k']}")
                     hud.print(f"|     +- b:float = {controls['b']}")
-                    start = player_to_npc.start
-                    end = player_to_npc.end
+                    start = from_entity_to_me.start
+                    end = from_entity_to_me.end
                     hud.print(f"|     +- d:Vec2D = {d.fmt(0.6)}: {start} to {end}")
                     hud.print(f"|     +- v:Vec2D = {v.fmt(0.6)}")
                     hud.print("|  +- Movement Attrs")
                     hud.print(f"|     +- speed.vec: {movement.speed.vec.fmt(0.6)}")
                     hud.print(f"|     +- force.vec: {movement.force.vec.fmt(0.6)}")
+                    hud.print(f"|     +- mass: {movement.mass}")
+                    hud.print(f"|     +- follow_entity: {movement.follow_entity}")
                     follow_speed = entity.movement.speed.vec
-                    follow_accel = entity.movement.speed.accel
-                    hud.print(f"|     +- follow_entity speed: {follow_speed}")
-                    hud.print(f"|     +- follow_entity accel: {follow_accel}")
+                    follow_accel = entity.movement.accel.vec
+                    hud.print(f"|     +- follow_entity speed: {follow_speed.fmt(0.6)}")
+                    hud.print(f"|     +- follow_entity accel: {follow_accel.fmt(0.6)}")
                 debug_npc_forces()
 
     @property
