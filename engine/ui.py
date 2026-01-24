@@ -29,7 +29,7 @@ import pathlib
 import logging
 from dataclasses import dataclass
 import pygame
-from .geometry_types import Vec2D, Point2D
+from .geometry_types import Vec2D, Point2D, DirectedLineSeg2D
 from .panning import Panning
 from .drawing_shapes import Line2D
 from .colors import Colors
@@ -159,6 +159,22 @@ class UI:
                 case pygame.MOUSEBUTTONUP: self.handle_mousebutton_up_events(event, log)
                 case pygame.MOUSEWHEEL: self.handle_mousewheel_events(event, log)
                 case _: self.log_unused_events(event, log)
+
+        if self.mouse.button_1:
+            if (kmod & pygame.KMOD_SHIFT):
+                game = self.game
+                # Get mouse position in game coordinates
+                mouse_p = Point2D.from_tuple(pygame.mouse.get_pos())
+                mouse_g = game.coord_sys.xfm(
+                        mouse_p.as_vec(),
+                        game.coord_sys.matrix.pcs_to_gcs
+                        ).as_point()
+                player_to_mouse = DirectedLineSeg2D(
+                        start=game.entities["player"].origin,
+                        end=mouse_g)
+                # Teleport NPC2 to mouse
+                game.entities["cross2"].origin = mouse_g
+                # Teleport NPC1 to half-way between player and NPC2
 
     def handle_windowsizechanged_events(self,
                                         event: pygame.event.Event,
