@@ -95,6 +95,7 @@ class Movement:
     # pylint: disable=unnecessary-lambda
     speed:      Speed = field(default_factory=lambda: Speed())
     force:      Force = field(default_factory=lambda: Force())
+    mass:       float = 1  # LEFTOFF: tie mass back to size and add a scaling factor I can tune
     is_force:   IsGoing = field(default_factory=lambda: IsGoing())
     is_excited:  bool = False
     follow_entity: str = ""  # Name of entity to follow
@@ -103,8 +104,14 @@ class Movement:
         """Update speed of the NPC based on the forces calculated for this frame."""
         movement = self
         # Update velocity: v(n) = v(n-1) + a(n) (acceleration is force, for now)
-        movement.speed.vec.x += movement.force.vec.x
-        movement.speed.vec.y += movement.force.vec.y
+        a = Vec2D(
+                movement.force.vec.x/movement.mass,
+                movement.force.vec.y/movement.mass
+                )
+        # movement.speed.vec.x += movement.force.vec.x
+        # movement.speed.vec.y += movement.force.vec.y
+        movement.speed.vec.x += a.x
+        movement.speed.vec.y += a.y
         # Impose a terminal velocity on NPC based on player's maximum speed
         # (If player drags NPC left/right, NPC lags behind instead of overshooting)
         if movement.speed.vec.x > 0:
@@ -230,6 +237,7 @@ class Entity:
     clocked_event_name: str = "every_frame"             # Match name of clocked_events dict key
     # pylint: disable=unnecessary-lambda
     origin:             Point2D = field(default_factory=lambda: Point2D(0, 0))
+    # TODO: make amount_excited proportional to size
     amount_excited:     AmountExcited = field(default_factory=lambda: AmountExcited())
     size:               float = 0.2
     artwork:            Artwork = field(default_factory=lambda: Artwork())
@@ -292,10 +300,7 @@ class Entity:
                but then I need to clear the snapshot).
         """
         entity_type = self.entity_type
-        # LEFTOFF: switch to entity_i_follow_exists
-        player_exists = "player" in self.entities
         movement = self.movement
-        if player_exists: player = self.entities["player"]
         # Update the forces on the entity.
         match entity_type:
             case EntityType.PLAYER:
@@ -309,9 +314,9 @@ class Entity:
                 follow_entity = self.movement.follow_entity
                 it_exists = follow_entity in self.entities
                 self.update_npc_forces(it_exists)
-                terminal_velocity = (
-                        self.entities[follow_entity].movement.speed.abs_max if player_exists else movement.speed.abs_max
-                        )
+                my_max_speed = movement.speed.abs_max
+                dragger_max_speed = self.entities[follow_entity].movement.speed.abs_max
+                terminal_velocity = dragger_max_speed if it_exists else my_max_speed
                 if not timing.frame_counters["game"].is_paused:
                     movement.update_npc_speed(abs_terminal_velocity=terminal_velocity)
                     self.update_npc_position()
@@ -388,7 +393,10 @@ class Entity:
             # Look excited if you feel forces acting on you
             force_feel = movement.speed.accel_abs_max/2  # Threshold for feeling force
             force = movement.force.vec
-            movement.is_excited = (force.x > force_feel) or (force.y > force_feel)
+            movement.is_excited = (
+                    (force.x > force_feel) or (force.y > force_feel)
+                    ) or (
+                    (force.x < -force_feel) or (force.y < -force_feel))
 
             if debug:
                 hud = self.debug.hud

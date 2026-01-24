@@ -216,19 +216,34 @@ class Game:
                 clocked_event_name="period_3",
                 # origin=Point2D(0.5, 0),
                 )
-        self.entities["cross"] = Entity(
+        self.entities["cross1"] = Entity(
                 debug=self.debug,
                 entities=self.entities,
                 entity_type=EntityType.NPC,
+                clocked_event_name="period_3",
                 # clocked_event_name="period_1",
                 # origin=Point2D(0, 0.1),
+                )
+        self.entities["cross2"] = Entity(
+                debug=self.debug,
+                entities=self.entities,
+                entity_type=EntityType.NPC,
+                clocked_event_name="period_3",
+                size=0.15,
+                # clocked_event_name="period_1",
+                origin=Point2D(0, -0.1),
                 )
         # Entities track their own name for display in the debug HUD
         for name, entity in self.entities.items():
             entity.entity_name = name
 
+        # LEFTOFF: add y-movement to cross entities
+        # TODO: use entity size as mass and include mass in the acceleration calc
         # Set NPC to follow the player
-        self.entities["cross"].movement.follow_entity = "player"
+        self.entities["cross1"].movement.follow_entity = "player"
+        self.entities["cross2"].movement.follow_entity = "cross1"
+        self.entities["cross2"].amount_excited.high = 0.01
+        self.entities["cross2"].amount_excited.low = 0.002
 
         # # Slow down the NPC
         # self.entities["cross"].movement.speed.accel /= 2
@@ -312,7 +327,7 @@ class Game:
                 iterate_over_specific_entity_attrs = True
                 if iterate_over_specific_entity_attrs:
                     # Only show these entity attrs:
-                    for name,entity in self.entities.items():
+                    for name, entity in self.entities.items():
                         hud.print(f"|     +- {name}")
                         hud.print(f"|        +- name: {entity.entity_name}")
                         hud.print(f"|        +- type: {entity.entity_type}")
@@ -321,8 +336,8 @@ class Game:
                         hud.print(f"|        +- size: {entity.size}")
                         hud.print(f"|        +- amount_excited: {entity.amount_excited}")
                 else:
-                    for entity, entity_value in self.entities.items():
-                        hud.print(f"|  +- {entity}:")
+                    for entity_name, entity_value in self.entities.items():
+                        hud.print(f"|  +- {entity_name}:")
                         for attr, attr_value in entity_value.__dict__.items():
                             match attr:
                                 case "points":

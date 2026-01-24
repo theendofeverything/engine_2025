@@ -63,6 +63,10 @@ def shutdown(file: str, log: logging.Logger) -> None:
 
 if __name__ == "__main__":
     _log = setup_logging()
-    _log.debug("Run \"%s\"", Path().joinpath(Path(__file__).parent.name).joinpath(Path(__file__).name))
+    _log.debug("Run \"%s\"",
+               Path()
+               .joinpath(Path(__file__).parent.name)
+               .joinpath(Path(__file__).name)
+               )
     atexit.register(shutdown, __file__, _log)
     Game().run(_log)
