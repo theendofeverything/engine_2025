@@ -64,6 +64,13 @@ class DirectedLineSeg2D:
     start: Point2D = field(default_factory=lambda: Point2D(x=0.0, y=0.0))
     end: Point2D = field(default_factory=lambda: Point2D(x=0.0, y=0.0))
 
+    def parametric_point(self, param: float = 0.5) -> Point2D:
+        """Return the Point2D = start + param*(end - start)"""
+        start = self.start
+        end = self.end
+        return Point2D(
+                x=start.x + param*(end.x - start.x),
+                y=start.y + param*(end.y - start.y))
 
 @dataclass
 class Vec2D:

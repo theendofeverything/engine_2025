@@ -155,8 +155,8 @@ class UI:
                 case pygame.KEYDOWN: self.handle_keydown_events(event, kmod, log)
                 case pygame.KEYUP: self.handle_keyup_events(event, log)
                 case pygame.WINDOWSIZECHANGED: self.handle_windowsizechanged_events(event, log)
-                case pygame.MOUSEBUTTONDOWN: self.handle_mousebutton_down_events(event, log)
-                case pygame.MOUSEBUTTONUP: self.handle_mousebutton_up_events(event, log)
+                case pygame.MOUSEBUTTONDOWN: self.handle_mousebutton_down_events(event, kmod, log)
+                case pygame.MOUSEBUTTONUP: self.handle_mousebutton_up_events(event, kmod, log)
                 case pygame.MOUSEWHEEL: self.handle_mousewheel_events(event, log)
                 case _: self.log_unused_events(event, log)
 
@@ -173,8 +173,9 @@ class UI:
                         start=game.entities["player"].origin,
                         end=mouse_g)
                 # Teleport NPC2 to mouse
-                game.entities["cross2"].origin = mouse_g
+                game.entities["cross2"].origin = player_to_mouse.parametric_point(1.0)
                 # Teleport NPC1 to half-way between player and NPC2
+                game.entities["cross1"].origin = player_to_mouse.parametric_point(0.5)
 
     def handle_windowsizechanged_events(self,
                                         event: pygame.event.Event,
@@ -216,6 +217,7 @@ class UI:
 
     def handle_mousebutton_down_events(self,
                                        event: pygame.event.Event,
+                                       kmod: int,
                                        log: logging.Logger) -> None:
         """Handle event mouse button down."""
         log.debug("Event MOUSEBUTTONDOWN, "
@@ -223,16 +225,18 @@ class UI:
                   f"button: {event.button}")
         match event.button:
             case 1:
-                self.start_panning(event.pos)           # Start panning
                 self.mouse.button_1 = True              # Left mouse button pressed
+                if (kmod & pygame.KMOD_CTRL):
+                    self.start_panning(event.pos)           # Start panning
             case 2:
-                self.start_panning(event.pos)           # Start panning
                 self.mouse.button_2 = True              # Middle mouse button pressed
+                self.start_panning(event.pos)           # Start panning
             case _:
                 pass
 
     def handle_mousebutton_up_events(self,
                                      event: pygame.event.Event,
+                                     kmod: int,
                                      log: logging.Logger) -> None:
         """Handle event mouse button up."""
         log.debug("Event MOUSEBUTTONUP, "
@@ -240,11 +244,12 @@ class UI:
                   f"button: {event.button}")
         match event.button:
             case 1:
-                self.stop_panning()                     # Stop panning
                 self.mouse.button_1 = False             # Left mouse button released
+                if (kmod & pygame.KMOD_CTRL):
+                    self.stop_panning()                     # Stop panning
             case 2:
-                self.stop_panning()                     # Stop panning
                 self.mouse.button_2 = False             # Middle mouse button released
+                self.stop_panning()                     # Stop panning
             case _:
                 pass
 
