@@ -138,8 +138,15 @@ class DebugHud:
 
     def define_controls(self) -> None:
         """Define variables that connect to user input from the HUD."""
-        self.controls["k"] = 0.04
-        self.controls["b"] = 0.064
+        # Nice springy motion
+        # self.controls["k"] = 0.04
+        # self.controls["b"] = 0.064
+        # Nice linked motion
+        self.controls["k"] = 1.28
+        self.controls["b"] = 0.512
+        # Nice following motion
+        # self.controls["k"] = 0.005
+        # self.controls["b"] = 0.064
 
     @property
     def lines(self) -> list[str]:

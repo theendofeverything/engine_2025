@@ -27,7 +27,8 @@ User actions:
 import sys                  # Exit with sys.exit()
 import pathlib
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Callable
 import pygame
 from .geometry_types import Vec2D, Point2D, DirectedLineSeg2D
 from .panning import Panning
@@ -60,6 +61,7 @@ class UI:
     panning:        Panning                             # Track panning state
     mouse:          UIMouse = UIMouse()                 # Track mouse button down/up
     keys:           UIKeys = UIKeys()                   # Track key up/down
+    subscribers:    list[Callable[[pygame.event.Event, int], None]] = field(default_factory=list)
 
     def handle_events(self, log: logging.Logger) -> None:
         """Handle events."""
@@ -150,18 +152,21 @@ class UI:
         """
         kmod = pygame.key.get_mods()
         for event in pygame.event.get():
+            # Handle event on the engine side
             match event.type:
                 case pygame.QUIT: sys.exit()
-                case pygame.KEYDOWN: self.handle_keydown_events(event, kmod, log)
+                case pygame.KEYDOWN: self.handle_keydown_events(event)
                 case pygame.KEYUP: self.handle_keyup_events(event, log)
                 case pygame.WINDOWSIZECHANGED: self.handle_windowsizechanged_events(event, log)
                 case pygame.MOUSEBUTTONDOWN: self.handle_mousebutton_down_events(event, kmod, log)
                 case pygame.MOUSEBUTTONUP: self.handle_mousebutton_up_events(event, kmod, log)
                 case pygame.MOUSEWHEEL: self.handle_mousewheel_events(event, log)
                 case _: self.log_unused_events(event, log)
+            # Let UI subscribers handle the event
+            self.publish(event, kmod)
 
         if self.mouse.button_1:
-            if (kmod & pygame.KMOD_SHIFT):
+            if kmod & pygame.KMOD_SHIFT:
                 game = self.game
                 # Get mouse position in game coordinates
                 mouse_p = Point2D.from_tuple(pygame.mouse.get_pos())
@@ -176,6 +181,15 @@ class UI:
                 game.entities["cross2"].origin = player_to_mouse.parametric_point(1.0)
                 # Teleport NPC1 to half-way between player and NPC2
                 game.entities["cross1"].origin = player_to_mouse.parametric_point(0.5)
+
+    def subscribe(self, callback: Callable[[pygame.event.Event, int], None]) -> None:
+        """Call ui.subscribe(callback) to register "callback" for receiving UI events."""
+        self.subscribers.append(callback)
+
+    def publish(self, event: pygame.event.Event, kmod: int) -> None:
+        """Publish the event to subscribers by calling all registered callbacks."""
+        for subscriber in self.subscribers:
+            subscriber(event, kmod)
 
     def handle_windowsizechanged_events(self,
                                         event: pygame.event.Event,
@@ -226,7 +240,7 @@ class UI:
         match event.button:
             case 1:
                 self.mouse.button_1 = True              # Left mouse button pressed
-                if (kmod & pygame.KMOD_CTRL):
+                if kmod & pygame.KMOD_CTRL:
                     self.start_panning(event.pos)           # Start panning
             case 2:
                 self.mouse.button_2 = True              # Middle mouse button pressed
@@ -245,7 +259,7 @@ class UI:
         match event.button:
             case 1:
                 self.mouse.button_1 = False             # Left mouse button released
-                if (kmod & pygame.KMOD_CTRL):
+                if kmod & pygame.KMOD_CTRL:
                     self.stop_panning()                     # Stop panning
             case 2:
                 self.mouse.button_2 = False             # Middle mouse button released
@@ -262,59 +276,13 @@ class UI:
             case pygame.K_UP:       self.keys.up_arrow = False
             case pygame.K_DOWN:     self.keys.down_arrow = False
 
-    # pylint: disable=too-many-branches
-    def handle_keydown_events(self,
-                              event: pygame.event.Event,
-                              kmod: int,
-                              log: logging.Logger) -> None:
+    def handle_keydown_events(self, event: pygame.event.Event) -> None:
         """Handle keydown events (keyboard key presses)."""
-        game = self.game
-        log.debug(f"Keydown: {event}")
         match event.key:
-            case pygame.K_q:
-                log.debug("User pressed 'q' to quit.")
-                sys.exit()
-            case pygame.K_c:
-                log.debug("User pressed 'c' to clear debug snapshot artwork.")
-                game.debug.art.reset_snapshots()
-            case pygame.K_F11:
-                log.debug("User pressed 'F12' to toggle fullscreen.")
-                game.renderer.toggle_fullscreen()
-            case pygame.K_F12:
-                log.debug("User pressed 'F12' to toggle debug HUD.")
-                game.debug.hud.is_visible = not game.debug.hud.is_visible
-            case pygame.K_SPACE:
-                log.debug("User pressed 'Space' to toggle pause.")
-                game.timing.frame_counters["game"].toggle_pause()
-                game_is_paused = game.timing.frame_counters["game"].is_paused
-                game.debug.snapshots["pause"] = ("game.timing.frame_counters['game'].is_paused: "
-                                                 f"{game_is_paused}")
-            case pygame.K_d:
-                log.debug("User pressed 'd' to toggle debug art overlay.")
-                game.debug.art.is_visible = not game.debug.art.is_visible
-            case pygame.K_EQUALS:
-                if (kmod & pygame.KMOD_CTRL) and (kmod & pygame.KMOD_SHIFT):
-                    game.debug.hud.font_size.increase()
-                    log.debug(f"User pressed Ctrl_+. Font size: {game.debug.hud.font_size.value}.")
-            case pygame.K_MINUS:
-                if kmod & pygame.KMOD_CTRL:
-                    game.debug.hud.font_size.decrease()
-                    log.debug(f"User pressed Ctrl_-. Font size: {game.debug.hud.font_size.value}.")
             case pygame.K_LEFT:     self.keys.left_arrow = True
             case pygame.K_RIGHT:    self.keys.right_arrow = True
             case pygame.K_UP:       self.keys.up_arrow = True
             case pygame.K_DOWN:     self.keys.down_arrow = True
-            # TEMPORARY CODE FOR WORKING ON NPC MOTION
-            case pygame.K_k:
-                if kmod & pygame.KMOD_SHIFT:
-                    game.debug.hud.controls["k"] /= 2
-                else:
-                    game.debug.hud.controls["k"] *= 2
-            case pygame.K_b:
-                if kmod & pygame.KMOD_SHIFT:
-                    game.debug.hud.controls["b"] /= 2
-                else:
-                    game.debug.hud.controls["b"] *= 2
 
     def log_unused_events(self, event: pygame.event.Event, log: logging.Logger) -> None:
         """Log events that I have not found a use for yet."""

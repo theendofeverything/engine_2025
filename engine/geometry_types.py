@@ -2,6 +2,8 @@
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
+import sys
+import math
 
 FLOAT_PRINT_PRECISION = 0.2
 
@@ -72,21 +74,37 @@ class DirectedLineSeg2D:
                 x=start.x + param*(end.x - start.x),
                 y=start.y + param*(end.y - start.y))
 
+
 @dataclass
 class Vec2D:
     """Two-dimensional vector.
 
-    >>> vec = Vec2D(x=0, y=1)
+    >>> vec = Vec2D(x=3, y=4)
     >>> vec
-    Vec2D(x=0, y=1)
+    Vec2D(x=3, y=4)
 
     Represent as a point:
     >>> vec.as_point()
-    Point2D(x=0, y=1)
+    Point2D(x=3, y=4)
 
     Represent as a tuple:
     >>> vec.as_tuple()
-    (0, 1)
+    (3, 4)
+
+    Get the magnitude:
+    >>> vec.mag
+    5.0
+
+    Obtain the unit vector:
+    >>> vec.to_unit_vec()
+    Vec2D(x=0.6, y=0.8)
+
+    Scale the vector by 2:
+    >>> vec.scale_by(2)
+    >>> vec
+    Vec2D(x=6, y=8)
+    >>> vec.mag
+    10.0
 
     Obtain a vector by subtracting two points:
     >>> vec = Vec2D.from_points(start=Point2D(x=1, y=-1), end=Point2D(x=1, y=0))
@@ -115,6 +133,27 @@ class Vec2D:
     def as_tuple(self) -> tuple[float, float]:
         """Return vector as tuple (x, y)."""
         return (self.x, self.y)
+
+    @property
+    def mag(self) -> float:
+        """Return the magnitude of the vector."""
+        return math.sqrt(self.x**2 + self.y**2)
+
+    @property
+    def mag_never_zero(self) -> float:
+        """Return the magnitude of the vector. If 0, return smallest float."""
+        return max(math.sqrt(self.x**2 + self.y**2), sys.float_info.min)
+
+    def to_unit_vec(self) -> Vec2D:
+        """Return the unit vector."""
+        return Vec2D(
+                x=self.x/self.mag_never_zero,
+                y=self.y/self.mag_never_zero)
+
+    def scale_by(self, k: float) -> None:
+        """Scale the vector by k."""
+        self.x *= k
+        self.y *= k
 
     def __str__(self) -> str:
         """Vector as string with two decimal places (default: FLOAT_PRINT_PRECISION)."""

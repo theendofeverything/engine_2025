@@ -69,4 +69,4 @@ if __name__ == "__main__":
                .joinpath(Path(__file__).name)
                )
     atexit.register(shutdown, __file__, _log)
-    Game().run(_log)
+    Game(_log).run()

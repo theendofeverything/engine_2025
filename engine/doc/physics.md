@@ -17,8 +17,12 @@ if force is not constant) using the difference equations:
 I define the difference equations this way so that the connection to
 derivatives (and analytical physics) is obvious. But the state variable updates
 are actually done as **sum equations** (integrals), not as difference equations
-(derivatives). So we start the update calculations with acceleration and work
-backwards.
+(derivatives).
+
+In other words, the calculations to update the state start with finding the
+acceleration from the mass and the total forces, then updating the velocity
+based on the acceleration, and finally updating the position based on the
+velocity.
 
 ## State variable update
 
@@ -44,8 +48,8 @@ Some examples of force:
 * The simplest is constant force, like gravity.
     * Imagine a platformer: the constant acceleration due to gravity acts on
       all entities. This is a constant force.
-    * It is always present and it always the same value.
-* More complex is a quantized force, like the player UI.
+    * It is always present and always the same value (per unit mass).
+* The player UI is an example of a quantized force.
     * A joystick or keyboard input determines the forces acting on the player
       entity  to tell the player which way to go. This is a quantized force
       because the UI is a logic input (up/down/left/right).
@@ -59,7 +63,8 @@ Some examples of force:
       engine figures out how that force manifests as a change in velocity and
       position.
 * The most complex is an analog force.
-    * Imagine an NPC that follows the player. The NPC's "aim" towards the
+    * Imagine an NPC that follows the player. The NPC's displacement vector
+      (the directed line segment from NPC to player) towards the
       player determines the force acting on the NPC entity.
     * This is an analog force because the NPC calculates its aim to be whatever
       vector takes it from its current position to the player's position. The

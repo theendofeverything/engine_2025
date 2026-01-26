@@ -115,6 +115,17 @@ If a Class has "too many instance attributes", add this above the Class definiti
 *Rationale*: It is early days in the codebase and you know you will refactor
 many of these attributes into their own class
 
+## pylint - logging-fstring-interpolation
+
+https://pylint.readthedocs.io/en/stable/user_guide/messages/warning/logging-fstring-interpolation.html
+
+Add this to `.pylintrc`:
+
+```
+[MESSAGES CONTROL]
+disable=logging-fstring-interpolation
+```
+
 ## flake8 undefined name
 
 If module A uses module B but module B acts on a type defined in module A, I

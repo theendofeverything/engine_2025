@@ -84,6 +84,8 @@
 """
 
 from dataclasses import dataclass, field
+import sys
+from enum import Enum, auto
 import random
 import pathlib
 import logging
@@ -101,6 +103,72 @@ from engine.colors import Colors
 from engine.entity import Entity, EntityType
 
 FILE = pathlib.Path(__file__).name
+
+
+class Action(Enum):
+    """Enumerate all actions for the InputMapper."""
+    QUIT = auto()
+    CLEAR_DEBUG_SNAPSHOT_ARTWORK = auto()
+    TOGGLE_DEBUG_ART_OVERLAY = auto()
+    TOGGLE_FULLSCREEN = auto()
+    TOGGLE_DEBUG_HUD = auto()
+    TOGGLE_PAUSE = auto()
+    FONT_SIZE_INCREASE = auto()
+    FONT_SIZE_DECREASE = auto()
+    CONTROLS_ADJUST_K_LESS = auto()
+    CONTROLS_ADJUST_K_MORE = auto()
+    CONTROLS_ADJUST_B_LESS = auto()
+    CONTROLS_ADJUST_B_MORE = auto()
+    CONTROLS_PICK_MODE_1 = auto()
+    CONTROLS_PICK_MODE_2 = auto()
+    CONTROLS_PICK_MODE_3 = auto()
+
+
+@dataclass
+class InputMapper:
+    """Map inputs (such as key presses) to actions.
+
+    key_map: {(key, keymod): Action}
+
+    >>> input_mapper = InputMapper()
+    >>> key_map = input_mapper.key_map
+    >>> key_map
+    {(99, 0): <Action.CLEAR_DEBUG_SNAPSHOT_ARTWORK: 2>,
+    (100, 0): <Action.TOGGLE_DEBUG_ART_OVERLAY: 3>,
+    (98, 3): <Action.CONTROLS_ADJUST_B_LESS: 11>,
+    (98, 0): <Action.CONTROLS_ADJUST_B_MORE: 12>,
+    (107, 3): <Action.CONTROLS_ADJUST_K_LESS: 9>,
+    (107, 0): <Action.CONTROLS_ADJUST_K_MORE: 10>,
+    (49, 0): <Action.CONTROLS_PICK_MODE_1: 13>,
+    (50, 0): <Action.CONTROLS_PICK_MODE_2: 14>,
+    (51, 0): <Action.CONTROLS_PICK_MODE_3: 15>,
+    (113, 0): <Action.QUIT: 1>,
+    (32, 0): <Action.TOGGLE_PAUSE: 6>,
+    (1073741892, 0): <Action.TOGGLE_FULLSCREEN: 4>,
+    (1073741893, 0): <Action.TOGGLE_DEBUG_HUD: 5>,
+    (61, 195): <Action.FONT_SIZE_INCREASE: 7>,
+    (45, 192): <Action.FONT_SIZE_DECREASE: 8>}
+    """
+    key_map: dict[tuple[int, int], Action] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        self.key_map = {
+                (pygame.K_c, pygame.KMOD_NONE): Action.CLEAR_DEBUG_SNAPSHOT_ARTWORK,
+                (pygame.K_d, pygame.KMOD_NONE): Action.TOGGLE_DEBUG_ART_OVERLAY,
+                (pygame.K_b, pygame.KMOD_SHIFT): Action.CONTROLS_ADJUST_B_LESS,
+                (pygame.K_b, pygame.KMOD_NONE): Action.CONTROLS_ADJUST_B_MORE,
+                (pygame.K_k, pygame.KMOD_SHIFT): Action.CONTROLS_ADJUST_K_LESS,
+                (pygame.K_k, pygame.KMOD_NONE): Action.CONTROLS_ADJUST_K_MORE,
+                (pygame.K_1, pygame.KMOD_NONE): Action.CONTROLS_PICK_MODE_1,
+                (pygame.K_2, pygame.KMOD_NONE): Action.CONTROLS_PICK_MODE_2,
+                (pygame.K_3, pygame.KMOD_NONE): Action.CONTROLS_PICK_MODE_3,
+                (pygame.K_q, pygame.KMOD_NONE): Action.QUIT,
+                (pygame.K_SPACE, pygame.KMOD_NONE): Action.TOGGLE_PAUSE,
+                (pygame.K_F11, pygame.KMOD_NONE): Action.TOGGLE_FULLSCREEN,
+                (pygame.K_F12, pygame.KMOD_NONE): Action.TOGGLE_DEBUG_HUD,
+                (pygame.K_EQUALS, pygame.KMOD_SHIFT | pygame.KMOD_CTRL): Action.FONT_SIZE_INCREASE,
+                (pygame.K_MINUS, pygame.KMOD_CTRL): Action.FONT_SIZE_DECREASE,
+                }
 
 
 # pylint: disable=too-many-instance-attributes
@@ -121,9 +189,11 @@ class Game:
         _p: PCS
 
     Game code is divided up as follows:
-    >>> game = Game()
+    >>> game = Game(log=None)
     >>> game
-    Game(debug=Debug(...),
+    Game(log=None,
+         input_mapper=InputMapper(...),
+         debug=Debug(...),
          timing=Timing(...),
          art=Art(...),
          renderer=Renderer(...),
@@ -132,6 +202,8 @@ class Game:
          entities={...})
     """
     # Instance variables defined in the implicit __init__()
+    log:        logging.Logger  # log created in main.py
+    input_mapper: InputMapper = InputMapper()  # Map inputs to actions
     debug:      Debug = Debug()     # Display debug prints in HUD and overlay debug art
     timing:     Timing = Timing()   # Set up a clock to set frame rate and measure frame period
     art:        Art = Art()         # Set up all artwork for rendering
@@ -169,6 +241,7 @@ class Game:
 
         # Handle all user interface events in ui.py (keyboard, mouse, panning, zoom)
         self.ui = UI(game=self, panning=Panning())
+        self.ui.subscribe(self.cb_handle_ui_event)
 
         # Set the GCS to fit the window size and center the GCS origin in the window.
         self.coord_sys = CoordinateSystem(
@@ -225,7 +298,7 @@ class Game:
                 entity_type=EntityType.NPC,
                 clocked_event_name="period_3",
                 # clocked_event_name="period_1",
-                origin=Point2D(0, 0.25),
+                # origin=Point2D(0, 0.25),
                 )
         self.entities["cross2"] = Entity(
                 debug=self.debug,
@@ -234,7 +307,7 @@ class Game:
                 clocked_event_name="period_3",
                 size=0.15,
                 # clocked_event_name="period_1",
-                origin=Point2D(0, -0.5),
+                # origin=Point2D(0, -0.5),
                 )
         # Entities track their own name for display in the debug HUD
         for name, entity in self.entities.items():
@@ -244,8 +317,9 @@ class Game:
         self.entities["cross1"].movement.follow_entity = "player"
         self.entities["cross2"].movement.follow_entity = "cross1"
 
-    def run(self, log: logging.Logger) -> None:
+    def run(self) -> None:
         """Run the game."""
+        log = self.log
         log.debug(f"Window supports OpenGL: {self.renderer.window.opengl}")
         log.debug(f"Entities: {self.entities}")
         while True:
@@ -266,6 +340,79 @@ class Game:
         self.debug.display_snapshots_in_hud()           # Print snapshots in HUD last
         self.renderer.render_all()                      # Render all art and HUD
         self.timing.maintain_framerate(fps=60)          # Run at 60 FPS
+
+    def cb_handle_ui_event(self, event: pygame.event.Event, kmod: int) -> None:
+        """Callback registered with UI for game to handle events from the pygame event queue."""
+        key_map = self.input_mapper.key_map
+        log = self.log
+        match event.type:
+            case pygame.KEYDOWN:
+                log.debug(f"Keydown: {event}")
+                log.debug(f"kmod: {kmod}")
+                # Filter out irrelevant keymods
+                kmod &= pygame.KMOD_ALT | pygame.KMOD_CTRL | pygame.KMOD_SHIFT
+                log.debug(f"Filtered kmod: {kmod}")
+                action = key_map.get((event.key, kmod))
+                if action is not None:
+                    self._handle_action_events(action)
+
+    # pylint: disable=too-many-branches
+    def _handle_action_events(self, action: Action) -> None:
+        """Handle actions events detected by the UI"""
+        log = self.log
+        game = self
+        match action:
+            case Action.QUIT:
+                log.debug("User action: quit.")
+                sys.exit()
+            case Action.CLEAR_DEBUG_SNAPSHOT_ARTWORK:
+                log.debug("User action: clear debug snapshot artwork.")
+                game.debug.art.reset_snapshots()
+            case Action.TOGGLE_FULLSCREEN:
+                log.debug("User action: toggle fullscreen.")
+                game.renderer.toggle_fullscreen()
+            case Action.TOGGLE_DEBUG_HUD:
+                log.debug("User action: toggle debug HUD.")
+                game.debug.hud.is_visible = not game.debug.hud.is_visible
+            case Action.TOGGLE_PAUSE:
+                log.debug("User action: toggle pause.")
+                game.timing.frame_counters["game"].toggle_pause()
+                game_is_paused = game.timing.frame_counters["game"].is_paused
+                game.debug.snapshots["pause"] = ("game.timing.frame_counters['game'].is_paused: "
+                                                 f"{game_is_paused}")
+            case Action.TOGGLE_DEBUG_ART_OVERLAY:
+                log.debug("User action: toggle debug art overlay.")
+                game.debug.art.is_visible = not game.debug.art.is_visible
+            case Action.FONT_SIZE_INCREASE:
+                game.debug.hud.font_size.increase()
+                log.debug("User action: Increase debug HUD font size."
+                          f"Font size: {game.debug.hud.font_size.value}.")
+            case Action.FONT_SIZE_DECREASE:
+                game.debug.hud.font_size.decrease()
+                log.debug(f"User action: Decrease debug HUD font size."
+                          f"Font size: {game.debug.hud.font_size.value}.")
+            # TEMPORARY CODE FOR WORKING ON NPC MOTION
+            case Action.CONTROLS_ADJUST_K_LESS:
+                game.debug.hud.controls["k"] /= 2
+            case Action.CONTROLS_ADJUST_K_MORE:
+                game.debug.hud.controls["k"] *= 2
+            case Action.CONTROLS_ADJUST_B_LESS:
+                game.debug.hud.controls["b"] /= 2
+            case Action.CONTROLS_ADJUST_B_MORE:
+                game.debug.hud.controls["b"] *= 2
+            # Set spring constant and damping: three modes.
+            case Action.CONTROLS_PICK_MODE_1:
+                log.debug("User action: Select mode 1 -- springy linked motion")
+                game.debug.hud.controls["k"] = 0.04
+                game.debug.hud.controls["b"] = 0.064
+            case Action.CONTROLS_PICK_MODE_2:
+                log.debug("User action: Select mode 2 -- rigid linked motion")
+                game.debug.hud.controls["k"] = 1.28
+                game.debug.hud.controls["b"] = 0.512
+            case Action.CONTROLS_PICK_MODE_3:
+                log.debug("User action: Select mode 3 -- separate entities following motion")
+                game.debug.hud.controls["k"] = 0.005
+                game.debug.hud.controls["b"] = 0.064
 
     def update_frame_counters(self) -> None:
         """Update the frame tick counters (animations are clocked by frame ticks).

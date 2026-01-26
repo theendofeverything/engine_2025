@@ -94,6 +94,7 @@ class Accel:
     abs_max:    float = 0.003
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class Movement:
     """Entity movement data: speed and up/down/left/right, and whether or not it is moving."""
@@ -105,6 +106,7 @@ class Movement:
     is_force:   IsGoing = field(default_factory=lambda: IsGoing())
     is_excited:  bool = False
     follow_entity: str = ""  # Name of entity to follow
+    dist_to_follow_entity: float = field(init=False)  # Entity sets goal distance based on size
 
     def update_npc_speed(self, abs_terminal_velocity: float) -> None:
         """Update speed of the NPC based on the forces calculated for this frame."""
@@ -264,6 +266,7 @@ class Entity:
         self.movement.mass = self.size * 5  # e.g., if size is 0.2, mass is 1
         self.amount_excited.high = self.size / 10
         self.amount_excited.low = self.size / 40
+        self.movement.dist_to_follow_entity = self.size * 1
 
     def _initialize_point_offsets(self) -> None:
         for _ in self.artwork.points:
@@ -375,6 +378,7 @@ class Entity:
         movement.is_force.left = ui_keys.left_arrow
         movement.is_force.right = ui_keys.right_arrow
 
+    # pylint: disable=too-many-locals
     def update_npc_forces(self, entity_i_follow_exists: bool) -> None:
         """Update forces on the NPC.
 
@@ -384,7 +388,8 @@ class Entity:
         """
         debug = True
         if entity_i_follow_exists:
-            entity = self.entities[self.movement.follow_entity]
+            movement = self.movement
+            entity = self.entities[movement.follow_entity]
             # Calculate displacement vector (displacement of NPC from the entity)
             from_entity_to_me = DirectedLineSeg2D(start=entity.origin, end=self.origin)
             if debug:
@@ -395,7 +400,20 @@ class Entity:
                             color=Colors.line_debug))
             # start = entity.origin
             # end = self.origin
-            d = Vec2D.from_points(start=from_entity_to_me.start, end=from_entity_to_me.end)
+            # Set the goal location from the entity to follow
+            closest = Vec2D.from_points(
+                    start=from_entity_to_me.start,
+                    end=from_entity_to_me.end
+                    ).to_unit_vec()
+            closest.scale_by(movement.dist_to_follow_entity)
+            goal = Point2D(
+                    x=entity.origin.x + closest.x,
+                    y=entity.origin.y + closest.y
+                    )
+
+            # Displacement vector is from the goal to me
+            d = Vec2D.from_points(start=goal, end=self.origin)
+            # d = Vec2D.from_points(start=entity.origin, end=self.origin)
             # Get velocity vector
             movement = self.movement
             v = movement.speed.vec

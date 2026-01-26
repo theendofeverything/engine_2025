@@ -40,3 +40,13 @@ To specify multiple allowed types, OR them like this:
 ```python
     position: tuple[int | float, int | float]
 ```
+
+To specify a callback (a function name), import `Callable` from `typing` and
+use `Callable[[type_arg1, type_arg2, etc.], type_returned]`. For example, here
+the callback takes an `Event` and an `int` (for the `kmod`) and returns
+nothing:
+
+```python
+def subscribe(self, callback: Callable[[pygame.event.Event, int], None]) -> None:
+```
+
