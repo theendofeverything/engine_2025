@@ -152,12 +152,18 @@ class InputMapper:
     key_map: dict[tuple[int, int], Action] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        # TODO: I put all variations of left and right SHIFT and CTRL keys but this is insanity.
+        # There has to be a better way.
         self.key_map = {
                 (pygame.K_c, pygame.KMOD_NONE): Action.CLEAR_DEBUG_SNAPSHOT_ARTWORK,
                 (pygame.K_d, pygame.KMOD_NONE): Action.TOGGLE_DEBUG_ART_OVERLAY,
                 (pygame.K_b, pygame.KMOD_SHIFT): Action.CONTROLS_ADJUST_B_LESS,
+                (pygame.K_b, pygame.KMOD_LSHIFT): Action.CONTROLS_ADJUST_B_LESS,
+                (pygame.K_b, pygame.KMOD_RSHIFT): Action.CONTROLS_ADJUST_B_LESS,
                 (pygame.K_b, pygame.KMOD_NONE): Action.CONTROLS_ADJUST_B_MORE,
                 (pygame.K_k, pygame.KMOD_SHIFT): Action.CONTROLS_ADJUST_K_LESS,
+                (pygame.K_k, pygame.KMOD_LSHIFT): Action.CONTROLS_ADJUST_K_LESS,
+                (pygame.K_k, pygame.KMOD_RSHIFT): Action.CONTROLS_ADJUST_K_LESS,
                 (pygame.K_k, pygame.KMOD_NONE): Action.CONTROLS_ADJUST_K_MORE,
                 (pygame.K_1, pygame.KMOD_NONE): Action.CONTROLS_PICK_MODE_1,
                 (pygame.K_2, pygame.KMOD_NONE): Action.CONTROLS_PICK_MODE_2,
@@ -167,7 +173,17 @@ class InputMapper:
                 (pygame.K_F11, pygame.KMOD_NONE): Action.TOGGLE_FULLSCREEN,
                 (pygame.K_F12, pygame.KMOD_NONE): Action.TOGGLE_DEBUG_HUD,
                 (pygame.K_EQUALS, pygame.KMOD_SHIFT | pygame.KMOD_CTRL): Action.FONT_SIZE_INCREASE,
+                (pygame.K_EQUALS, pygame.KMOD_LSHIFT | pygame.KMOD_CTRL): Action.FONT_SIZE_INCREASE,
+                (pygame.K_EQUALS, pygame.KMOD_RSHIFT | pygame.KMOD_CTRL): Action.FONT_SIZE_INCREASE,
+                (pygame.K_EQUALS, pygame.KMOD_SHIFT | pygame.KMOD_LCTRL): Action.FONT_SIZE_INCREASE,
+                (pygame.K_EQUALS, pygame.KMOD_LSHIFT | pygame.KMOD_LCTRL): Action.FONT_SIZE_INCREASE,
+                (pygame.K_EQUALS, pygame.KMOD_RSHIFT | pygame.KMOD_LCTRL): Action.FONT_SIZE_INCREASE,
+                (pygame.K_EQUALS, pygame.KMOD_SHIFT | pygame.KMOD_RCTRL): Action.FONT_SIZE_INCREASE,
+                (pygame.K_EQUALS, pygame.KMOD_LSHIFT | pygame.KMOD_RCTRL): Action.FONT_SIZE_INCREASE,
+                (pygame.K_EQUALS, pygame.KMOD_RSHIFT | pygame.KMOD_RCTRL): Action.FONT_SIZE_INCREASE,
                 (pygame.K_MINUS, pygame.KMOD_CTRL): Action.FONT_SIZE_DECREASE,
+                (pygame.K_MINUS, pygame.KMOD_LCTRL): Action.FONT_SIZE_DECREASE,
+                (pygame.K_MINUS, pygame.KMOD_RCTRL): Action.FONT_SIZE_DECREASE,
                 }
 
 
@@ -241,7 +257,7 @@ class Game:
 
         # Handle all user interface events in ui.py (keyboard, mouse, panning, zoom)
         self.ui = UI(game=self, panning=Panning())
-        self.ui.subscribe(self.cb_handle_ui_event)
+        self.ui.subscribe(self.ui_callback_to_map_event_to_action)
 
         # Set the GCS to fit the window size and center the GCS origin in the window.
         self.coord_sys = CoordinateSystem(
@@ -341,16 +357,48 @@ class Game:
         self.renderer.render_all()                      # Render all art and HUD
         self.timing.maintain_framerate(fps=60)          # Run at 60 FPS
 
-    def cb_handle_ui_event(self, event: pygame.event.Event, kmod: int) -> None:
-        """Callback registered with UI for game to handle events from the pygame event queue."""
+    def ui_callback_to_map_event_to_action(self, event: pygame.event.Event, kmod: int) -> None:
+        """Map UI events to actions and then passes the action to the action handler.
+
+        Usage:
+            1. Register with the UI like this:
+                self.ui = UI(game=self, ...)  # Instantiate UI
+                ...
+                ui = self.ui
+                ui.subscribe(ui_callback_to_map_event_to_action)  # Register callback
+            2. Define actions in the InputMapper.key_map
+            3. Define how to handle the actions in _handle_action_events()
+
+        This is a callback registered with UI. It simply maps events from the pygame event queue to
+        actions and then passes the action to the action handler.
+
+        Actions are defined in the InputMapper.key_map:
+            {(99, 0): <Action.CLEAR_DEBUG_SNAPSHOT_ARTWORK: 2>,
+            (100, 0): <Action.TOGGLE_DEBUG_ART_OVERLAY: 3>,
+            ...
+
+            The dictionary key (int, int) is the tuple (event.key, kmod) where:
+                - event.key is the int key code of the key press
+                - kmod is the int of the bitfield representing which key modifiers are held,
+                  returned by pygame.key.get_mods()
+
+        Even with no key modifiers held down, kmod is 4096, not 0. I only care about ALT, CTRL, and
+        SHIFT, so I filter the kmod before using it by masking it with ALT | CTRL | SHIFT.
+
+        I use dict.get((event.key, kmod)) to get the action corresponding to the key press. Unlike
+        key_map[(event.key, kmod)], get() does not throw an exception if the tuple does not exist in
+        InputMapper.key_map. If the tuple does not exist, dict.get() returns None.
+        """
         key_map = self.input_mapper.key_map
         log = self.log
         match event.type:
+            # TODO: I have to hold down both SHIFT keys to get pygame.KMOD_SHIFT. How should I set
+            # this up so that either left or right SHIFT keys register as SHIFT?
             case pygame.KEYDOWN:
                 log.debug(f"Keydown: {event}")
                 log.debug(f"kmod: {kmod}")
                 # Filter out irrelevant keymods
-                kmod &= pygame.KMOD_ALT | pygame.KMOD_CTRL | pygame.KMOD_SHIFT
+                kmod = kmod & (pygame.KMOD_ALT | pygame.KMOD_CTRL | pygame.KMOD_SHIFT)
                 log.debug(f"Filtered kmod: {kmod}")
                 action = key_map.get((event.key, kmod))
                 if action is not None:

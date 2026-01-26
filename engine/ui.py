@@ -56,7 +56,13 @@ class UIKeys:
 
 @dataclass
 class UI:
-    """Handle user interface events."""
+    """Handle user interface events.
+
+    Some events, like pygame.QUIT, are handled by UI. But most events are published to whatever
+    callbacks the Game registered with UI (via UI.subscribe()). "Publishing an event" just means the
+    callback is called with two arguments: the event (pygame.event.Event) and the key modifiers (a
+    bitfield of flags like pygame.KMOD_SHIFT).
+    """
     game:           "Game"
     panning:        Panning                             # Track panning state
     mouse:          UIMouse = UIMouse()                 # Track mouse button down/up
@@ -163,7 +169,9 @@ class UI:
                 case pygame.MOUSEWHEEL: self.handle_mousewheel_events(event, log)
                 case _: self.log_unused_events(event, log)
             # Let UI subscribers handle the event
-            self.publish(event, kmod)
+            # NOTE: kmod is stale. Call get_mods() when publishing.
+            # self.publish(event, kmod)
+            self.publish(event, pygame.key.get_mods())
 
         if self.mouse.button_1:
             if kmod & pygame.KMOD_SHIFT:
