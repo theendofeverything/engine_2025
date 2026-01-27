@@ -447,7 +447,17 @@ class Entity:
                 hud = self.debug.hud
 
                 def debug_npc_forces() -> None:
-                    hud.print(f"+- Entity.update() ({FILE})")
+                    hud.print("|")
+                    hud.print(f"+- {self.entity_name}.update.update_npc_forces() ({FILE})")
+                    hud.print("|  +- Movement Attrs")
+                    hud.print(f"|     +- follow_entity: {movement.follow_entity}")
+                    follow_speed = entity.movement.speed.vec
+                    follow_accel = entity.movement.accel.vec
+                    hud.print(f"|     +- follow_entity speed: {follow_speed.fmt(0.6)}")
+                    hud.print(f"|     +- follow_entity accel: {follow_accel.fmt(0.6)}")
+                    hud.print(f"|     +- speed.vec: {movement.speed.vec.fmt(0.6)}")
+                    hud.print(f"|     +- force.vec: {movement.force.vec.fmt(0.6)}")
+                    hud.print(f"|     +- mass: {movement.mass}")
                     hud.print("|  +- Locals")
                     hud.print(f"|     +- k:float = {controls['k']}")
                     hud.print(f"|     +- b:float = {controls['b']}")
@@ -455,15 +465,6 @@ class Entity:
                     end = from_entity_to_me.end
                     hud.print(f"|     +- d:Vec2D = {d.fmt(0.6)}: {start} to {end}")
                     hud.print(f"|     +- v:Vec2D = {v.fmt(0.6)}")
-                    hud.print("|  +- Movement Attrs")
-                    hud.print(f"|     +- speed.vec: {movement.speed.vec.fmt(0.6)}")
-                    hud.print(f"|     +- force.vec: {movement.force.vec.fmt(0.6)}")
-                    hud.print(f"|     +- mass: {movement.mass}")
-                    hud.print(f"|     +- follow_entity: {movement.follow_entity}")
-                    follow_speed = entity.movement.speed.vec
-                    follow_accel = entity.movement.accel.vec
-                    hud.print(f"|     +- follow_entity speed: {follow_speed.fmt(0.6)}")
-                    hud.print(f"|     +- follow_entity accel: {follow_accel.fmt(0.6)}")
                 debug_npc_forces()
 
     @property

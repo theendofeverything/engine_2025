@@ -81,6 +81,10 @@
 * [ ] Improve frame rate metrics:
     * [ ] Display average FPS instead of displaying one value every 30 frames
     * [ ] Display the percentage of the game loop period that is utilized
+* [ ] Move engine code out to game.py via callbacks.
+    * game.py will grow large, so come up with a template project structure for moving code from
+      game.py to a user-created lib (not the engine).
+* [ ] Document how I am doing callbacks for the UI code
 """
 
 from dataclasses import dataclass, field
@@ -155,36 +159,36 @@ class InputMapper:
         # TODO: I put all variations of left and right SHIFT and CTRL keys but this is insanity.
         # There has to be a better way.
         self.key_map = {
-                (pygame.K_c, pygame.KMOD_NONE): Action.CLEAR_DEBUG_SNAPSHOT_ARTWORK,
-                (pygame.K_d, pygame.KMOD_NONE): Action.TOGGLE_DEBUG_ART_OVERLAY,
-                (pygame.K_b, pygame.KMOD_SHIFT): Action.CONTROLS_ADJUST_B_LESS,
-                (pygame.K_b, pygame.KMOD_LSHIFT): Action.CONTROLS_ADJUST_B_LESS,
-                (pygame.K_b, pygame.KMOD_RSHIFT): Action.CONTROLS_ADJUST_B_LESS,
-                (pygame.K_b, pygame.KMOD_NONE): Action.CONTROLS_ADJUST_B_MORE,
-                (pygame.K_k, pygame.KMOD_SHIFT): Action.CONTROLS_ADJUST_K_LESS,
-                (pygame.K_k, pygame.KMOD_LSHIFT): Action.CONTROLS_ADJUST_K_LESS,
-                (pygame.K_k, pygame.KMOD_RSHIFT): Action.CONTROLS_ADJUST_K_LESS,
-                (pygame.K_k, pygame.KMOD_NONE): Action.CONTROLS_ADJUST_K_MORE,
-                (pygame.K_1, pygame.KMOD_NONE): Action.CONTROLS_PICK_MODE_1,
-                (pygame.K_2, pygame.KMOD_NONE): Action.CONTROLS_PICK_MODE_2,
-                (pygame.K_3, pygame.KMOD_NONE): Action.CONTROLS_PICK_MODE_3,
-                (pygame.K_q, pygame.KMOD_NONE): Action.QUIT,
-                (pygame.K_SPACE, pygame.KMOD_NONE): Action.TOGGLE_PAUSE,
-                (pygame.K_F11, pygame.KMOD_NONE): Action.TOGGLE_FULLSCREEN,
-                (pygame.K_F12, pygame.KMOD_NONE): Action.TOGGLE_DEBUG_HUD,
-                (pygame.K_EQUALS, pygame.KMOD_SHIFT | pygame.KMOD_CTRL): Action.FONT_SIZE_INCREASE,
-                (pygame.K_EQUALS, pygame.KMOD_LSHIFT | pygame.KMOD_CTRL): Action.FONT_SIZE_INCREASE,
-                (pygame.K_EQUALS, pygame.KMOD_RSHIFT | pygame.KMOD_CTRL): Action.FONT_SIZE_INCREASE,
-                (pygame.K_EQUALS, pygame.KMOD_SHIFT | pygame.KMOD_LCTRL): Action.FONT_SIZE_INCREASE,
-                (pygame.K_EQUALS, pygame.KMOD_LSHIFT | pygame.KMOD_LCTRL): Action.FONT_SIZE_INCREASE,
-                (pygame.K_EQUALS, pygame.KMOD_RSHIFT | pygame.KMOD_LCTRL): Action.FONT_SIZE_INCREASE,
-                (pygame.K_EQUALS, pygame.KMOD_SHIFT | pygame.KMOD_RCTRL): Action.FONT_SIZE_INCREASE,
-                (pygame.K_EQUALS, pygame.KMOD_LSHIFT | pygame.KMOD_RCTRL): Action.FONT_SIZE_INCREASE,
-                (pygame.K_EQUALS, pygame.KMOD_RSHIFT | pygame.KMOD_RCTRL): Action.FONT_SIZE_INCREASE,
-                (pygame.K_MINUS, pygame.KMOD_CTRL): Action.FONT_SIZE_DECREASE,
-                (pygame.K_MINUS, pygame.KMOD_LCTRL): Action.FONT_SIZE_DECREASE,
-                (pygame.K_MINUS, pygame.KMOD_RCTRL): Action.FONT_SIZE_DECREASE,
-                }
+            (pygame.K_c, pygame.KMOD_NONE): Action.CLEAR_DEBUG_SNAPSHOT_ARTWORK,
+            (pygame.K_d, pygame.KMOD_NONE): Action.TOGGLE_DEBUG_ART_OVERLAY,
+            (pygame.K_b, pygame.KMOD_SHIFT): Action.CONTROLS_ADJUST_B_LESS,
+            (pygame.K_b, pygame.KMOD_LSHIFT): Action.CONTROLS_ADJUST_B_LESS,
+            (pygame.K_b, pygame.KMOD_RSHIFT): Action.CONTROLS_ADJUST_B_LESS,
+            (pygame.K_b, pygame.KMOD_NONE): Action.CONTROLS_ADJUST_B_MORE,
+            (pygame.K_k, pygame.KMOD_SHIFT): Action.CONTROLS_ADJUST_K_LESS,
+            (pygame.K_k, pygame.KMOD_LSHIFT): Action.CONTROLS_ADJUST_K_LESS,
+            (pygame.K_k, pygame.KMOD_RSHIFT): Action.CONTROLS_ADJUST_K_LESS,
+            (pygame.K_k, pygame.KMOD_NONE): Action.CONTROLS_ADJUST_K_MORE,
+            (pygame.K_1, pygame.KMOD_NONE): Action.CONTROLS_PICK_MODE_1,
+            (pygame.K_2, pygame.KMOD_NONE): Action.CONTROLS_PICK_MODE_2,
+            (pygame.K_3, pygame.KMOD_NONE): Action.CONTROLS_PICK_MODE_3,
+            (pygame.K_q, pygame.KMOD_NONE): Action.QUIT,
+            (pygame.K_SPACE, pygame.KMOD_NONE): Action.TOGGLE_PAUSE,
+            (pygame.K_F11, pygame.KMOD_NONE): Action.TOGGLE_FULLSCREEN,
+            (pygame.K_F12, pygame.KMOD_NONE): Action.TOGGLE_DEBUG_HUD,
+            (pygame.K_EQUALS, pygame.KMOD_SHIFT | pygame.KMOD_CTRL): Action.FONT_SIZE_INCREASE,
+            (pygame.K_EQUALS, pygame.KMOD_LSHIFT | pygame.KMOD_CTRL): Action.FONT_SIZE_INCREASE,
+            (pygame.K_EQUALS, pygame.KMOD_RSHIFT | pygame.KMOD_CTRL): Action.FONT_SIZE_INCREASE,
+            (pygame.K_EQUALS, pygame.KMOD_SHIFT | pygame.KMOD_LCTRL): Action.FONT_SIZE_INCREASE,
+            (pygame.K_EQUALS, pygame.KMOD_LSHIFT | pygame.KMOD_LCTRL): Action.FONT_SIZE_INCREASE,
+            (pygame.K_EQUALS, pygame.KMOD_RSHIFT | pygame.KMOD_LCTRL): Action.FONT_SIZE_INCREASE,
+            (pygame.K_EQUALS, pygame.KMOD_SHIFT | pygame.KMOD_RCTRL): Action.FONT_SIZE_INCREASE,
+            (pygame.K_EQUALS, pygame.KMOD_LSHIFT | pygame.KMOD_RCTRL): Action.FONT_SIZE_INCREASE,
+            (pygame.K_EQUALS, pygame.KMOD_RSHIFT | pygame.KMOD_RCTRL): Action.FONT_SIZE_INCREASE,
+            (pygame.K_MINUS, pygame.KMOD_CTRL): Action.FONT_SIZE_DECREASE,
+            (pygame.K_MINUS, pygame.KMOD_LCTRL): Action.FONT_SIZE_DECREASE,
+            (pygame.K_MINUS, pygame.KMOD_RCTRL): Action.FONT_SIZE_DECREASE,
+            }
 
 
 # pylint: disable=too-many-instance-attributes
@@ -346,9 +350,12 @@ class Game:
         # Prologue: reset debug
         self.debug.hud.reset()                          # Clear the debug HUD
         self.debug_hud_begin()                          # Load first values in debug HUD
+        self.debug_fps(True)
         # Game
         self.reset_art()                                # Clear old art
         self.ui.handle_events(log)                      # Handle all user events
+        self.debug_mouse(False)
+        self.debug_player_keys(False)
         self.update_entities()                          #
         self.draw_remaining_art()                       # Draw any remaining art not already drawn
         # Epilogue: update debug HUD, display, and timing
@@ -356,6 +363,52 @@ class Game:
         self.debug.display_snapshots_in_hud()           # Print snapshots in HUD last
         self.renderer.render_all()                      # Render all art and HUD
         self.timing.maintain_framerate(fps=60)          # Run at 60 FPS
+
+    def debug_player_keys(self, show_in_hud: bool) -> None:
+        """Debug key presses for game controls."""
+        if not show_in_hud: return
+        hud = self.debug.hud
+        keys = self.ui.keys
+        hud.print(f"|\n+- UI -> Keys ({FILE})")
+        keys_pressed = ""
+        if keys.left_arrow:
+            keys_pressed += "LEFT"
+        if keys.right_arrow:
+            keys_pressed += "RIGHT"
+        if keys.up_arrow:
+            keys_pressed += "UP"
+        if keys.down_arrow:
+            keys_pressed += "DOWN"
+        hud.print(f"|  +- arrow keys: {keys_pressed}")
+
+    def debug_mouse(self, show_in_hud: bool) -> None:
+        """Debug mouse position and buttons."""
+        if not show_in_hud: return
+        debug = self.debug
+        coord_sys = self.coord_sys
+        debug.hud.print(f"|\n+- UI -> Mouse ({FILE})")
+
+        def debug_mouse_position() -> None:
+            """Display mouse position in GCS and PCS."""
+            # Get mouse position in pixel coordinates
+            mouse_position = Point2D.from_tuple(pygame.mouse.get_pos())
+            # Get mouse position in game coordinates
+            mouse_gcs = coord_sys.xfm(
+                    mouse_position.as_vec(),
+                    coord_sys.matrix.pcs_to_gcs)
+            # Test transform by converting back to pixel coordinates
+            mouse_pcs = coord_sys.xfm(
+                    mouse_gcs,
+                    coord_sys.matrix.gcs_to_pcs)
+            debug.hud.print(f"|  +- mouse.get_pos(): {mouse_gcs} GCS, {mouse_pcs.fmt(0.0)} PCS")
+        debug_mouse_position()
+
+        def debug_mouse_buttons() -> None:
+            """Display mouse button state."""
+            debug.hud.print("|  +- mouse.button_:")
+            debug.hud.print(f"|     +- 1: {self.ui.mouse.button_1}")
+            debug.hud.print(f"|     +- 2: {self.ui.mouse.button_2}")
+        debug_mouse_buttons()
 
     def ui_callback_to_map_event_to_action(self, event: pygame.event.Event, kmod: int) -> None:
         """Map UI events to actions and then passes the action to the action handler.
@@ -576,23 +629,6 @@ class Game:
                         f"{sdl_version:<25}"
                         f"{debug_art_is_visible:<25}")
 
-        def debug_fps() -> None:
-            """Display frame duration in milliseconds and rate in FPS."""
-            timing = self.timing
-            # # Old: use get_fps() -- it averages every 10 frames
-            # fps = timing.clock.get_fps()
-            # if timing.ticks["video"].counters["hud_fps"].clocked:
-            if timing.frame_counters["video"].clocked_events["hud_fps"].is_period:
-                # Update buffered milliseconds per frame once every period (30 frames).
-                # See Tick.counters["hud_fps"] and Tick.update() for period.
-                timing.update_buffered_ms_per_frame()
-            # Print buffered versions to HUD
-            fps = timing.fps_buffered
-            ms_per_frame = timing.ms_per_frame_buffered
-            debug.hud.print(f"|\n+- Video frames ({FILE})")
-            debug.hud.print(f"|   +- FPS: {fps:0.1f}")
-            debug.hud.print(f"|   +- Period: {ms_per_frame:d}ms")
-
         def debug_window_size() -> None:
             """Display window size and center."""
             debug.hud.print(f"|\n+- OS window (in pixels) ({FILE})")
@@ -611,11 +647,29 @@ class Game:
             debug.hud.print(f"|  +- window_center: {window_center.fmt(0.0)} PCS"
                             f", {gcs_window_center} GCS")
 
-        debug_fps()
         debug_window_size()
-        debug.hud.print("\n------")
-        debug.hud.print(f"Locals ({FILE})")         # Local debug prints (e.g., from UI)
-        debug.hud.print("------")
+        # debug.hud.print("\n------")
+        # debug.hud.print(f"Locals ({FILE})")         # Local debug prints (e.g., from UI)
+        # debug.hud.print("------")
+
+    def debug_fps(self, show_in_hud: bool) -> None:
+        """Display frame duration in milliseconds and rate in FPS."""
+        if not show_in_hud: return
+        debug = self.debug
+        timing = self.timing
+        # # Old: use get_fps() -- it averages every 10 frames
+        # fps = timing.clock.get_fps()
+        # if timing.ticks["video"].counters["hud_fps"].clocked:
+        if timing.frame_counters["video"].clocked_events["hud_fps"].is_period:
+            # Update buffered milliseconds per frame once every period (30 frames).
+            # See Tick.counters["hud_fps"] and Tick.update() for period.
+            timing.update_buffered_ms_per_frame()
+        # Print buffered versions to HUD
+        fps = timing.fps_buffered
+        ms_per_frame = timing.ms_per_frame_buffered
+        debug.hud.print(f"|\n+- Video frames ({FILE})")
+        debug.hud.print(f"|   +- FPS: {fps:0.1f}")
+        debug.hud.print(f"|   +- Period: {ms_per_frame:d}ms")
 
     def draw_background_crosses(self) -> None:
         """Draw some animated shapes in the background.

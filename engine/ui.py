@@ -72,53 +72,7 @@ class UI:
     def handle_events(self, log: logging.Logger) -> None:
         """Handle events."""
         self.consume_event_queue(log)
-        self.debug_mouse()
-        self.debug_keys()
         self.update_panning()
-
-    def debug_keys(self) -> None:
-        """Debug key presses for game controls."""
-        hud = self.game.debug.hud
-        keys = self.keys
-        hud.print(f"|\n+- UI -> Keys ({FILE})")
-        keys_pressed = ""
-        if keys.left_arrow:
-            keys_pressed += "LEFT"
-        if keys.right_arrow:
-            keys_pressed += "RIGHT"
-        if keys.up_arrow:
-            keys_pressed += "UP"
-        if keys.down_arrow:
-            keys_pressed += "DOWN"
-        hud.print(f"|  +- arrow keys: {keys_pressed}")
-
-    def debug_mouse(self) -> None:
-        """Debug mouse position and buttons."""
-        debug = self.game.debug
-        coord_sys = self.game.coord_sys
-        debug.hud.print(f"|\n+- UI -> Mouse ({FILE})")
-
-        def debug_mouse_position() -> None:
-            """Display mouse position in GCS and PCS."""
-            # Get mouse position in pixel coordinates
-            mouse_position = Point2D.from_tuple(pygame.mouse.get_pos())
-            # Get mouse position in game coordinates
-            mouse_gcs = coord_sys.xfm(
-                    mouse_position.as_vec(),
-                    coord_sys.matrix.pcs_to_gcs)
-            # Test transform by converting back to pixel coordinates
-            mouse_pcs = coord_sys.xfm(
-                    mouse_gcs,
-                    coord_sys.matrix.gcs_to_pcs)
-            debug.hud.print(f"|  +- mouse.get_pos(): {mouse_gcs} GCS, {mouse_pcs.fmt(0.0)} PCS")
-        debug_mouse_position()
-
-        def debug_mouse_buttons() -> None:
-            """Display mouse button state."""
-            debug.hud.print("|  +- mouse.button_:")
-            debug.hud.print(f"|     +- 1: {self.mouse.button_1}")
-            debug.hud.print(f"|     +- 2: {self.mouse.button_2}")
-        debug_mouse_buttons()
 
     def update_panning(self) -> None:
         """Update 'panning.end': the latest point the mouse has panned to.
@@ -133,7 +87,8 @@ class UI:
         debug = self.game.debug
         panning = self.panning
 
-        def debug_panning() -> None:
+        def debug_panning(show_in_hud: bool) -> None:
+            if not show_in_hud: return
             coord_sys = self.game.coord_sys
             debug.hud.print(f"|\n+- UI -> Panning: {panning.is_active} ({FILE})")
             debug.hud.print(f"|        +- .start: {panning.start.fmt(0.0)}")
@@ -143,8 +98,7 @@ class UI:
             debug.hud.print(f"|              +- coord_sys.pcs_origin:  {coord_sys.pcs_origin}")
             debug.hud.print(f"|              +- coord_sys.translation: {coord_sys.translation} = "
                             "pcs_origin + .vector")
-        show_panning_in_hud = False
-        if show_panning_in_hud: debug_panning()
+        debug_panning(False)
         if panning.is_active:
             mouse_pos = pygame.mouse.get_pos()
             panning.end = Point2D.from_tuple(mouse_pos)
