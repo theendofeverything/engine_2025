@@ -89,7 +89,6 @@
 
 from dataclasses import dataclass, field
 import sys
-from enum import Enum, auto
 import random
 import pathlib
 import logging
@@ -105,90 +104,9 @@ from engine.geometry_types import Point2D, Vec2D
 from engine.drawing_shapes import Cross
 from engine.colors import Colors
 from engine.entity import Entity, EntityType
+from gamelibs.input_mapper import Action, InputMapper
 
 FILE = pathlib.Path(__file__).name
-
-
-class Action(Enum):
-    """Enumerate all actions for the InputMapper."""
-    QUIT = auto()
-    CLEAR_DEBUG_SNAPSHOT_ARTWORK = auto()
-    TOGGLE_DEBUG_ART_OVERLAY = auto()
-    TOGGLE_FULLSCREEN = auto()
-    TOGGLE_DEBUG_HUD = auto()
-    TOGGLE_PAUSE = auto()
-    FONT_SIZE_INCREASE = auto()
-    FONT_SIZE_DECREASE = auto()
-    CONTROLS_ADJUST_K_LESS = auto()
-    CONTROLS_ADJUST_K_MORE = auto()
-    CONTROLS_ADJUST_B_LESS = auto()
-    CONTROLS_ADJUST_B_MORE = auto()
-    CONTROLS_PICK_MODE_1 = auto()
-    CONTROLS_PICK_MODE_2 = auto()
-    CONTROLS_PICK_MODE_3 = auto()
-
-
-@dataclass
-class InputMapper:
-    """Map inputs (such as key presses) to actions.
-
-    key_map: {(key, keymod): Action}
-
-    >>> input_mapper = InputMapper()
-    >>> key_map = input_mapper.key_map
-    >>> key_map
-    {(99, 0): <Action.CLEAR_DEBUG_SNAPSHOT_ARTWORK: 2>,
-    (100, 0): <Action.TOGGLE_DEBUG_ART_OVERLAY: 3>,
-    (98, 3): <Action.CONTROLS_ADJUST_B_LESS: 11>,
-    (98, 0): <Action.CONTROLS_ADJUST_B_MORE: 12>,
-    (107, 3): <Action.CONTROLS_ADJUST_K_LESS: 9>,
-    (107, 0): <Action.CONTROLS_ADJUST_K_MORE: 10>,
-    (49, 0): <Action.CONTROLS_PICK_MODE_1: 13>,
-    (50, 0): <Action.CONTROLS_PICK_MODE_2: 14>,
-    (51, 0): <Action.CONTROLS_PICK_MODE_3: 15>,
-    (113, 0): <Action.QUIT: 1>,
-    (32, 0): <Action.TOGGLE_PAUSE: 6>,
-    (1073741892, 0): <Action.TOGGLE_FULLSCREEN: 4>,
-    (1073741893, 0): <Action.TOGGLE_DEBUG_HUD: 5>,
-    (61, 195): <Action.FONT_SIZE_INCREASE: 7>,
-    (45, 192): <Action.FONT_SIZE_DECREASE: 8>}
-    """
-    key_map: dict[tuple[int, int], Action] = field(default_factory=dict)
-
-    def __post_init__(self) -> None:
-        # TODO: I put all variations of left and right SHIFT and CTRL keys but this is insanity.
-        # There has to be a better way.
-        self.key_map = {
-            (pygame.K_c, pygame.KMOD_NONE): Action.CLEAR_DEBUG_SNAPSHOT_ARTWORK,
-            (pygame.K_d, pygame.KMOD_NONE): Action.TOGGLE_DEBUG_ART_OVERLAY,
-            (pygame.K_b, pygame.KMOD_SHIFT): Action.CONTROLS_ADJUST_B_LESS,
-            (pygame.K_b, pygame.KMOD_LSHIFT): Action.CONTROLS_ADJUST_B_LESS,
-            (pygame.K_b, pygame.KMOD_RSHIFT): Action.CONTROLS_ADJUST_B_LESS,
-            (pygame.K_b, pygame.KMOD_NONE): Action.CONTROLS_ADJUST_B_MORE,
-            (pygame.K_k, pygame.KMOD_SHIFT): Action.CONTROLS_ADJUST_K_LESS,
-            (pygame.K_k, pygame.KMOD_LSHIFT): Action.CONTROLS_ADJUST_K_LESS,
-            (pygame.K_k, pygame.KMOD_RSHIFT): Action.CONTROLS_ADJUST_K_LESS,
-            (pygame.K_k, pygame.KMOD_NONE): Action.CONTROLS_ADJUST_K_MORE,
-            (pygame.K_1, pygame.KMOD_NONE): Action.CONTROLS_PICK_MODE_1,
-            (pygame.K_2, pygame.KMOD_NONE): Action.CONTROLS_PICK_MODE_2,
-            (pygame.K_3, pygame.KMOD_NONE): Action.CONTROLS_PICK_MODE_3,
-            (pygame.K_q, pygame.KMOD_NONE): Action.QUIT,
-            (pygame.K_SPACE, pygame.KMOD_NONE): Action.TOGGLE_PAUSE,
-            (pygame.K_F11, pygame.KMOD_NONE): Action.TOGGLE_FULLSCREEN,
-            (pygame.K_F12, pygame.KMOD_NONE): Action.TOGGLE_DEBUG_HUD,
-            (pygame.K_EQUALS, pygame.KMOD_SHIFT | pygame.KMOD_CTRL): Action.FONT_SIZE_INCREASE,
-            (pygame.K_EQUALS, pygame.KMOD_LSHIFT | pygame.KMOD_CTRL): Action.FONT_SIZE_INCREASE,
-            (pygame.K_EQUALS, pygame.KMOD_RSHIFT | pygame.KMOD_CTRL): Action.FONT_SIZE_INCREASE,
-            (pygame.K_EQUALS, pygame.KMOD_SHIFT | pygame.KMOD_LCTRL): Action.FONT_SIZE_INCREASE,
-            (pygame.K_EQUALS, pygame.KMOD_LSHIFT | pygame.KMOD_LCTRL): Action.FONT_SIZE_INCREASE,
-            (pygame.K_EQUALS, pygame.KMOD_RSHIFT | pygame.KMOD_LCTRL): Action.FONT_SIZE_INCREASE,
-            (pygame.K_EQUALS, pygame.KMOD_SHIFT | pygame.KMOD_RCTRL): Action.FONT_SIZE_INCREASE,
-            (pygame.K_EQUALS, pygame.KMOD_LSHIFT | pygame.KMOD_RCTRL): Action.FONT_SIZE_INCREASE,
-            (pygame.K_EQUALS, pygame.KMOD_RSHIFT | pygame.KMOD_RCTRL): Action.FONT_SIZE_INCREASE,
-            (pygame.K_MINUS, pygame.KMOD_CTRL): Action.FONT_SIZE_DECREASE,
-            (pygame.K_MINUS, pygame.KMOD_LCTRL): Action.FONT_SIZE_DECREASE,
-            (pygame.K_MINUS, pygame.KMOD_RCTRL): Action.FONT_SIZE_DECREASE,
-            }
 
 
 # pylint: disable=too-many-instance-attributes
