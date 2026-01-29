@@ -231,6 +231,10 @@ The `engine/__init__.py` makes the `engine/` folder a Python package.
 `__init__.py` is only necessary to avoid linter `mypy` throwing the error
 `Cannot find implementation or library stub for module named ...`.*
 
+Inevitably `game.py` grows large. Create a `gamelibs` folder and put an
+`__init__.py` in it to make it a package. Handle imports of `gamelibs` exactly
+how `engine` does it.
+
 ## Use engine for a game
 
 My quick and dirty way to use the engine is to create symbolic links. I know

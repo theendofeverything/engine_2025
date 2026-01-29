@@ -87,23 +87,10 @@ class UI:
         debug = self.game.debug
         panning = self.panning
 
-        def debug_panning(show_in_hud: bool) -> None:
-            if not show_in_hud: return
-            coord_sys = self.game.coord_sys
-            debug.hud.print(f"|\n+- UI -> Panning: {panning.is_active} ({FILE})")
-            debug.hud.print(f"|        +- .start: {panning.start.fmt(0.0)}")
-            debug.hud.print(f"|        +- .end: {panning.end.fmt(0.0)}")
-            debug.hud.print(f"|        +- .vector: {panning.vector.fmt(0.0)}")
-            debug.hud.print("|           +- Panning updates the coord_sys:")
-            debug.hud.print(f"|              +- coord_sys.pcs_origin:  {coord_sys.pcs_origin}")
-            debug.hud.print(f"|              +- coord_sys.translation: {coord_sys.translation} = "
-                            "pcs_origin + .vector")
-        debug_panning(False)
         if panning.is_active:
             mouse_pos = pygame.mouse.get_pos()
             panning.end = Point2D.from_tuple(mouse_pos)
-            debug.art.lines_pcs.append(
-                    Line2D(start=panning.start, end=panning.end, color=Colors.panning))
+
 
     def consume_event_queue(self, log: logging.Logger) -> None:
         """Consume all events on the event queue.

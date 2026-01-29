@@ -82,8 +82,10 @@
     * [ ] Display average FPS instead of displaying one value every 30 frames
     * [ ] Display the percentage of the game loop period that is utilized
 * [ ] Move engine code out to game.py via callbacks.
-    * game.py will grow large, so come up with a template project structure for moving code from
-      game.py to a user-created lib (not the engine).
+    * game.py grows large, so:
+        * [x] create a "gamelibs/" folder and put a "__init__.py" in it to make gamelibs a package
+        * [x] move game lib code to gamelibs
+        * this package is for user-created libs (not the engine).
 * [ ] Document how I am doing callbacks for the UI code
 """
 
@@ -101,7 +103,7 @@ from engine.panning import Panning
 from engine.coord_sys import CoordinateSystem
 from engine.renderer import Renderer
 from engine.geometry_types import Point2D, Vec2D
-from engine.drawing_shapes import Cross
+from engine.drawing_shapes import Cross, Line2D
 from engine.colors import Colors
 from engine.entity import Entity, EntityType
 from gamelibs.input_mapper import Action, InputMapper
@@ -272,8 +274,7 @@ class Game:
         # Game
         self.reset_art()                                # Clear old art
         self.ui.handle_events(log)                      # Handle all user events
-        self.debug_mouse(False)
-        self.debug_player_keys(False)
+        self.debug_ui(False)
         self.update_entities()                          #
         self.draw_remaining_art()                       # Draw any remaining art not already drawn
         # Epilogue: update debug HUD, display, and timing
@@ -281,6 +282,30 @@ class Game:
         self.debug.display_snapshots_in_hud()           # Print snapshots in HUD last
         self.renderer.render_all()                      # Render all art and HUD
         self.timing.maintain_framerate(fps=60)          # Run at 60 FPS
+
+    def debug_ui(self, enable_debug: bool) -> None:
+        """Enables UI debug methods. Set True/False on individual methods here."""
+        self.debug_mouse(True)
+        self.debug_player_keys(True)
+        self.debug_panning(True)
+
+    def debug_panning(self, show_in_hud: bool) -> None:
+        """Draw debug art to show panning and display state/values in HUD"""
+        debug = self.debug
+        panning = self.ui.panning
+        if not show_in_hud: return
+        coord_sys = self.coord_sys
+        debug.hud.print(f"|\n+- UI -> Panning: {panning.is_active} ({FILE})")
+        debug.hud.print(f"|        +- .start: {panning.start.fmt(0.0)}")
+        debug.hud.print(f"|        +- .end: {panning.end.fmt(0.0)}")
+        debug.hud.print(f"|        +- .vector: {panning.vector.fmt(0.0)}")
+        debug.hud.print("|           +- Panning updates the coord_sys:")
+        debug.hud.print(f"|              +- coord_sys.pcs_origin:  {coord_sys.pcs_origin}")
+        debug.hud.print(f"|              +- coord_sys.translation: {coord_sys.translation} = "
+                        "pcs_origin + .vector")
+        if panning.is_active:
+            debug.art.lines_pcs.append(
+                    Line2D(start=panning.start, end=panning.end, color=Colors.panning))
 
     def debug_player_keys(self, show_in_hud: bool) -> None:
         """Debug key presses for game controls."""
