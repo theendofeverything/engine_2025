@@ -271,6 +271,7 @@ class Game:
         self.debug.hud.reset()                          # Clear the debug HUD
         self.debug_hud_begin()                          # Load first values in debug HUD
         self.debug_fps(True)
+        self.debug_window_size(True)
         # Game
         self.reset_art()                                # Clear old art
         self.ui.handle_events(log)                      # Handle all user events
@@ -572,28 +573,29 @@ class Game:
                         f"{sdl_version:<25}"
                         f"{debug_art_is_visible:<25}")
 
-        def debug_window_size() -> None:
-            """Display window size and center."""
-            debug.hud.print(f"|\n+- OS window (in pixels) ({FILE})")
-            coord_sys: CoordinateSystem = self.coord_sys
-            # Size
-            window_size: Vec2D = coord_sys.window_size
-            gcs_window_size: Vec2D = coord_sys.xfm(v=window_size, mat=coord_sys.matrix.pcs_to_gcs)
-            debug.hud.print(f"|  +- window_size: {window_size.fmt(0.0)} PCS"
-                            f", {gcs_window_size} GCS")
-
-            # Center
-            window_center: Point2D = coord_sys.window_center
-            gcs_window_center: Vec2D = coord_sys.xfm(
-                    v=window_center.as_vec(),
-                    mat=coord_sys.matrix.pcs_to_gcs)
-            debug.hud.print(f"|  +- window_center: {window_center.fmt(0.0)} PCS"
-                            f", {gcs_window_center} GCS")
-
-        debug_window_size()
         # debug.hud.print("\n------")
         # debug.hud.print(f"Locals ({FILE})")         # Local debug prints (e.g., from UI)
         # debug.hud.print("------")
+
+    def debug_window_size(self, show_in_hud: bool) -> None:
+        """Display window size and center."""
+        if not show_in_hud: return
+        debug = self.debug
+        coord_sys: CoordinateSystem = self.coord_sys
+        debug.hud.print(f"|\n+- OS window (in pixels) ({FILE})")
+        # Size
+        window_size: Vec2D = coord_sys.window_size
+        gcs_window_size: Vec2D = coord_sys.xfm(v=window_size, mat=coord_sys.matrix.pcs_to_gcs)
+        debug.hud.print(f"|  +- window_size: {window_size.fmt(0.0)} PCS"
+                        f", {gcs_window_size} GCS")
+
+        # Center
+        window_center: Point2D = coord_sys.window_center
+        gcs_window_center: Vec2D = coord_sys.xfm(
+                v=window_center.as_vec(),
+                mat=coord_sys.matrix.pcs_to_gcs)
+        debug.hud.print(f"|  +- window_center: {window_center.fmt(0.0)} PCS"
+                        f", {gcs_window_center} GCS")
 
     def debug_fps(self, show_in_hud: bool) -> None:
         """Display frame duration in milliseconds and rate in FPS."""
