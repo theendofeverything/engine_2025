@@ -360,9 +360,7 @@ class Game:
         Usage:
             1. Register with the UI like this:
                 self.ui = UI(game=self, ...)  # Instantiate UI
-                ...
-                ui = self.ui
-                ui.subscribe(ui_callback_to_map_event_to_action)  # Register callback
+                self.ui.subscribe(self.ui_callback_to_map_event_to_action)  # Register callback
             2. Define actions in the InputMapper.key_map
             3. Define how to handle the actions in _handle_action_events()
 
@@ -396,6 +394,15 @@ class Game:
                 log.debug(f"kmod: {kmod}")
                 # Filter out irrelevant keymods
                 kmod = kmod & (pygame.KMOD_ALT | pygame.KMOD_CTRL | pygame.KMOD_SHIFT)
+                # Turn LSHIFT and RSHIFT into just SHIFT
+                if kmod & pygame.KMOD_SHIFT:
+                    kmod |= pygame.KMOD_SHIFT
+                # Turn LCTRL and RCTRL into just CTRL
+                if kmod & pygame.KMOD_CTRL:
+                    kmod |= pygame.KMOD_CTRL
+                # Turn LALT and RALT into just ALT
+                if kmod & pygame.KMOD_ALT:
+                    kmod |= pygame.KMOD_ALT
                 log.debug(f"Filtered kmod: {kmod}")
                 action = key_map.get((event.key, kmod))
                 if action is not None:
