@@ -103,10 +103,11 @@ from engine.panning import Panning
 from engine.coord_sys import CoordinateSystem
 from engine.renderer import Renderer
 from engine.geometry_types import Point2D, Vec2D
-from engine.drawing_shapes import Cross, Line2D
+from engine.drawing_shapes import Cross
 from engine.colors import Colors
 from engine.entity import Entity, EntityType
 from gamelibs.input_mapper import Action, InputMapper, KeyDirection
+from gamelibs.debug_game import DebugGame
 
 FILE = pathlib.Path(__file__).name
 
@@ -149,7 +150,6 @@ class Game:
     debug:      Debug = Debug()     # Display debug prints in HUD and overlay debug art
     timing:     Timing = Timing()   # Set up a clock to set frame rate and measure frame period
     art:        Art = Art()         # Set up all artwork for rendering
-
     # Instance variables defined in __post_init__()
     renderer:   Renderer = field(init=False)
     ui:         UI = field(init=False)                      # Keyboard, mouse, panning, zoom
@@ -161,12 +161,15 @@ class Game:
     #################################
     # Instance variables defined in the implicit __init__() of dataclass
     input_mapper: InputMapper = InputMapper()  # Map inputs to actions
+    # Instance variables defined in __post_init__()
+    debug_game: DebugGame = field(init=False)
 
     def __post_init__(self) -> None:
         # Load pygame
         pygame.init()
         pygame.font.init()
         self.debug_font = "fonts/ProggyClean.ttf"
+        self.debug_game = DebugGame(game=self)
 
         # Handle rendering in renderer.py
         # Note: The window size is just an initial value.
@@ -277,91 +280,22 @@ class Game:
         """Loop until the user quits."""
         # Prologue: reset debug
         self.debug.hud.reset()                          # Clear the debug HUD
-        self.debug_hud_begin()                          # Load first values in debug HUD
-        self.debug_fps(True)
-        self.debug_window_size(True)
+        self.debug_game.hud_begin()                          # Load first values in debug HUD
+        self.debug_game.fps(True)
+        self.debug_game.window_size(True)
         # Game
         self.reset_art()                                # Clear old art
         self.ui.handle_events(log)                      # Handle all user events
-        self.debug_ui(True)
-        self.update_entities()                          #
+        self.debug_game.ui(False)
+        self.update_entities()
+        self.debug_game.entities(False)
         self.draw_remaining_art()                       # Draw any remaining art not already drawn
         # Epilogue: update debug HUD, display, and timing
         self.update_frame_counters()                    # Advance frame-based ticks
+        self.debug_game.frame_counters(True)
         self.debug.display_snapshots_in_hud()           # Print snapshots in HUD last
         self.renderer.render_all()                      # Render all art and HUD
         self.timing.maintain_framerate(fps=60)          # Run at 60 FPS
-
-    def debug_ui(self, enable_debug: bool) -> None:
-        """Enables UI debug methods. Set True/False on individual methods here."""
-        if not enable_debug: return
-        self.debug_mouse(True)
-        self.debug_player_forces(True)
-        self.debug_panning(True)
-
-    def debug_panning(self, show_in_hud: bool) -> None:
-        """Draw debug art to show panning and display state/values in HUD"""
-        debug = self.debug
-        panning = self.ui.panning
-        if not show_in_hud: return
-        coord_sys = self.coord_sys
-        debug.hud.print(f"|\n+- UI -> Panning: {panning.is_active} ({FILE})")
-        debug.hud.print(f"|        +- .start: {panning.start.fmt(0.0)}")
-        debug.hud.print(f"|        +- .end: {panning.end.fmt(0.0)}")
-        debug.hud.print(f"|        +- .vector: {panning.vector.fmt(0.0)}")
-        debug.hud.print("|           +- Panning updates the coord_sys:")
-        debug.hud.print(f"|              +- coord_sys.pcs_origin:  {coord_sys.pcs_origin}")
-        debug.hud.print(f"|              +- coord_sys.translation: {coord_sys.translation} = "
-                        "pcs_origin + .vector")
-        if panning.is_active:
-            debug.art.lines_pcs.append(
-                    Line2D(start=panning.start, end=panning.end, color=Colors.panning))
-
-    def debug_player_forces(self, show_in_hud: bool) -> None:
-        """Debug key presses for game controls."""
-        if not show_in_hud: return
-        hud = self.debug.hud
-        hud.print(f"|\n+- Movement -> PlayerForce ({FILE})")
-        player_forces = ""
-        entities = self.entities
-        if entities["player"].movement.player_force.left:
-            player_forces += "LEFT"
-        if entities["player"].movement.player_force.right:
-            player_forces += "RIGHT"
-        if entities["player"].movement.player_force.up:
-            player_forces += "UP"
-        if entities["player"].movement.player_force.down:
-            player_forces += "DOWN"
-        hud.print(f"|  +- player_forces: {player_forces}")
-
-    def debug_mouse(self, show_in_hud: bool) -> None:
-        """Debug mouse position and buttons."""
-        if not show_in_hud: return
-        debug = self.debug
-        coord_sys = self.coord_sys
-        debug.hud.print(f"|\n+- UI -> Mouse ({FILE})")
-
-        def debug_mouse_position() -> None:
-            """Display mouse position in GCS and PCS."""
-            # Get mouse position in pixel coordinates
-            mouse_position = Point2D.from_tuple(pygame.mouse.get_pos())
-            # Get mouse position in game coordinates
-            mouse_gcs = coord_sys.xfm(
-                    mouse_position.as_vec(),
-                    coord_sys.matrix.pcs_to_gcs)
-            # Test transform by converting back to pixel coordinates
-            mouse_pcs = coord_sys.xfm(
-                    mouse_gcs,
-                    coord_sys.matrix.gcs_to_pcs)
-            debug.hud.print(f"|  +- mouse.get_pos(): {mouse_gcs} GCS, {mouse_pcs.fmt(0.0)} PCS")
-        debug_mouse_position()
-
-        def debug_mouse_buttons() -> None:
-            """Display mouse button state."""
-            debug.hud.print("|  +- mouse.button_:")
-            debug.hud.print(f"|     +- 1: {self.ui.mouse.button_1}")
-            debug.hud.print(f"|     +- 2: {self.ui.mouse.button_2}")
-        debug_mouse_buttons()
 
     def ui_callback_to_map_event_to_action(self, event: pygame.event.Event, kmod: int) -> None:
         """Map UI events to actions and then passes the action to the action handler.
@@ -522,77 +456,13 @@ class Game:
         for frame_counter in timing.frame_counters.values():
             frame_counter.update()
 
-        debug = True
-
-        def debug_frame_counters() -> None:
-            hud = self.debug.hud
-            heading = f"|\n+- Timing -> FrameCounter ({FILE})"
-            hud.print(heading)
-            # Video frame counters
-            hud.print("|  +- frame_counters['video']")
-            hud.print(f"|     +- frame_count: {timing.frame_counters['video'].frame_count}")
-            hud.print("|     +- clocked_events:")
-            for clocked_event in timing.frame_counters["video"].clocked_events.values():
-                hud.print(f"|        +- {clocked_event}")
-            # Game frame counters
-            if timing.frame_counters["game"].is_paused:
-                paused = "--Paused--"
-            else:
-                paused = "(<Space> to pause)"
-            hud.print("|  +- frame_counters['game']")
-            hud.print(f"|     +- frame_count: {timing.frame_counters['game'].frame_count} {paused}")
-            hud.print("|     +- clocked_events:")
-            for clocked_event in timing.frame_counters["game"].clocked_events.values():
-                hud.print(f"|        +- {clocked_event}")
-        if debug: debug_frame_counters()
-
     def update_entities(self) -> None:
         """Update the state of all entities based on counters and events."""
         timing = self.timing
         art = self.art
-        # TODO: make the red cross (slowly) follow the player around. Adust movement by adusting
-        # speed vector, not direct movement (to simulate inertia).
         for entity in self.entities.values():
             entity.update(timing)
             entity.draw(art)
-
-        debug = True
-        if debug:
-            def debug_entities() -> None:
-                hud = self.debug.hud
-                heading = f"|\n+- Entities ({FILE})"
-                hud.print(heading)
-
-                iterate_over_specific_entity_attrs = True
-                if iterate_over_specific_entity_attrs:
-                    # Only show these entity attrs:
-                    for name, entity in self.entities.items():
-                        hud.print(f"|     +- {name}")
-                        hud.print(f"|        +- name: {entity.entity_name}")
-                        hud.print(f"|        +- type: {entity.entity_type}")
-                        hud.print(f"|        +- clocked by: {entity.clocked_event_name}")
-                        hud.print(f"|        +- origin: {entity.origin}")
-                        hud.print(f"|        +- size: {entity.size}")
-                        hud.print(f"|        +- amount_excited: {entity.amount_excited}")
-                else:
-                    for entity_name, entity_value in self.entities.items():
-                        hud.print(f"|  +- {entity_name}:")
-                        for attr, attr_value in entity_value.__dict__.items():
-                            match attr:
-                                case "points":
-                                    # Catch points to print them with desired precision
-                                    hud.print(f"|     +- {attr}:")
-                                    for point in attr_value:
-                                        hud.print(f"|        +- !{point.fmt(0.3)}")
-                                case "debug":
-                                    # Do not iterate over the items in game.debug!
-                                    pass
-                                case "entities":
-                                    # Do not iterate over the items in game.entities!
-                                    pass
-                                case _:
-                                    hud.print(f"|     +- {attr}: {attr_value}")
-            debug_entities()
 
     def reset_art(self) -> None:
         """Clear out old artwork: application and debug."""
@@ -601,72 +471,11 @@ class Game:
 
     def draw_remaining_art(self) -> None:
         """Update art and debug art"""
-        draw_more_stuff = False
+        draw_more_stuff = True
         if draw_more_stuff:
             # self.draw_a_cross()                       # Draw application artwork
             self.draw_background_crosses()                      # Draw application artwork
-            # self.draw_debug_crosses()                   # Draw debug artwork
-
-    def debug_hud_begin(self) -> None:
-        """The first values displayed in the HUD are printed in this function."""
-        debug = self.debug
-        debug_hud = f"Debug HUD ({FILE})"
-        # Version values
-        using_pygame_ce = getattr(pygame, "IS_CE", False)
-        pygame_version = f"pygame{'-ce' if using_pygame_ce else ''} {pygame.version.ver}"
-        sdl_version = f"SDL {pygame.version.SDL}"
-        # Debug values
-        debug_hud_font_size = f"debug.hud.font_size:      {debug.hud.font_size.value}"
-        debug_art_is_visible = f"debug.hud.art.is_visible: {debug.art.is_visible} ('d' to toggle)"
-        debug.hud.print(f"{debug_hud:<25}"
-                        f"{pygame_version:<25}"
-                        f"{debug_hud_font_size:<25}")
-        debug.hud.print(f"{'---------':<25}"
-                        f"{sdl_version:<25}"
-                        f"{debug_art_is_visible:<25}")
-
-        # debug.hud.print("\n------")
-        # debug.hud.print(f"Locals ({FILE})")         # Local debug prints (e.g., from UI)
-        # debug.hud.print("------")
-
-    def debug_window_size(self, show_in_hud: bool) -> None:
-        """Display window size and center."""
-        if not show_in_hud: return
-        debug = self.debug
-        coord_sys: CoordinateSystem = self.coord_sys
-        debug.hud.print(f"|\n+- OS window (in pixels) ({FILE})")
-        # Size
-        window_size: Vec2D = coord_sys.window_size
-        gcs_window_size: Vec2D = coord_sys.xfm(v=window_size, mat=coord_sys.matrix.pcs_to_gcs)
-        debug.hud.print(f"|  +- window_size: {window_size.fmt(0.0)} PCS"
-                        f", {gcs_window_size} GCS")
-
-        # Center
-        window_center: Point2D = coord_sys.window_center
-        gcs_window_center: Vec2D = coord_sys.xfm(
-                v=window_center.as_vec(),
-                mat=coord_sys.matrix.pcs_to_gcs)
-        debug.hud.print(f"|  +- window_center: {window_center.fmt(0.0)} PCS"
-                        f", {gcs_window_center} GCS")
-
-    def debug_fps(self, show_in_hud: bool) -> None:
-        """Display frame duration in milliseconds and rate in FPS."""
-        if not show_in_hud: return
-        debug = self.debug
-        timing = self.timing
-        # # Old: use get_fps() -- it averages every 10 frames
-        # fps = timing.clock.get_fps()
-        # if timing.ticks["video"].counters["hud_fps"].clocked:
-        if timing.frame_counters["video"].clocked_events["hud_fps"].is_period:
-            # Update buffered milliseconds per frame once every period (30 frames).
-            # See Tick.counters["hud_fps"] and Tick.update() for period.
-            timing.update_buffered_ms_per_frame()
-        # Print buffered versions to HUD
-        fps = timing.fps_buffered
-        ms_per_frame = timing.ms_per_frame_buffered
-        debug.hud.print(f"|\n+- Video frames ({FILE})")
-        debug.hud.print(f"|   +- FPS: {fps:0.1f}")
-        debug.hud.print(f"|   +- Period: {ms_per_frame:d}ms")
+            self.draw_debug_crosses()                   # Draw debug artwork
 
     def draw_background_crosses(self) -> None:
         """Draw some animated shapes in the background.
