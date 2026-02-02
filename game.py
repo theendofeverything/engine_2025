@@ -132,18 +132,20 @@ class Game:
     >>> game = Game(log=None)
     >>> game
     Game(log=None,
-         input_mapper=InputMapper(...),
          debug=Debug(...),
          timing=Timing(...),
          art=Art(...),
          renderer=Renderer(...),
          ui=UI(...),
          coord_sys=CoordinateSystem(...),
-         entities={...})
+         entities={...},
+         input_mapper=InputMapper(...))
     """
-    # Instance variables defined in the implicit __init__()
+    ###################################
+    # Engine-defined instance variables
+    ###################################
+    # Instance variables defined in the implicit __init__() of dataclass
     log:        logging.Logger  # log created in main.py
-    input_mapper: InputMapper = InputMapper()  # Map inputs to actions
     debug:      Debug = Debug()     # Display debug prints in HUD and overlay debug art
     timing:     Timing = Timing()   # Set up a clock to set frame rate and measure frame period
     art:        Art = Art()         # Set up all artwork for rendering
@@ -153,6 +155,12 @@ class Game:
     ui:         UI = field(init=False)                      # Keyboard, mouse, panning, zoom
     coord_sys:  CoordinateSystem = field(init=False)        # Track state of PCS and GCS
     entities:   dict[str, Entity] = field(init=False)   # Game characters like the player
+
+    #################################
+    # Game-defined instance variables
+    #################################
+    # Instance variables defined in the implicit __init__() of dataclass
+    input_mapper: InputMapper = InputMapper()  # Map inputs to actions
 
     def __post_init__(self) -> None:
         # Load pygame
@@ -420,6 +428,7 @@ class Game:
                 if action is not None:
                     self._handle_action_events(action)
 
+    # pylint: disable=too-many-statements
     # pylint: disable=too-many-branches
     def _handle_action_events(self, action: Action) -> None:
         """Handle actions events detected by the UI"""
