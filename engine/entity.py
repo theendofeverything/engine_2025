@@ -50,7 +50,6 @@ from .drawing_shapes import Cross, Line2D
 from .timing import Timing
 from .colors import Colors
 from .art import Art
-from .ui import UIKeys
 from .debug import Debug
 
 
@@ -65,8 +64,8 @@ class AmountExcited:
 
 
 @dataclass
-class IsGoing:
-    """Store True/False information on up/down/left/right."""
+class PlayerForce:
+    """Store True/False information on Player up/down/left/right."""
     up:     bool = False
     down:   bool = False
     left:   bool = False
@@ -75,9 +74,12 @@ class IsGoing:
 
 @dataclass
 class Speed:
-    """Store speed information on up/down/left/right."""
+    """Store speed as a vector with a max value for any component.
+
+    Temporary: "slide" models player's inertia
+    """
     vec:    Vec2D = field(default_factory=lambda: Vec2D(x=0.0, y=0.0))
-    slide:  float = 0.0015
+    slide:  float = 0.0015  # TODO: replace this with actual inertia
     abs_max: float = 0.02
 
 
@@ -91,7 +93,7 @@ class Force:
 class Accel:
     """Acceleration vector of the entity."""
     vec:        Vec2D = field(default_factory=lambda: Vec2D(x=0.003, y=0.003))
-    abs_max:    float = 0.003
+    threshold:    float = 0.0015
 
 
 # pylint: disable=too-many-instance-attributes
@@ -103,7 +105,7 @@ class Movement:
     force:      Force = field(default_factory=lambda: Force())
     accel:      Accel = field(default_factory=lambda: Accel())
     mass:       float = field(init=False)  # Entity sets mass based on size in __post_init__()
-    is_force:   IsGoing = field(default_factory=lambda: IsGoing())
+    player_force:   PlayerForce = field(default_factory=lambda: PlayerForce())
     is_excited:  bool = False
     follow_entity: str = ""  # Name of entity to follow
     dist_to_follow_entity: float = field(init=False)  # Entity sets goal distance based on size
@@ -226,7 +228,7 @@ class Entity:
     API:
         is_excited():
             True if entity is moving.
-        update(timing: Timing, ui_keys: UIKeys):
+        update(timing: Timing):
             If game is not paused, the entity animation updates (if the clocked_event period
             elapsed) and the entity moves (if keys are pressed).
         draw(art: Art):
@@ -310,7 +312,7 @@ class Entity:
             self.artwork.points.append(Point2D(line.start.x, line.start.y))
             self.artwork.points.append(Point2D(line.end.x, line.end.y))
 
-    def update(self, timing: Timing, ui_keys: UIKeys) -> None:
+    def update(self, timing: Timing) -> None:
         """Update entity state based on the Timing -> Ticks and UI -> UIKeys.
 
         I update forces regardless of whether the game is paused. This is for two reasons:
@@ -326,7 +328,7 @@ class Entity:
         match entity_type:
             case EntityType.PLAYER:
                 # Player forces come from UI inputs
-                self.update_player_forces_from_ui(ui_keys)
+                self.update_player_forces_from_ui()
                 if not timing.frame_counters["game"].is_paused:
                     movement.update_player_speed()
                     self.update_player_position()
@@ -347,13 +349,13 @@ class Entity:
         if not timing.frame_counters["game"].is_paused:
             self.animate(timing)
 
-    def update_player_forces_from_ui(self, ui_keys: UIKeys) -> None:
+    def update_player_forces_from_ui(self) -> None:
         """Update movement state based on UI input from arrow keys."""
         movement = self.movement
-        up = ui_keys.up_arrow
-        down = ui_keys.down_arrow
-        right = ui_keys.right_arrow
-        left = ui_keys.left_arrow
+        up = movement.player_force.up
+        down = movement.player_force.down
+        right = movement.player_force.right
+        left = movement.player_force.left
         movement.is_excited = (up or down or left or right)
         # Rest the force vector to zero
         movement.force = Force()
@@ -361,22 +363,14 @@ class Entity:
         force = movement.force.vec
         accel = movement.accel.vec
         mass = movement.mass
-        if ui_keys.up_arrow:
+        if up:
             force.y += mass * accel.y
-        if ui_keys.down_arrow:
+        if down:
             force.y -= mass * accel.y
-        if ui_keys.right_arrow:
+        if right:
             force.x += mass * accel.x
-        if ui_keys.left_arrow:
+        if left:
             force.x -= mass * accel.x
-
-    def player_update_forces_from_ui_old(self, ui_keys: UIKeys) -> None:
-        """Update movement state based on UI input from arrow keys."""
-        movement = self.movement
-        movement.is_force.up = ui_keys.up_arrow
-        movement.is_force.down = ui_keys.down_arrow
-        movement.is_force.left = ui_keys.left_arrow
-        movement.is_force.right = ui_keys.right_arrow
 
     # pylint: disable=too-many-locals
     def update_npc_forces(self, entity_i_follow_exists: bool) -> None:
@@ -436,7 +430,8 @@ class Entity:
 
             # Update excited state:
             # Look excited if you feel forces acting on you
-            force_feel = movement.mass * movement.accel.abs_max/2  # Threshold for feeling force
+            # force_feel = movement.mass * movement.accel.abs_max/2  # Threshold for feeling force
+            force_feel = movement.mass * movement.accel.threshold  # Threshold for feeling force
             force = movement.force.vec
             movement.is_excited = (
                     (force.x > force_feel) or (force.y > force_feel)

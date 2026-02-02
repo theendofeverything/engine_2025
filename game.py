@@ -106,7 +106,7 @@ from engine.geometry_types import Point2D, Vec2D
 from engine.drawing_shapes import Cross, Line2D
 from engine.colors import Colors
 from engine.entity import Entity, EntityType
-from gamelibs.input_mapper import Action, InputMapper
+from gamelibs.input_mapper import Action, InputMapper, KeyDirection
 
 FILE = pathlib.Path(__file__).name
 
@@ -275,7 +275,7 @@ class Game:
         # Game
         self.reset_art()                                # Clear old art
         self.ui.handle_events(log)                      # Handle all user events
-        self.debug_ui(False)
+        self.debug_ui(True)
         self.update_entities()                          #
         self.draw_remaining_art()                       # Draw any remaining art not already drawn
         # Epilogue: update debug HUD, display, and timing
@@ -286,8 +286,9 @@ class Game:
 
     def debug_ui(self, enable_debug: bool) -> None:
         """Enables UI debug methods. Set True/False on individual methods here."""
+        if not enable_debug: return
         self.debug_mouse(True)
-        self.debug_player_keys(True)
+        self.debug_player_forces(True)
         self.debug_panning(True)
 
     def debug_panning(self, show_in_hud: bool) -> None:
@@ -308,22 +309,22 @@ class Game:
             debug.art.lines_pcs.append(
                     Line2D(start=panning.start, end=panning.end, color=Colors.panning))
 
-    def debug_player_keys(self, show_in_hud: bool) -> None:
+    def debug_player_forces(self, show_in_hud: bool) -> None:
         """Debug key presses for game controls."""
         if not show_in_hud: return
         hud = self.debug.hud
-        keys = self.ui.keys
-        hud.print(f"|\n+- UI -> Keys ({FILE})")
-        keys_pressed = ""
-        if keys.left_arrow:
-            keys_pressed += "LEFT"
-        if keys.right_arrow:
-            keys_pressed += "RIGHT"
-        if keys.up_arrow:
-            keys_pressed += "UP"
-        if keys.down_arrow:
-            keys_pressed += "DOWN"
-        hud.print(f"|  +- arrow keys: {keys_pressed}")
+        hud.print(f"|\n+- Movement -> PlayerForce ({FILE})")
+        player_forces = ""
+        entities = self.entities
+        if entities["player"].movement.player_force.left:
+            player_forces += "LEFT"
+        if entities["player"].movement.player_force.right:
+            player_forces += "RIGHT"
+        if entities["player"].movement.player_force.up:
+            player_forces += "UP"
+        if entities["player"].movement.player_force.down:
+            player_forces += "DOWN"
+        hud.print(f"|  +- player_forces: {player_forces}")
 
     def debug_mouse(self, show_in_hud: bool) -> None:
         """Debug mouse position and buttons."""
@@ -368,30 +369,41 @@ class Game:
         actions and then passes the action to the action handler.
 
         Actions are defined in the InputMapper.key_map:
-            {(99, 0): <Action.CLEAR_DEBUG_SNAPSHOT_ARTWORK: 2>,
-            (100, 0): <Action.TOGGLE_DEBUG_ART_OVERLAY: 3>,
+            {(99, 0, <KeyDirection.DOWN: 2>): <Action.CLEAR_DEBUG_SNAPSHOT_ARTWORK: 2>,
+            (100, 0, <KeyDirection.DOWN: 2>): <Action.TOGGLE_DEBUG_ART_OVERLAY: 3>,
+            (98, 3, <KeyDirection.DOWN: 2>): <Action.CONTROLS_ADJUST_B_LESS: 11>,
             ...
 
-            The dictionary key (int, int) is the tuple (event.key, kmod) where:
+            The dictionary key (int, int, KeyDirection) is the tuple (event.key, kmod, KeyDirection)
+            where:
                 - event.key is the int key code of the key press
                 - kmod is the int of the bitfield representing which key modifiers are held,
                   returned by pygame.key.get_mods()
+                - KeyDirection is KeyDirection.DOWN (for a pygame.KEYDOWN event) or KeyDirection.UP
+                  (for a pygame.KEYUP event)
 
         Even with no key modifiers held down, kmod is 4096, not 0. I only care about ALT, CTRL, and
         SHIFT, so I filter the kmod before using it by masking it with ALT | CTRL | SHIFT.
 
-        I use dict.get((event.key, kmod)) to get the action corresponding to the key press. Unlike
-        key_map[(event.key, kmod)], get() does not throw an exception if the tuple does not exist in
-        InputMapper.key_map. If the tuple does not exist, dict.get() returns None.
+        I use dict.get((event.key, kmod, key_direction)) to get the action corresponding to the key
+        press. Unlike key_map[(event.key, kmod, key_direction)], get() does not throw an exception
+        if the tuple does not exist in InputMapper.key_map. If the tuple does not exist, dict.get()
+        returns None.
         """
         key_map = self.input_mapper.key_map
         log = self.log
         match event.type:
             # TODO: I have to hold down both SHIFT keys to get pygame.KMOD_SHIFT. How should I set
             # this up so that either left or right SHIFT keys register as SHIFT?
-            case pygame.KEYDOWN:
+            case pygame.KEYDOWN | pygame.KEYUP:
                 log.debug(f"Keydown: {event}")
                 log.debug(f"kmod: {kmod}")
+                # Get the keydirection
+                match event.type:
+                    case pygame.KEYDOWN:
+                        key_direction = KeyDirection.DOWN
+                    case pygame.KEYUP:
+                        key_direction = KeyDirection.UP
                 # Filter out irrelevant keymods
                 kmod = kmod & (pygame.KMOD_ALT | pygame.KMOD_CTRL | pygame.KMOD_SHIFT)
                 # Turn LSHIFT and RSHIFT into just SHIFT
@@ -404,7 +416,7 @@ class Game:
                 if kmod & pygame.KMOD_ALT:
                     kmod |= pygame.KMOD_ALT
                 log.debug(f"Filtered kmod: {kmod}")
-                action = key_map.get((event.key, kmod))
+                action = key_map.get((event.key, kmod, key_direction))
                 if action is not None:
                     self._handle_action_events(action)
 
@@ -413,6 +425,7 @@ class Game:
         """Handle actions events detected by the UI"""
         log = self.log
         game = self
+        entities = self.entities
         match action:
             case Action.QUIT:
                 log.debug("User action: quit.")
@@ -465,6 +478,30 @@ class Game:
                 log.debug("User action: Select mode 3 -- separate entities following motion")
                 game.debug.hud.controls["k"] = 0.005
                 game.debug.hud.controls["b"] = 0.064
+            case Action.PLAYER_MOVE_LEFT_GO:
+                log.debug("Player move left")
+                entities["player"].movement.player_force.left = True
+            case Action.PLAYER_MOVE_RIGHT_GO:
+                log.debug("Player move right")
+                entities["player"].movement.player_force.right = True
+            case Action.PLAYER_MOVE_UP_GO:
+                log.debug("Player move up")
+                entities["player"].movement.player_force.up = True
+            case Action.PLAYER_MOVE_DOWN_GO:
+                log.debug("Player move down")
+                entities["player"].movement.player_force.down = True
+            case Action.PLAYER_MOVE_LEFT_STOP:
+                log.debug("Player move left")
+                self.entities["player"].movement.player_force.left = False
+            case Action.PLAYER_MOVE_RIGHT_STOP:
+                log.debug("Player move right")
+                self.entities["player"].movement.player_force.right = False
+            case Action.PLAYER_MOVE_UP_STOP:
+                log.debug("Player move up")
+                self.entities["player"].movement.player_force.up = False
+            case Action.PLAYER_MOVE_DOWN_STOP:
+                self.entities["player"].movement.player_force.down = False
+                log.debug("Player move down")
 
     def update_frame_counters(self) -> None:
         """Update the frame tick counters (animations are clocked by frame ticks).
@@ -502,13 +539,12 @@ class Game:
 
     def update_entities(self) -> None:
         """Update the state of all entities based on counters and events."""
-        ui_keys = self.ui.keys
         timing = self.timing
         art = self.art
         # TODO: make the red cross (slowly) follow the player around. Adust movement by adusting
         # speed vector, not direct movement (to simulate inertia).
         for entity in self.entities.values():
-            entity.update(timing, ui_keys)
+            entity.update(timing)
             entity.draw(art)
 
         debug = True
