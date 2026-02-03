@@ -44,6 +44,7 @@ from dataclasses import dataclass, field
 import pathlib
 import random
 from enum import Enum, auto
+from pygame import Color
 from .geometry_types import Point2D, Vec2D, DirectedLineSeg2D
 # from .drawing_shapes import Shape, Cross
 from .drawing_shapes import Cross, Line2D
@@ -180,6 +181,7 @@ class Artwork:
     # shape:          Shape
     points:         list[Point2D] = field(default_factory=list)
     point_offsets:  list[Vec2D] = field(default_factory=list)
+    color:          Color = Colors.line
 
     def __post_init__(self) -> None:
         self.points = []
@@ -218,12 +220,7 @@ class EntityType(Enum):
 class Entity:
     """Any character in the game, such as the player.
 
-    Tell entities apart based on the 'entity_name':
-    - starts with "player": it is a player
-    - starts with "bgnd" it is background art
-    - starts with "enemy" it is an enemy
-
-    TODO: change entity_name from string to enum
+    Tell entities apart based on the 'entity_type': see EntityType.
 
     API:
         is_excited():
@@ -262,6 +259,13 @@ class Entity:
     movement:           Movement = field(default_factory=lambda: Movement())
 
     def __post_init__(self) -> None:
+        match self.entity_type:
+            case EntityType.PLAYER:
+                self.artwork.color = Colors.line_player
+            case EntityType.NPC:
+                self.artwork.color = Colors.line_debug
+            case EntityType.BACKGROUND_ART:
+                self.artwork.color = Colors.line
         self._reset_points()
         self._initialize_point_offsets()
         # Game can override these, but here are the defaults
@@ -298,19 +302,37 @@ class Entity:
             #     point.x += random.uniform(-1*amount_excited, amount_excited)
             #     point.y += random.uniform(-1*amount_excited, amount_excited)
 
+    # TODO: How do I want to control what entities look like? _reset_points() controls that now, but
+    # it should just reset the points to their initial locations for the entity, whatever that is.
+    # For now that can be determined by a shape. Where should I store the shape? I can just base it
+    # for now on the entity_type. So that can stay in _reset_points() for now.
     def _reset_points(self) -> None:
         """Set the artwork vertices back to their non-wiggle values, plus any movement offset."""
-        self.artwork.points = []
+        artwork = self.artwork
+        artwork.points = []
+        entity_type = self.entity_type
         # TODO: decouple line color from shape description?
         # I ignore this color anyway and assign it in self.draw()
-        cross = Cross(
-                origin=self.origin,
-                size=self.size,
-                rotate45=True,
-                color=Colors.line)
-        for line in cross.lines:
-            self.artwork.points.append(Point2D(line.start.x, line.start.y))
-            self.artwork.points.append(Point2D(line.end.x, line.end.y))
+        #
+        match entity_type:
+            case EntityType.PLAYER | EntityType.NPC:
+                cross = Cross(
+                        origin=self.origin,
+                        size=self.size,
+                        rotate45=True,
+                        color=artwork.color)
+                for line in cross.lines:
+                    artwork.points.append(Point2D(line.start.x, line.start.y))
+                    artwork.points.append(Point2D(line.end.x, line.end.y))
+            case EntityType.BACKGROUND_ART:
+                cross = Cross(
+                        origin=self.origin,
+                        size=self.size,
+                        rotate45=False,
+                        color=artwork.color)
+                for line in cross.lines:
+                    artwork.points.append(Point2D(line.start.x, line.start.y))
+                    artwork.points.append(Point2D(line.end.x, line.end.y))
 
     def update(self, timing: Timing) -> None:
         """Update entity state based on the Timing -> Ticks and UI -> UIKeys.
@@ -483,8 +505,5 @@ class Entity:
 
     def draw(self, art: Art) -> None:
         """Draw entity in the GCS. Game must call update() before draw()."""
-        if self.entity_name == "player":
-            color = Colors.line_player
-        else:
-            color = Colors.line_debug
-        art.draw_lines(self.artwork.animated_points, color)
+        artwork = self.artwork
+        art.draw_lines(artwork.animated_points, artwork.color)

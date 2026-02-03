@@ -260,6 +260,26 @@ class Game:
                 # clocked_event_name="period_1",
                 # origin=Point2D(0, -0.5),
                 )
+        # Create entities for background art
+        # 5 x 5 grid of crosses named "bgnd1" ... "bgnd10"
+        num_crosses_x = 10
+        num_crosses_y = 10
+        dist = Vec2D(x=0.2, y=0.2)
+        coord_sys = self.coord_sys
+        start = Point2D(x=-1*coord_sys.gcs_width/2 + 0.1,
+                        y=-1*coord_sys.gcs_width/2 + 0.1)
+        for i in range(num_crosses_x):
+            for j in range(num_crosses_y):
+                number = 1 + j + (i*num_crosses_x)
+                name = f"bgnd{number}"
+                self.entities[name] = Entity(
+                        debug=self.debug,
+                        entities=self.entities,
+                        entity_type=EntityType.BACKGROUND_ART,
+                        size=0.1,
+                        origin=Point2D(start.x + i*dist.x,
+                                       start.y + j*dist.y),
+                        )
         # Entities track their own name for display in the debug HUD
         for name, entity in self.entities.items():
             entity.entity_name = name
@@ -471,12 +491,12 @@ class Game:
 
     def draw_remaining_art(self) -> None:
         """Update art and debug art"""
-        draw_more_stuff = True
+        draw_more_stuff = False
         if draw_more_stuff:
-            # self.draw_a_cross()                       # Draw application artwork
-            self.draw_background_crosses()                      # Draw application artwork
+            self.draw_background_crosses()              # Draw application artwork
             self.draw_debug_crosses()                   # Draw debug artwork
 
+    # TODO: THIS IS NOT USED ANYMORE -- MOVE IT OUT AFTER ADDRESSING TODO BELOW
     def draw_background_crosses(self) -> None:
         """Draw some animated shapes in the background.
 
@@ -485,8 +505,8 @@ class Game:
         new problem that the origins of the crosses changes when I zoom. That is the problem with
         attempting to just draw these without any persistent state.
 
-        TODO: make these animated shapes Entities so that I can give the a persistent state: slow
-        down their animation speeds and assign different amount sof drift to each dependent on the
+        LEFTOFF: These animated shapes are Entities. Now give they have a persistent state! Slow
+        down their animation speeds and assign different amounts of drift to each dependent on the
         location of the player character.
         """
         coord_sys = self.coord_sys
