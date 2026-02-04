@@ -111,6 +111,21 @@ class Movement:
     follow_entity: str = ""  # Name of entity to follow
     dist_to_follow_entity: float = field(init=False)  # Entity sets goal distance based on size
 
+    def update_background_art_speed(self) -> None:
+        """Update drift speed of background art entity."""
+        drift = False
+        movement = self
+        if drift:
+            if self.is_excited:
+                drift_amt = random.uniform(0, 0.002)
+            else:
+                drift_amt = random.uniform(0, 0.001)
+            # movement.speed.vec.x += random.uniform(-1*drift_amt, drift_amt)
+            # movement.speed.vec.y += random.uniform(-1*drift_amt, drift_amt)
+            movement.speed.vec.x = random.uniform(-1*drift_amt, drift_amt)
+            movement.speed.vec.y = random.uniform(-1*drift_amt, drift_amt)
+
+
     def update_npc_speed(self, abs_terminal_velocity: float) -> None:
         """Update speed of the NPC based on the forces calculated for this frame."""
         movement = self
@@ -365,6 +380,18 @@ class Entity:
                 if not timing.frame_counters["game"].is_paused:
                     movement.update_npc_speed(abs_terminal_velocity=terminal_velocity)
                     self.update_npc_position()
+            case EntityType.BACKGROUND_ART:
+                # LEFTOFF: I started out just wanting the crosses to "drift faster" when the player
+                # is around. But now I am thinking of tethering the crosses to their origins and
+                # making the player into a force that acts upon the cross when it is near, like it
+                # is pushing the crosses out of the way. And when the player is far away, the
+                # crosses spring back to their original positions.
+                follow_entity = self.movement.follow_entity
+                it_exists = follow_entity in self.entities
+                self.update_background_art_excitement(it_exists)
+                if not timing.frame_counters["game"].is_paused:
+                    movement.update_background_art_speed()
+                    self.update_background_art_position()
             case _:
                 pass
         # Update animation
@@ -394,6 +421,23 @@ class Entity:
         if left:
             force.x -= mass * accel.x
 
+    def update_background_art_excitement(self, entity_i_follow_exists: bool) -> None:
+        """Set is_excited True to drift about more if the player is near."""
+        if entity_i_follow_exists:
+            movement = self.movement
+            followed_entity = self.entities[movement.follow_entity]
+            # Set the threshold distance where excitement level changes.
+            threshold = followed_entity.size
+            # Check how far the entity is from me
+            d = Vec2D.from_points(
+                    start=followed_entity.origin,
+                    end=self.origin
+                    )
+            # Get excited when entity is near
+            movement.is_excited = d.mag <= threshold
+            # Get clam when entity is near
+            # movement.is_excited = not(d.mag <= threshold)
+
     # pylint: disable=too-many-locals
     def update_npc_forces(self, entity_i_follow_exists: bool) -> None:
         """Update forces on the NPC.
@@ -402,7 +446,7 @@ class Entity:
             - previous velocity (friction)
             - previous displacement from player (spring)
         """
-        debug = True
+        debug = False
         if entity_i_follow_exists:
             movement = self.movement
             entity = self.entities[movement.follow_entity]
@@ -488,6 +532,25 @@ class Entity:
     def is_excited(self) -> bool:
         """True if entity is moving."""
         return self.movement.is_excited
+
+    def update_background_art_position(self) -> None:
+        """Update position of one background art entity."""
+        movement = self.movement
+        self.origin.x += movement.speed.vec.x
+        self.origin.y += movement.speed.vec.y
+        debug = True
+        entity_name = self.entity_name
+        # if debug:
+        if debug and (entity_name == "bgnd1"):
+            hud = self.debug.hud
+            def debug_npc_forces() -> None:
+                hud.print("|")
+                hud.print(f"+- {entity_name}.update.update_background_art_position() ({FILE})")
+                hud.print("|  +- Movement Attrs")
+                hud.print(f"|     +- speed.vec: {movement.speed.vec.fmt(0.6)}")
+                hud.print(f"|     +- force.vec: {movement.force.vec.fmt(0.6)}")
+                hud.print(f"|     +- mass: {movement.mass}")
+            debug_npc_forces()
 
     def update_npc_position(self) -> None:
         """Update position of NPC"""

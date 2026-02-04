@@ -262,9 +262,10 @@ class Game:
                 )
         # Create entities for background art
         # 5 x 5 grid of crosses named "bgnd1" ... "bgnd10"
-        num_crosses_x = 10
-        num_crosses_y = 10
-        dist = Vec2D(x=0.2, y=0.2)
+        size = 0.05
+        num_crosses_x = 20
+        num_crosses_y = 20
+        dist = Vec2D(x=2*size, y=2*size)
         coord_sys = self.coord_sys
         start = Point2D(x=-1*coord_sys.gcs_width/2 + 0.1,
                         y=-1*coord_sys.gcs_width/2 + 0.1)
@@ -276,10 +277,17 @@ class Game:
                         debug=self.debug,
                         entities=self.entities,
                         entity_type=EntityType.BACKGROUND_ART,
-                        size=0.1,
+                        size=size,
                         origin=Point2D(start.x + i*dist.x,
                                        start.y + j*dist.y),
                         )
+                me = self.entities[name]
+                # Respond to the player
+                me.movement.follow_entity = "player"
+                # Be excited in general
+                me.amount_excited.low *= 2
+                # Get very excited when player is near
+                me.amount_excited.high *= 2
         # Entities track their own name for display in the debug HUD
         for name, entity in self.entities.items():
             entity.entity_name = name
@@ -505,7 +513,7 @@ class Game:
         new problem that the origins of the crosses changes when I zoom. That is the problem with
         attempting to just draw these without any persistent state.
 
-        LEFTOFF: These animated shapes are Entities. Now give they have a persistent state! Slow
+        LEFTOFF: These animated shapes are Entities. Now they have a persistent state! Slow
         down their animation speeds and assign different amounts of drift to each dependent on the
         location of the player character.
         """
