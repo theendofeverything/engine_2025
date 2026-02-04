@@ -262,9 +262,9 @@ class Game:
                 )
         # Create entities for background art
         # 5 x 5 grid of crosses named "bgnd1" ... "bgnd10"
-        size = 0.05
-        num_crosses_x = 20
-        num_crosses_y = 20
+        size = 0.07
+        num_crosses_x = 13
+        num_crosses_y = 13
         dist = Vec2D(x=2*size, y=2*size)
         coord_sys = self.coord_sys
         start = Point2D(x=-1*coord_sys.gcs_width/2 + 0.1,
@@ -283,7 +283,7 @@ class Game:
                         )
                 me = self.entities[name]
                 # Respond to the player
-                me.movement.follow_entity = "player"
+                me.movement.follow_entities = ["player", "cross1", "cross2"]
                 # Be excited in general
                 me.amount_excited.low *= 2
                 # Get very excited when player is near

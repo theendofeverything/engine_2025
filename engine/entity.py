@@ -110,6 +110,7 @@ class Movement:
     is_excited:  bool = False
     follow_entity: str = ""  # Name of entity to follow
     dist_to_follow_entity: float = field(init=False)  # Entity sets goal distance based on size
+    follow_entities: list[str] = field(default_factory=list)  # Name other entities to follow
 
     def update_background_art_speed(self) -> None:
         """Update drift speed of background art entity."""
@@ -124,7 +125,6 @@ class Movement:
             # movement.speed.vec.y += random.uniform(-1*drift_amt, drift_amt)
             movement.speed.vec.x = random.uniform(-1*drift_amt, drift_amt)
             movement.speed.vec.y = random.uniform(-1*drift_amt, drift_amt)
-
 
     def update_npc_speed(self, abs_terminal_velocity: float) -> None:
         """Update speed of the NPC based on the forces calculated for this frame."""
@@ -387,8 +387,7 @@ class Entity:
                 # is pushing the crosses out of the way. And when the player is far away, the
                 # crosses spring back to their original positions.
                 follow_entity = self.movement.follow_entity
-                it_exists = follow_entity in self.entities
-                self.update_background_art_excitement(it_exists)
+                self.update_background_art_excitement()
                 if not timing.frame_counters["game"].is_paused:
                     movement.update_background_art_speed()
                     self.update_background_art_position()
@@ -421,22 +420,28 @@ class Entity:
         if left:
             force.x -= mass * accel.x
 
-    def update_background_art_excitement(self, entity_i_follow_exists: bool) -> None:
-        """Set is_excited True to drift about more if the player is near."""
-        if entity_i_follow_exists:
-            movement = self.movement
-            followed_entity = self.entities[movement.follow_entity]
-            # Set the threshold distance where excitement level changes.
-            threshold = followed_entity.size
-            # Check how far the entity is from me
-            d = Vec2D.from_points(
-                    start=followed_entity.origin,
-                    end=self.origin
-                    )
-            # Get excited when entity is near
-            movement.is_excited = d.mag <= threshold
-            # Get clam when entity is near
-            # movement.is_excited = not(d.mag <= threshold)
+    def update_background_art_excitement(self) -> None:
+        """Set is_excited True if entities I follow are near."""
+        movement = self.movement
+        # Reset excitement
+        movement.is_excited = False
+        for name in movement.follow_entities:
+            if name in self.entities:
+                followed_entity = self.entities[name]
+                # Set the threshold distance where excitement level changes.
+                threshold = followed_entity.size
+                # Check how far the entity is from me
+                d = Vec2D.from_points(
+                        start=followed_entity.origin,
+                        end=self.origin
+                        )
+                # Get excited when entity is near
+                # movement.is_excited = d.mag <= threshold
+                # Get calm when entity is near
+                # movement.is_excited = not(d.mag <= threshold)
+                if d.mag <= threshold:
+                    movement.is_excited = True
+                    break
 
     # pylint: disable=too-many-locals
     def update_npc_forces(self, entity_i_follow_exists: bool) -> None:
@@ -543,6 +548,7 @@ class Entity:
         # if debug:
         if debug and (entity_name == "bgnd1"):
             hud = self.debug.hud
+
             def debug_npc_forces() -> None:
                 hud.print("|")
                 hud.print(f"+- {entity_name}.update.update_background_art_position() ({FILE})")
