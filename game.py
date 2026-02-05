@@ -107,7 +107,7 @@ from engine.drawing_shapes import Cross
 from engine.colors import Colors
 from engine.entity import Entity, EntityType
 from gamelibs.input_mapper import Action, InputMapper, KeyDirection
-from gamelibs.debug_game import DebugGame
+from gamelibs.debug_game import DebugGame, Mode
 
 FILE = pathlib.Path(__file__).name
 
@@ -238,6 +238,7 @@ class Game:
         self.entities = {}
         self.entities["player"] = Entity(
                 debug=self.debug,
+                debug_game=self.debug_game,
                 entities=self.entities,
                 entity_type=EntityType.PLAYER,
                 clocked_event_name="period_3",
@@ -245,6 +246,7 @@ class Game:
                 )
         self.entities["cross1"] = Entity(
                 debug=self.debug,
+                debug_game=self.debug_game,
                 entities=self.entities,
                 entity_type=EntityType.NPC,
                 clocked_event_name="period_3",
@@ -253,6 +255,7 @@ class Game:
                 )
         self.entities["cross2"] = Entity(
                 debug=self.debug,
+                debug_game=self.debug_game,
                 entities=self.entities,
                 entity_type=EntityType.NPC,
                 clocked_event_name="period_3",
@@ -275,6 +278,7 @@ class Game:
                 name = f"bgnd{number}"
                 self.entities[name] = Entity(
                         debug=self.debug,
+                        debug_game=self.debug_game,
                         entities=self.entities,
                         entity_type=EntityType.BACKGROUND_ART,
                         size=size,
@@ -314,7 +318,10 @@ class Game:
         # Game
         self.reset_art()                                # Clear old art
         self.ui.handle_events(log)                      # Handle all user events
-        self.debug_game.ui(False)
+        self.debug_game.mouse(False)  # Mouse position and buttons
+        self.debug_game.panning(False)  # Panning; Ctrl+Left-Click-Drag to pan
+        self.debug_game.player_forces(False)  # Show arrow keys: UP/DOWN/LEFT/RIGHT
+        self.debug_game.mode_controls(True)
         self.update_entities()
         self.debug_game.entities(False)
         self.draw_remaining_art()                       # Draw any remaining art not already drawn
@@ -326,7 +333,7 @@ class Game:
         self.timing.maintain_framerate(fps=60)          # Run at 60 FPS
 
     def ui_callback_to_map_event_to_action(self, event: pygame.event.Event, kmod: int) -> None:
-        """Map UI events to actions and then passes the action to the action handler.
+        """Map UI events to actions and then pass the action to the action handler.
 
         Usage:
             1. Register with the UI like this:
@@ -362,9 +369,9 @@ class Game:
         """
         key_map = self.input_mapper.key_map
         log = self.log
+        kmod = self.ui.kmod_simplify(kmod)
+        log.debug(f"Filtered kmod: {kmod}")
         match event.type:
-            # TODO: I have to hold down both SHIFT keys to get pygame.KMOD_SHIFT. How should I set
-            # this up so that either left or right SHIFT keys register as SHIFT?
             case pygame.KEYDOWN | pygame.KEYUP:
                 log.debug(f"Keydown: {event}")
                 log.debug(f"kmod: {kmod}")
@@ -374,18 +381,6 @@ class Game:
                         key_direction = KeyDirection.DOWN
                     case pygame.KEYUP:
                         key_direction = KeyDirection.UP
-                # Filter out irrelevant keymods
-                kmod = kmod & (pygame.KMOD_ALT | pygame.KMOD_CTRL | pygame.KMOD_SHIFT)
-                # Turn LSHIFT and RSHIFT into just SHIFT
-                if kmod & pygame.KMOD_SHIFT:
-                    kmod |= pygame.KMOD_SHIFT
-                # Turn LCTRL and RCTRL into just CTRL
-                if kmod & pygame.KMOD_CTRL:
-                    kmod |= pygame.KMOD_CTRL
-                # Turn LALT and RALT into just ALT
-                if kmod & pygame.KMOD_ALT:
-                    kmod |= pygame.KMOD_ALT
-                log.debug(f"Filtered kmod: {kmod}")
                 action = key_map.get((event.key, kmod, key_direction))
                 if action is not None:
                     self._handle_action_events(action)
@@ -429,26 +424,29 @@ class Game:
                           f"Font size: {game.debug.hud.font_size.value}.")
             # TEMPORARY CODE FOR WORKING ON NPC MOTION
             case Action.CONTROLS_ADJUST_K_LESS:
-                game.debug.hud.controls["k"] /= 2
+                game.debug_game.controls["k"] /= 2
             case Action.CONTROLS_ADJUST_K_MORE:
-                game.debug.hud.controls["k"] *= 2
+                game.debug_game.controls["k"] *= 2
             case Action.CONTROLS_ADJUST_B_LESS:
-                game.debug.hud.controls["b"] /= 2
+                game.debug_game.controls["b"] /= 2
             case Action.CONTROLS_ADJUST_B_MORE:
-                game.debug.hud.controls["b"] *= 2
+                game.debug_game.controls["b"] *= 2
             # Set spring constant and damping: three modes.
             case Action.CONTROLS_PICK_MODE_1:
                 log.debug("User action: Select mode 1 -- springy linked motion")
-                game.debug.hud.controls["k"] = 0.04
-                game.debug.hud.controls["b"] = 0.064
+                game.debug_game.mode = Mode.MODE_1
+                game.debug_game.controls["k"] = 0.04
+                game.debug_game.controls["b"] = 0.064
             case Action.CONTROLS_PICK_MODE_2:
                 log.debug("User action: Select mode 2 -- rigid linked motion")
-                game.debug.hud.controls["k"] = 1.28
-                game.debug.hud.controls["b"] = 0.512
+                game.debug_game.mode = Mode.MODE_2
+                game.debug_game.controls["k"] = 1.28
+                game.debug_game.controls["b"] = 0.512
             case Action.CONTROLS_PICK_MODE_3:
                 log.debug("User action: Select mode 3 -- separate entities following motion")
-                game.debug.hud.controls["k"] = 0.005
-                game.debug.hud.controls["b"] = 0.064
+                game.debug_game.mode = Mode.MODE_3
+                game.debug_game.controls["k"] = 0.005
+                game.debug_game.controls["b"] = 0.064
             case Action.PLAYER_MOVE_LEFT_GO:
                 log.debug("Player move left")
                 entities["player"].movement.player_force.left = True

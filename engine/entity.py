@@ -246,11 +246,12 @@ class Entity:
         draw(art: Art):
             Connects lines between all points, including connecting last to first.
 
+    LEFTOFF HERE: pass Game for now so that I don't need to define DebugGame()
     >>> entities: dict[str, "Entity"] = {}
-    >>> entity = Entity(debug=Debug(), entities=entities, entity_type=EntityType.BACKGROUND_ART,
+    >>> entity = Entity(debug=Debug(), debug_game=DebugGame(), entities=entities, entity_type=EntityType.BACKGROUND_ART,
     ... clocked_event_name = "period_3")
     >>> entity
-    Entity(debug=Debug(hud=..., art=...), entities={},
+    Entity(debug=Debug(hud=..., art=...), debug_game=DebugGame(...), entities={},
         entity_type=<EntityType...>,
         entity_name='...',
         clocked_event_name='period_3',
@@ -261,6 +262,7 @@ class Entity:
         movement=Movement(...))
     """
     debug:              Debug
+    debug_game:         "DebugGame"
     entities:           dict[str, Entity]               # Give each entity access to all others
     entity_type:        EntityType
     entity_name:        str = "NameMe"                  # Match name of entities dict key
@@ -484,7 +486,7 @@ class Entity:
             v = movement.speed.vec
             # Update forces
             # TODO: set up a better way to connect variables to user input from HUD
-            controls = self.debug.hud.controls
+            controls = self.debug_game.controls
             # fk(n) = -1*k*d(n-1)
             force_spring = Force(
                     vec=Vec2D(

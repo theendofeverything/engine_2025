@@ -131,22 +131,6 @@ class DebugHud:
     is_visible: bool = True     # Control whether HUD should be visible or not.
     _text:      str = ""        # The text that is displayed in the Debug HUD.
     # Connect variables to user input from HUD
-    controls:   dict[str, float] = field(default_factory=dict)
-
-    def __post_init__(self) -> None:
-        self.define_controls()
-
-    def define_controls(self) -> None:
-        """Define variables that connect to user input from the HUD."""
-        # Nice springy motion
-        # self.controls["k"] = 0.04
-        # self.controls["b"] = 0.064
-        # Nice linked motion
-        self.controls["k"] = 1.28
-        self.controls["b"] = 0.512
-        # Nice following motion
-        # self.controls["k"] = 0.005
-        # self.controls["b"] = 0.064
 
     @property
     def lines(self) -> list[str]:

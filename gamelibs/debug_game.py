@@ -3,8 +3,9 @@
 """Debug game code using the debug engine.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import pathlib
+from enum import Enum, auto
 import pygame
 from engine.coord_sys import CoordinateSystem
 from engine.geometry_types import Point2D, Vec2D
@@ -14,10 +15,35 @@ from engine.drawing_shapes import Line2D
 FILE = pathlib.Path(__file__).name
 
 
+class Mode(Enum):
+    """Enumerate "modes" selected with the number keys."""
+    MODE_1 = auto()
+    MODE_2 = auto()
+    MODE_3 = auto()
+
+
 @dataclass
 class DebugGame:
     """Debug game code."""
     game: "Game"
+    mode: Mode = Mode.MODE_2
+    controls:   dict[str, float] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        self.define_controls()
+
+    def define_controls(self) -> None:
+        """Define variables that connect to user input from the HUD."""
+        # TODO: use case match to set the following based on the default Mode
+        # Nice springy motion
+        # self.controls["k"] = 0.04
+        # self.controls["b"] = 0.064
+        # Nice linked motion
+        self.controls["k"] = 1.28
+        self.controls["b"] = 0.512
+        # Nice following motion
+        # self.controls["k"] = 0.005
+        # self.controls["b"] = 0.064
 
     def hud_begin(self) -> None:
         """The first values displayed in the HUD are printed in this function."""
@@ -80,14 +106,7 @@ class DebugGame:
         debug.hud.print(f"|  +- window_center: {window_center.fmt(0.0)} PCS"
                         f", {gcs_window_center} GCS")
 
-    def ui(self, enable_debug: bool) -> None:
-        """Enables UI debug methods. Set True/False on individual methods here."""
-        if not enable_debug: return
-        self.debug_mouse(True)
-        self.debug_player_forces(True)
-        self.debug_panning(True)
-
-    def debug_mouse(self, show_in_hud: bool) -> None:
+    def mouse(self, show_in_hud: bool) -> None:
         """Debug mouse position and buttons."""
         if not show_in_hud: return
         debug = self.game.debug
@@ -116,7 +135,7 @@ class DebugGame:
             debug.hud.print(f"|     +- 2: {self.game.ui.mouse.button_2}")
         debug_mouse_buttons()
 
-    def debug_player_forces(self, show_in_hud: bool) -> None:
+    def player_forces(self, show_in_hud: bool) -> None:
         """Debug key presses for game controls."""
         if not show_in_hud: return
         hud = self.game.debug.hud
@@ -133,7 +152,7 @@ class DebugGame:
             player_forces += "DOWN"
         hud.print(f"|  +- player_forces: {player_forces}")
 
-    def debug_panning(self, show_in_hud: bool) -> None:
+    def panning(self, show_in_hud: bool) -> None:
         """Draw debug art to show panning and display state/values in HUD"""
         debug = self.game.debug
         panning = self.game.ui.panning
@@ -212,3 +231,12 @@ class DebugGame:
         hud.print("|     +- clocked_events:")
         for clocked_event in timing.frame_counters["game"].clocked_events.values():
             hud.print(f"|        +- {clocked_event}")
+
+    def mode_controls(self, show_in_hud: bool) -> None:
+        """Display the mode controls in the HUD"""
+        if not show_in_hud: return
+        hud = self.game.debug.hud
+        hud.print(f"|\n+- DebugGame.mode: {self.mode}")
+        hud.print(f"+- DebugGame.controls: dict[str, float | ] ({FILE})")
+        for name, value in self.controls.items():
+            hud.print(f"|  +- controls['{name}']: {value}")

@@ -98,7 +98,7 @@ class UI:
             # Let UI subscribers handle the event
             # NOTE: kmod is stale. Call get_mods() when publishing.
             # self.publish(event, kmod)
-            self.publish(event, pygame.key.get_mods())
+            self.publish(event, self.kmod_simplify(pygame.key.get_mods()))
 
         if self.mouse.button_1:
             if kmod & pygame.KMOD_SHIFT:
@@ -283,3 +283,22 @@ class UI:
         self.panning.is_active = False
         game.coord_sys.pcs_origin = game.coord_sys.translation.as_point()  # Set new origin
         self.panning.start = self.panning.end  # Zero-out the panning vector
+
+    ##############
+    # API FOR GAME
+    ##############
+
+    def kmod_simplify(self, kmod: int) -> int:
+        """Filter out irrelevant keymods and combine left/right keymods."""
+        # Filter out irrelevant keymods
+        kmod = kmod & (pygame.KMOD_ALT | pygame.KMOD_CTRL | pygame.KMOD_SHIFT)
+        # Turn LSHIFT and RSHIFT into just SHIFT
+        if kmod & pygame.KMOD_SHIFT:
+            kmod |= pygame.KMOD_SHIFT
+        # Turn LCTRL and RCTRL into just CTRL
+        if kmod & pygame.KMOD_CTRL:
+            kmod |= pygame.KMOD_CTRL
+        # Turn LALT and RALT into just ALT
+        if kmod & pygame.KMOD_ALT:
+            kmod |= pygame.KMOD_ALT
+        return kmod
