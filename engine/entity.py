@@ -52,6 +52,8 @@ from .timing import Timing
 from .colors import Colors
 from .art import Art
 from .debug import Debug
+# from ..gamelibs.debug_game import DebugGame
+# from ..game import Game
 
 
 FILE = pathlib.Path(__file__).name
@@ -246,11 +248,11 @@ class Entity:
         draw(art: Art):
             Connects lines between all points, including connecting last to first.
 
-    LEFTOFF HERE: pass Game for now so that I don't need to define DebugGame()
     >>> entities: dict[str, "Entity"] = {}
-    >>> entity = Entity(debug=Debug(), debug_game=DebugGame(), entities=entities, entity_type=EntityType.BACKGROUND_ART,
-    ... clocked_event_name = "period_3")
-    >>> entity
+
+    > entity = Entity(debug=Debug(), debug_game=DebugGame(), entities=entities, entity_type=EntityType.BACKGROUND_ART, clocked_event_name = "period_3")
+
+    > entity
     Entity(debug=Debug(hud=..., art=...), debug_game=DebugGame(...), entities={},
         entity_type=<EntityType...>,
         entity_name='...',
