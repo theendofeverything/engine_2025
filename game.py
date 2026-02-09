@@ -107,6 +107,7 @@ from engine.drawing_shapes import Cross
 from engine.colors import Colors
 from engine.entity import Entity, EntityType
 from gamelibs.input_mapper import Action, InputMapper, KeyDirection
+from gamelibs.input_mapper import MouseButton, ButtonDirection
 from gamelibs.debug_game import DebugGame, Mode
 
 FILE = pathlib.Path(__file__).name
@@ -319,7 +320,7 @@ class Game:
         self.reset_art()                                # Clear old art
         self.ui.handle_events(log)                      # Handle all user events
         self.debug_game.mouse(False)  # Mouse position and buttons
-        self.debug_game.panning(False)  # Panning; Ctrl+Left-Click-Drag to pan
+        self.debug_game.panning(True)  # Panning; Ctrl+Left-Click-Drag to pan
         self.debug_game.player_forces(False)  # Show arrow keys: UP/DOWN/LEFT/RIGHT
         self.debug_game.mode_controls(True)
         self.update_entities()
@@ -340,7 +341,7 @@ class Game:
                 self.ui = UI(game=self, ...)  # Instantiate UI
                 self.ui.subscribe(self.ui_callback_to_map_event_to_action)  # Register callback
             2. Define actions in the InputMapper.key_map
-            3. Define how to handle the actions in _handle_action_events()
+            3. Define how to handle the actions in _handle_keyboard_action_events()
 
         This is a callback registered with UI. It simply maps events from the pygame event queue to
         actions and then passes the action to the action handler.
@@ -367,28 +368,75 @@ class Game:
         if the tuple does not exist in InputMapper.key_map. If the tuple does not exist, dict.get()
         returns None.
         """
-        key_map = self.input_mapper.key_map
+        input_mapper = self.input_mapper
         log = self.log
         kmod = self.ui.kmod_simplify(kmod)
+        log.debug(f"Event: {event}")
         log.debug(f"Filtered kmod: {kmod}")
         match event.type:
             case pygame.KEYDOWN | pygame.KEYUP:
-                log.debug(f"Keydown: {event}")
-                log.debug(f"kmod: {kmod}")
                 # Get the keydirection
                 match event.type:
                     case pygame.KEYDOWN:
+                        log.debug("KEYDOWN")
                         key_direction = KeyDirection.DOWN
                     case pygame.KEYUP:
+                        log.debug("KEYUP")
                         key_direction = KeyDirection.UP
-                action = key_map.get((event.key, kmod, key_direction))
+                action = input_mapper.key_map.get((event.key, kmod, key_direction))
                 if action is not None:
-                    self._handle_action_events(action)
+                    self._handle_keyboard_action_events(action)
+            case pygame.MOUSEBUTTONDOWN:
+                log.debug("Event MOUSEBUTTONDOWN, "
+                          f"pos: {event.pos}, ({type(event.pos[0])}), "
+                          f"event.button: {event.button}, "
+                          f"MouseButton: {MouseButton.from_event(event)}")
+                # NEXT: add the action for the middle button press
+                match event.button:
+                    case 1:
+                        self.ui.mouse.button_1 = True
+                        mouse_button = MouseButton.LEFT
+                    case 2:
+                        self.ui.mouse.button_2 = True
+                        mouse_button = MouseButton.MIDDLE
+                    case 2:
+                        self.ui.mouse.button_3 = True
+                        mouse_button = MouseButton.RIGHT
+                    case 4:
+                        # Unused -- should this even be here?
+                        mouse_button = MouseButton.WHEELUP
+                    case 5:
+                        # Unused -- should this even be here?
+                        mouse_button = MouseButton.WHEELDOWN
+                    case _:
+                        mouse_button = MouseButton.UNKNOWN
+
+                button_direction = ButtonDirection.DOWN
+                action = input_mapper.mouse_map.get(
+                        (mouse_button, kmod, button_direction))
+                log.debug(f"BOB ACTION: {action}")
+                log.debug(f"event.button: {event.button}")
+                log.debug(f"kmod: {kmod}")
+                log.debug(f"button_direction: {button_direction}")
+                if action is not None:
+                    self._handle_mouse_action_events(action, event.pos)
+
+    def _handle_mouse_action_events(self,
+                                    action: Action,
+                                    position: tuple[int, int]
+                                    ) -> None:
+        """Handle mouse action events detected by the UI"""
+        log = self.log
+        game = self
+        match action:
+            case Action.START_PANNING:
+                log.debug("User action: start panning")
+                game.ui.start_panning(position)
 
     # pylint: disable=too-many-statements
     # pylint: disable=too-many-branches
-    def _handle_action_events(self, action: Action) -> None:
-        """Handle actions events detected by the UI"""
+    def _handle_keyboard_action_events(self, action: Action) -> None:
+        """Handle keyboard actions events detected by the UI"""
         log = self.log
         game = self
         entities = self.entities

@@ -39,10 +39,11 @@ FILE = pathlib.Path(__file__).name
 
 
 @dataclass
-class UIMouse:
+class Mouse:
     """Track mouse button state."""
     button_1: bool = False                              # Track mouse button 1 down/up
     button_2: bool = False                              # Track mouse button 2 down/up
+    button_3: bool = False                              # Track mouse button 3 down/up
 
 
 @dataclass
@@ -56,7 +57,7 @@ class UI:
     """
     game:           "Game"
     panning:        Panning                             # Track panning state
-    mouse:          UIMouse = UIMouse()                 # Track mouse button down/up
+    mouse:          Mouse = Mouse()                     # Track mouse button down/up
     subscribers:    list[Callable[[pygame.event.Event, int], None]] = field(default_factory=list)
 
     def handle_events(self, log: logging.Logger) -> None:
@@ -173,10 +174,10 @@ class UI:
                   f"pos: {event.pos}, ({type(event.pos[0])})"
                   f"button: {event.button}")
         match event.button:
-            case 1:
-                self.mouse.button_1 = True              # Left mouse button pressed
-                if kmod & pygame.KMOD_CTRL:
-                    self.start_panning(event.pos)           # Start panning
+            # case 1:
+            #     self.mouse.button_1 = True              # Left mouse button pressed
+            #     if kmod & pygame.KMOD_CTRL:
+            #         self.start_panning(event.pos)           # Start panning
             case 2:
                 self.mouse.button_2 = True              # Middle mouse button pressed
                 self.start_panning(event.pos)           # Start panning

@@ -250,7 +250,8 @@ class Entity:
 
     >>> entities: dict[str, "Entity"] = {}
 
-    > entity = Entity(debug=Debug(), debug_game=DebugGame(), entities=entities, entity_type=EntityType.BACKGROUND_ART, clocked_event_name = "period_3")
+    > entity = Entity(debug=Debug(), debug_game=DebugGame(), entities=entities,
+    ... entity_type=EntityType.BACKGROUND_ART, clocked_event_name = "period_3")
 
     > entity
     Entity(debug=Debug(hud=..., art=...), debug_game=DebugGame(...), entities={},
