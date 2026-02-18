@@ -6,9 +6,9 @@ There are two coordinate systems:
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
+from gamelibs.ongoing_action import Panning
 from .geometry_types import Vec2D, Point2D
 from .geometry_operators import Matrix2DH
-from .panning import Panning
 
 
 @dataclass
@@ -101,7 +101,7 @@ class CoordinateSystem:
     >>> coord_sys = CoordinateSystem(window_size=Vec2D(20*16, 20*9), panning=Panning())
     >>> print(coord_sys)
     CoordinateSystem(window_size=Vec2D(x=320, y=180),
-                     panning=Panning(start=Point2D(x=0, y=0),
+                     panning=Panning(begin=Point2D(x=0, y=0),
                         end=Point2D(x=0, y=0),
                         is_active=False),
                      gcs_width=2,
@@ -145,13 +145,15 @@ class CoordinateSystem:
         window_center (Point2D):
             Center of the window in pixel coordinates.
         translation (Vec2D):
-            This is a vector in pixel coordinates from the topleft of the window to the game origin,
-            i.e., this translation vector describes the origin offset.
+            This is a vector in pixel coordinates from the topleft of the window
+            to the game origin, i.e., this translation vector describes the
+            origin offset.
             The name 'translation' refers to how it is used in the CoordinateTransform.
             Mouse panning is included in the origin offset when calculating 'translation'.
     """
     window_size: Vec2D                                  # Track window size
-    panning:     Panning  # Track UI panning: in game __post_init__() do 'panning=self.ui.panning'
+    # This will eventually move out to game_libs, for now Panning is "Panning"
+    panning:     "Panning"  # Track UI panning: in game __post_init__() do 'panning=self.ui.panning'
     gcs_width:   float = 2                              # Initial value GCS -1:1 fills screen width
 
     # Instance variables defined in __post_init__()
@@ -171,13 +173,15 @@ class CoordinateSystem:
 
     @property
     def translation(self) -> Vec2D:
-        """The translation vector describing the origin offset relative to the window (0,0).
+        """The translation vector describing the origin offset relative to the
+        window (0,0).
 
-        Dependency chain showing how translation is used and how it is affected by panning:
+        Dependency chain showing how translation is used and how it is affected
+        by panning:
             renderer <-- coord_sys.matrix.gcs_to_pcs <-- coord_sys.translation <-- panning.vector
             In the above dependency chain:
                 - read "<--" as "thing-on-left uses thing-on-right"
-                - panning.vector = panning.end - panning.start
+                - panning.vector = panning.end - panning.begin
         """
         return Vec2D(x=self.pcs_origin.x + self.panning.vector.x,
                      y=self.pcs_origin.y + self.panning.vector.y)

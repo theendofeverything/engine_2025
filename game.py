@@ -98,16 +98,16 @@ import pygame
 from engine.debug import Debug
 from engine.timing import Timing, FrameCounter, ClockedEvent
 from engine.art import Art
-from engine.ui import UI
-from engine.panning import Panning
+from engine.ui import UI, MouseButton
 from engine.coord_sys import CoordinateSystem
 from engine.renderer import Renderer
 from engine.geometry_types import Point2D, Vec2D
 from engine.drawing_shapes import Cross
 from engine.colors import Colors
 from engine.entity import Entity, EntityType
-from gamelibs.input_mapper import Action, InputMapper, KeyDirection
-from gamelibs.input_mapper import MouseButton, ButtonDirection
+from gamelibs.ongoing_action import OngoingAction
+from gamelibs.input_mapper import Action, InputMapper, KeyDirection, ModifierKey, KeyModifier
+from gamelibs.input_mapper import ButtonDirection
 from gamelibs.debug_game import DebugGame, Mode
 
 FILE = pathlib.Path(__file__).name
@@ -153,7 +153,7 @@ class Game:
     art:        Art = Art()         # Set up all artwork for rendering
     # Instance variables defined in __post_init__()
     renderer:   Renderer = field(init=False)
-    ui:         UI = field(init=False)                      # Keyboard, mouse, panning, zoom
+    ui:         UI = field(init=False)                      # Keyboard, mouse, zoom
     coord_sys:  CoordinateSystem = field(init=False)        # Track state of PCS and GCS
     entities:   dict[str, Entity] = field(init=False)   # Game characters like the player
 
@@ -162,6 +162,7 @@ class Game:
     #################################
     # Instance variables defined in the implicit __init__() of dataclass
     input_mapper: InputMapper = InputMapper()  # Map inputs to actions
+    ongoing_action: OngoingAction = OngoingAction()
     # Instance variables defined in __post_init__()
     debug_game: DebugGame = field(init=False)
 
@@ -192,13 +193,13 @@ class Game:
         # self.renderer.toggle_fullscreen()               # Start in fullscreen
 
         # Handle all user interface events in ui.py (keyboard, mouse, panning, zoom)
-        self.ui = UI(game=self, panning=Panning())
+        self.ui = UI(game=self)
         self.ui.subscribe(self.ui_callback_to_map_event_to_action)
 
         # Set the GCS to fit the window size and center the GCS origin in the window.
         self.coord_sys = CoordinateSystem(
                 window_size=Vec2D.from_tuple(self.renderer.window.size),
-                panning=self.ui.panning)
+                panning=self.ongoing_action.panning)
 
         #######################
         # Create clocked events
@@ -312,26 +313,27 @@ class Game:
     def loop(self, log: logging.Logger) -> None:
         """Loop until the user quits."""
         # Prologue: reset debug
-        self.debug.hud.reset()                          # Clear the debug HUD
-        self.debug_game.hud_begin()                          # Load first values in debug HUD
+        self.debug.hud.reset()  # Clear the debug HUD
+        self.debug_game.hud_begin()  # Load first values in debug HUD
         self.debug_game.fps(True)
         self.debug_game.window_size(True)
         # Game
-        self.reset_art()                                # Clear old art
-        self.ui.handle_events(log)                      # Handle all user events
+        self.reset_art()  # Clear old art
+        self.ui.handle_events(log)  # Handle all user events
+        self.ongoing_action.update(self)
         self.debug_game.mouse(False)  # Mouse position and buttons
         self.debug_game.panning(True)  # Panning; Ctrl+Left-Click-Drag to pan
         self.debug_game.player_forces(False)  # Show arrow keys: UP/DOWN/LEFT/RIGHT
         self.debug_game.mode_controls(True)
         self.update_entities()
         self.debug_game.entities(False)
-        self.draw_remaining_art()                       # Draw any remaining art not already drawn
+        self.draw_remaining_art()  # Draw any remaining art not already drawn
         # Epilogue: update debug HUD, display, and timing
-        self.update_frame_counters()                    # Advance frame-based ticks
+        self.update_frame_counters()  # Advance frame-based ticks
         self.debug_game.frame_counters(True)
-        self.debug.display_snapshots_in_hud()           # Print snapshots in HUD last
-        self.renderer.render_all()                      # Render all art and HUD
-        self.timing.maintain_framerate(fps=60)          # Run at 60 FPS
+        self.debug.display_snapshots_in_hud()  # Print snapshots in HUD last
+        self.renderer.render_all()  # Render all art and HUD
+        self.timing.maintain_framerate(fps=60)  # Run at 60 FPS
 
     def ui_callback_to_map_event_to_action(self, event: pygame.event.Event, kmod: int) -> None:
         """Map UI events to actions and then pass the action to the action handler.
@@ -346,22 +348,12 @@ class Game:
         This is a callback registered with UI. It simply maps events from the pygame event queue to
         actions and then passes the action to the action handler.
 
-        Actions are defined in the InputMapper.key_map:
-            {(99, 0, <KeyDirection.DOWN: 2>): <Action.CLEAR_DEBUG_SNAPSHOT_ARTWORK: 2>,
-            (100, 0, <KeyDirection.DOWN: 2>): <Action.TOGGLE_DEBUG_ART_OVERLAY: 3>,
-            (98, 3, <KeyDirection.DOWN: 2>): <Action.CONTROLS_ADJUST_B_LESS: 11>,
-            ...
+        Actions are mapped to these UI events in the InputMapper.key_map, InputMapper.mouse_map, and
+        InputMapper.modifier_key_map.
 
-            The dictionary key (int, int, KeyDirection) is the tuple (event.key, kmod, KeyDirection)
-            where:
-                - event.key is the int key code of the key press
-                - kmod is the int of the bitfield representing which key modifiers are held,
-                  returned by pygame.key.get_mods()
-                - KeyDirection is KeyDirection.DOWN (for a pygame.KEYDOWN event) or KeyDirection.UP
-                  (for a pygame.KEYUP event)
-
-        Even with no key modifiers held down, kmod is 4096, not 0. I only care about ALT, CTRL, and
-        SHIFT, so I filter the kmod before using it by masking it with ALT | CTRL | SHIFT.
+        Note the key modifiers need to be filtered / cleaned up. Even with no key modifiers held
+        down, kmod is 4096, not 0. I only care about ALT, CTRL, and SHIFT, so I filter the kmod
+        before using it by masking it with ALT | CTRL | SHIFT.
 
         I use dict.get((event.key, kmod, key_direction)) to get the action corresponding to the key
         press. Unlike key_map[(event.key, kmod, key_direction)], get() does not throw an exception
@@ -373,50 +365,79 @@ class Game:
         kmod = self.ui.kmod_simplify(kmod)
         log.debug(f"Event: {event}")
         log.debug(f"Filtered kmod: {kmod}")
+        log.debug(f"Mapped kmod: {KeyModifier.from_kmod(kmod)}")
         match event.type:
-            case pygame.KEYDOWN | pygame.KEYUP:
-                # Get the keydirection
-                match event.type:
-                    case pygame.KEYDOWN:
-                        log.debug("KEYDOWN")
-                        key_direction = KeyDirection.DOWN
-                    case pygame.KEYUP:
-                        log.debug("KEYUP")
-                        key_direction = KeyDirection.UP
-                action = input_mapper.key_map.get((event.key, kmod, key_direction))
+            case pygame.KEYDOWN:
+                log.debug(f"KEYDOWN: {pygame.key.name(event.key)}")
+                key_direction = KeyDirection.DOWN
+                log.debug(f"BOB: {event.key}")
+                action = input_mapper.key_map.get(
+                        (event.key,
+                         KeyModifier.from_kmod(kmod),
+                         key_direction))
+                log.debug(f"action: {action}")
                 if action is not None:
                     self._handle_keyboard_action_events(action)
+            case pygame.KEYUP:
+                log.debug(f"KEYUP: {pygame.key.name(event.key)}")
+                key_direction = KeyDirection.UP
+                action = input_mapper.key_map.get(
+                        (event.key,
+                         KeyModifier.from_kmod(kmod),
+                         key_direction))
+                if action is not None:
+                    self._handle_keyboard_action_events(action)
+                # Add something here to handle releasing modifier keys while mouse is click
+                # dragging.
+                match event.key:
+                    # case ModifierKey.RELEASE_DRAG_PLAYER:
+                    case pygame.K_RSHIFT | pygame.K_LSHIFT:
+                        log.debug("Shift released")
+                        action = input_mapper.modifier_key_map.get(
+                                (ModifierKey.RELEASE_DRAG_PLAYER,
+                                 KeyModifier.from_kmod(kmod),
+                                 key_direction))
+                        if action is not None:
+                            self._handle_keyup_while_mouse_is_dragging(action)
+                    # case ModifierKey.RELEASE_PANNING:
+                    case pygame.K_RCTRL | pygame.K_LCTRL:
+                        log.debug(f"Ctrl released. kmod: {kmod} == {pygame.KMOD_NONE}")
+                        action = input_mapper.modifier_key_map.get(
+                                (ModifierKey.RELEASE_PANNING,
+                                 KeyModifier.from_kmod(kmod),
+                                 key_direction))
+                        if action is not None:
+                            self._handle_keyup_while_mouse_is_dragging(action)
             case pygame.MOUSEBUTTONDOWN:
+                mouse_button = MouseButton.from_event(event)
                 log.debug("Event MOUSEBUTTONDOWN, "
                           f"pos: {event.pos}, ({type(event.pos[0])}), "
                           f"event.button: {event.button}, "
-                          f"MouseButton: {MouseButton.from_event(event)}")
-                # NEXT: add the action for the middle button press
-                match event.button:
-                    case 1:
-                        self.ui.mouse.button_1 = True
-                        mouse_button = MouseButton.LEFT
-                    case 2:
-                        self.ui.mouse.button_2 = True
-                        mouse_button = MouseButton.MIDDLE
-                    case 2:
-                        self.ui.mouse.button_3 = True
-                        mouse_button = MouseButton.RIGHT
-                    case 4:
-                        # Unused -- should this even be here?
-                        mouse_button = MouseButton.WHEELUP
-                    case 5:
-                        # Unused -- should this even be here?
-                        mouse_button = MouseButton.WHEELDOWN
-                    case _:
-                        mouse_button = MouseButton.UNKNOWN
+                          f"MouseButton: {mouse_button}")
 
                 button_direction = ButtonDirection.DOWN
                 action = input_mapper.mouse_map.get(
-                        (mouse_button, kmod, button_direction))
-                log.debug(f"BOB ACTION: {action}")
+                        (mouse_button, KeyModifier.from_kmod(kmod), button_direction))
+                log.debug(f"BOB1 ACTION: {action}")
                 log.debug(f"event.button: {event.button}")
                 log.debug(f"kmod: {kmod}")
+                log.debug(f"Mapped kmod: {KeyModifier.from_kmod(kmod)}")
+                log.debug(f"button_direction: {button_direction}")
+                if action is not None:
+                    self._handle_mouse_action_events(action, event.pos)
+            case pygame.MOUSEBUTTONUP:
+                mouse_button = MouseButton.from_event(event)
+                log.debug("Event MOUSEBUTTONDOWN, "
+                          f"pos: {event.pos}, ({type(event.pos[0])}), "
+                          f"event.button: {event.button}, "
+                          f"MouseButton: {mouse_button}")
+                button_direction = ButtonDirection.UP
+                action = input_mapper.mouse_map.get(
+                        (mouse_button, KeyModifier.from_kmod(kmod), button_direction))
+                log.debug(f"BOB2 ACTION: {action}")
+                log.debug(f"event.button: {event.button}")
+                log.debug(f"kmod: {kmod}")
+                log.debug(f"Mapped kmod: {KeyModifier.from_kmod(kmod)}")
                 log.debug(f"button_direction: {button_direction}")
                 if action is not None:
                     self._handle_mouse_action_events(action, event.pos)
@@ -425,18 +446,27 @@ class Game:
                                     action: Action,
                                     position: tuple[int, int]
                                     ) -> None:
-        """Handle mouse action events detected by the UI"""
+        """Handle actions for mouse events detected by the UI"""
         log = self.log
         game = self
         match action:
             case Action.START_PANNING:
                 log.debug("User action: start panning")
-                game.ui.start_panning(position)
+                game.ongoing_action.panning.start(position)
+            case Action.STOP_PANNING:
+                log.debug("User action: stop panning")
+                game.ongoing_action.panning.stop(self)
+            case Action.START_DRAG_PLAYER:
+                log.debug("User action: start teleport player to mouse")
+                game.ongoing_action.drag_player_is_active = True
+            case Action.STOP_DRAG_PLAYER:
+                log.debug("User action: stop teleport player to mouse")
+                game.ongoing_action.drag_player_is_active = False
 
     # pylint: disable=too-many-statements
     # pylint: disable=too-many-branches
     def _handle_keyboard_action_events(self, action: Action) -> None:
-        """Handle keyboard actions events detected by the UI"""
+        """Handle actions for keyboard events detected by the UI"""
         log = self.log
         game = self
         entities = self.entities
@@ -519,6 +549,18 @@ class Game:
             case Action.PLAYER_MOVE_DOWN_STOP:
                 self.entities["player"].movement.player_force.down = False
                 log.debug("Player move down")
+
+    def _handle_keyup_while_mouse_is_dragging(self, action: Action) -> None:
+        """Handle actions for key release events detected by UI while mouse is click-dragging."""
+        log = self.log
+        game = self
+        match action:
+            case Action.STOP_PANNING:
+                log.debug("User action: stop panning")
+                game.ongoing_action.panning.stop(self)
+            case Action.STOP_DRAG_PLAYER:
+                log.debug("User action: stop teleport player to mouse")
+                game.ongoing_action.drag_player_is_active = False
 
     def update_frame_counters(self) -> None:
         """Update the frame tick counters (animations are clocked by frame ticks).

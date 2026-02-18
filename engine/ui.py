@@ -6,15 +6,22 @@ Events:
         See 'handle_windowsizechanged_events()'.
         Also see pygame documentation for 'pygame.event'.
     Key pressed:
-        See 'handle_keydown_events()'.
+        See 'ui_callback_to_map_event_to_action()' in 'Game':
+            'case pygame.KEYDOWN'
+            'case pygame.KEYUP'
+            '_handle_keyboard_action_events()'
+        See 'InputMapper.key_map'
     Mouse button down/up:
-        See 'handle_mousebutton_down_events()'.
-        See 'handle_mousebutton_up_events()'.
+        See 'ui_callback_to_map_event_to_action()' in 'Game':
+            'case pygame.MOUSEBUTTONDOWN'
+            'case pygame.MOUSEBUTTONUP'
+            '_handle_mouse_action_events()'
+        See 'InputMapper.mouse_map'
 
 User actions:
     Panning:
-        See 'handle_mousebutton_down_events()' and 'start_panning()'.
-        See 'handle_mousebutton_up_events()' and 'stop_panning()'.
+        See 'OngoingAction.panning.start()'
+        See 'OngoingAction.panning.stop()'
     Zoom:
         See 'handle_mousewheel_events()', 'zoom_out()', and 'zoom_in()'.
     Press 'q': Quit.
@@ -24,14 +31,15 @@ User actions:
     Press Ctrl_+: Increase debug HUD font.
     Press Ctrl_-: Decrease debug HUD font.
 """
+from __future__ import annotations
 import sys                  # Exit with sys.exit()
 import pathlib
 import logging
 from dataclasses import dataclass, field
 from typing import Callable
+from enum import Enum
 import pygame
-from .geometry_types import Vec2D, Point2D, DirectedLineSeg2D
-from .panning import Panning
+from .geometry_types import Vec2D, Point2D
 from .drawing_shapes import Line2D
 from .colors import Colors
 
@@ -39,11 +47,25 @@ FILE = pathlib.Path(__file__).name
 
 
 @dataclass
-class Mouse:
-    """Track mouse button state."""
-    button_1: bool = False                              # Track mouse button 1 down/up
-    button_2: bool = False                              # Track mouse button 2 down/up
-    button_3: bool = False                              # Track mouse button 3 down/up
+class MousePressed:
+    """Track mouse button pressed state."""
+    left: bool = False  # Track mouse button 1 down/up
+    middle: bool = False  # Track mouse button 2 down/up
+    right: bool = False  # Track mouse button 3 down/up
+
+
+class MouseButton(Enum):
+    """Enumerate the mouse button values from pygame.Event.button"""
+    LEFT = 1
+    MIDDLE = 2
+    RIGHT = 3
+    WHEELUP = 4
+    WHEELDOWN = 5
+
+    @classmethod
+    def from_event(cls, event: pygame.Event) -> MouseButton:
+        """Get MouseButton from an event (uses event.button)."""
+        return cls(event.button)
 
 
 @dataclass
@@ -55,68 +77,34 @@ class UI:
     callback is called with two arguments: the event (pygame.event.Event) and the key modifiers (a
     bitfield of flags like pygame.KMOD_SHIFT).
     """
-    game:           "Game"
-    panning:        Panning                             # Track panning state
-    mouse:          Mouse = Mouse()                     # Track mouse button down/up
+    game: "Game"
+    mouse_pressed: MousePressed = MousePressed()  # Track mouse button down/up
     subscribers:    list[Callable[[pygame.event.Event, int], None]] = field(default_factory=list)
 
     def handle_events(self, log: logging.Logger) -> None:
         """Handle events."""
         self.consume_event_queue(log)
-        self.update_panning()
-
-    def update_panning(self) -> None:
-        """Update 'panning.end': the latest point the mouse has panned to.
-
-        Dependency chain depicting how panning manifests as translating the game view on the screen:
-            renderer <-- coord_sys.matrix.gcs_to_pcs <-- coord_sys.translation <-- panning.vector
-
-            In the above dependency chain:
-                - read "<--" as "thing-on-left uses thing-on-right"
-                - panning.vector = panning.end - panning.start
-        """
-        panning = self.panning
-
-        if panning.is_active:
-            mouse_pos = pygame.mouse.get_pos()
-            panning.end = Point2D.from_tuple(mouse_pos)
+        # self.update_panning()
 
     def consume_event_queue(self, log: logging.Logger) -> None:
         """Consume all events on the event queue.
 
         All events are logged, including unused events.
         """
-        kmod = pygame.key.get_mods()
+        # kmod = pygame.key.get_mods()
         for event in pygame.event.get():
             # Handle event on the engine side
             match event.type:
                 case pygame.QUIT: sys.exit()
                 case pygame.WINDOWSIZECHANGED: self.handle_windowsizechanged_events(event, log)
-                case pygame.MOUSEBUTTONDOWN: self.handle_mousebutton_down_events(event, kmod, log)
-                case pygame.MOUSEBUTTONUP: self.handle_mousebutton_up_events(event, kmod, log)
+                case pygame.MOUSEBUTTONDOWN: self.track_mouse_pressed(event, True, log)
+                case pygame.MOUSEBUTTONUP: self.track_mouse_pressed(event, False, log)
                 case pygame.MOUSEWHEEL: self.handle_mousewheel_events(event, log)
                 case _: self.log_unused_events(event, log)
             # Let UI subscribers handle the event
             # NOTE: kmod is stale. Call get_mods() when publishing.
             # self.publish(event, kmod)
             self.publish(event, self.kmod_simplify(pygame.key.get_mods()))
-
-        if self.mouse.button_1:
-            if kmod & pygame.KMOD_SHIFT:
-                game = self.game
-                # Get mouse position in game coordinates
-                mouse_p = Point2D.from_tuple(pygame.mouse.get_pos())
-                mouse_g = game.coord_sys.xfm(
-                        mouse_p.as_vec(),
-                        game.coord_sys.matrix.pcs_to_gcs
-                        ).as_point()
-                player_to_mouse = DirectedLineSeg2D(
-                        start=game.entities["player"].origin,
-                        end=mouse_g)
-                # Teleport NPC2 to mouse
-                game.entities["cross2"].origin = player_to_mouse.parametric_point(1.0)
-                # Teleport NPC1 to half-way between player and NPC2
-                game.entities["cross1"].origin = player_to_mouse.parametric_point(0.5)
 
     def subscribe(self, callback: Callable[[pygame.event.Event, int], None]) -> None:
         """Call ui.subscribe(callback) to register "callback" for receiving UI events."""
@@ -165,43 +153,29 @@ class UI:
                   f"x:{event.x}, y:{event.y}, "
                   f"precise_x:{event.precise_x}, precise_y:{event.precise_y}")
 
-    def handle_mousebutton_down_events(self,
-                                       event: pygame.event.Event,
-                                       kmod: int,
-                                       log: logging.Logger) -> None:
-        """Handle event mouse button down."""
-        log.debug("Event MOUSEBUTTONDOWN, "
-                  f"pos: {event.pos}, ({type(event.pos[0])})"
-                  f"button: {event.button}")
-        match event.button:
-            # case 1:
-            #     self.mouse.button_1 = True              # Left mouse button pressed
-            #     if kmod & pygame.KMOD_CTRL:
-            #         self.start_panning(event.pos)           # Start panning
-            case 2:
-                self.mouse.button_2 = True              # Middle mouse button pressed
-                self.start_panning(event.pos)           # Start panning
-            case _:
-                pass
-
-    def handle_mousebutton_up_events(self,
-                                     event: pygame.event.Event,
-                                     kmod: int,
-                                     log: logging.Logger) -> None:
-        """Handle event mouse button up."""
-        log.debug("Event MOUSEBUTTONUP, "
+    def track_mouse_pressed(self,
+                            event: pygame.event.Event,
+                            is_pressed: bool,
+                            log: logging.Logger
+                            ) -> None:
+        """Track mouse button state."""
+        if is_pressed:
+            event_str = "MOUSEBUTTONDOWN"
+        else:
+            event_str = "MOUSEBUTTONUP"
+        log.debug(f"Event {event_str}, "
                   f"pos: {event.pos}, "
                   f"button: {event.button}")
-        match event.button:
-            case 1:
-                self.mouse.button_1 = False             # Left mouse button released
-                if kmod & pygame.KMOD_CTRL:
-                    self.stop_panning()                     # Stop panning
-            case 2:
-                self.mouse.button_2 = False             # Middle mouse button released
-                self.stop_panning()                     # Stop panning
+        mouse_button = MouseButton.from_event(event)
+        match mouse_button:
+            case MouseButton.LEFT:
+                self.mouse_pressed.left = is_pressed
+            case MouseButton.MIDDLE:
+                self.mouse_pressed.middle = is_pressed
+            case MouseButton.RIGHT:
+                self.mouse_pressed.right = is_pressed
             case _:
-                pass
+                log.debug(f"ERROR: Missing case for {mouse_button}")
 
     def log_unused_events(self, event: pygame.event.Event, log: logging.Logger) -> None:
         """Log events that I have not found a use for yet."""
@@ -273,24 +247,19 @@ class UI:
         """Zoom in."""
         self._zoom(scale=0.9)
 
-    def start_panning(self, position: tuple[int | float, int | float]) -> None:
-        """User started panning."""
-        self.panning.is_active = True
-        self.panning.start = Point2D.from_tuple(position)
-
-    def stop_panning(self) -> None:
-        """User stopped panning."""
-        game = self.game
-        self.panning.is_active = False
-        game.coord_sys.pcs_origin = game.coord_sys.translation.as_point()  # Set new origin
-        self.panning.start = self.panning.end  # Zero-out the panning vector
-
     ##############
     # API FOR GAME
     ##############
 
     def kmod_simplify(self, kmod: int) -> int:
-        """Filter out irrelevant keymods and combine left/right keymods."""
+        """Filter out irrelevant keymods and combine left/right keymods.
+
+        This reduces the many keymod left/right combinations to the following set:
+            pygame.KMOD_NONE
+            pygame.KMOD_SHIFT
+            pygame.KMOD_CTRL
+            pygame.KMOD_ALT
+        """
         # Filter out irrelevant keymods
         kmod = kmod & (pygame.KMOD_ALT | pygame.KMOD_CTRL | pygame.KMOD_SHIFT)
         # Turn LSHIFT and RSHIFT into just SHIFT

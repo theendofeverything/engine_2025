@@ -21,6 +21,19 @@ Independent of using callbacks or not, this is how the `Game` asks the engine
                        | -----------------------
 ```
 
+Besides adding callbacks, we'll also move all of the logic out to `gamelibs/`
+(a module local to the game, not part of the `engine/` module). So in the end,
+`UI` is just a thin glue layer between `pygame` and our game code. It will do
+nothing more than take OS events and publish them to subscribers.
+
+There are two special events that are exceptions (for now):
+
+1. hard-quitting (developer's quick exit, not the player's quit)
+2. adjusting the coordinate system after the window size changes
+
+These could be moved out too, but as of right now I don't see a reason the
+`game` needs to change how these events are handled.
+
 ## Event game logic originally defined in the engine
 
 My engine `UI` code originally went like this.
@@ -96,15 +109,23 @@ class Game:
 I mentioned above that there were two layers of abstraction. The first layer is
 the PubSub we just discussed. The PubSub moves game logic from the engine code
 into the game code. The second layer of abstraction is mapping events to
-actions. Even if we wanted to leave the game logic in the engine code, it is a good idea to map events to actions.
+actions. Even if we wanted to leave the game logic in the engine code, it is a
+good idea to map events to actions.
 
 Mapping events to actions makes the action handler independent of which
 specific UI event causes the action. That makes it easy to remap the UI
 controls to any actions.
 
-Since this is Python, the easiest way to do this is to define a class.
-As usual, I use a `dataclass` because I just want a C-style struct that holds
-my dictionary of mappings.
+Since this is Python, the easiest way to do this is to define a class. As
+usual, I use a `dataclass` because I just want a C-style struct that holds my
+dictionaries of mappings.
+
+I'll make a `_map` for each type of input device: `key_map` for the keyboard,
+`mouse_map` for the mouse, etc. (Key modifiers are not necessarily part of
+`key_map`: for example, anything like a `Ctrl+Left-Click` is part of the
+`mouse_map`).
+
+Let's just look at a `key_map` first:
 
 ```python
 @dataclass
@@ -122,6 +143,116 @@ class InputMapper:
     """
 ```
 
+The simple `(key, keymod)` would work if I only cared about key presses. But
+think about moving the player around on screen. If the user holds the move
+keys, the player should keep moving until the key is released. So I need to
+differentiate between key down and key up. I add a `KeyDirection` to the tuple.
+This is a simple enum of `DOWN` and `UP`.
+
+```python
+class KeyDirection(Enum):
+    """Enumerate names for KEYUP and KEYDOWN instead of just using bool."""
+    UP = auto()
+    DOWN = auto()
+```
+
+Adding `keydirection` to the tuple of our `key_map` dict key, now we can get
+different actions depending on whether the key event is down (press) or up
+(release).
+
+```python
+@dataclass
+class InputMapper:
+    """Map inputs (such as key presses) to actions.
+
+    key_map: {(key, keymod, keydirection): Action}
+
+    >>> input_mapper = InputMapper()
+    >>> key_map = input_mapper.key_map
+    >>> key_map
+    {(99, 0, <KeyDirection.DOWN: 2>): <Action.CLEAR_DEBUG_SNAPSHOT_ARTWORK: 2>,
+    ...
+    (1073741905, 0, <KeyDirection.UP: 1>): <Action.PLAYER_MOVE_DOWN_STOP: 23>}
+    """
+    key_map: dict[tuple[int,  # event.key
+                        int,  # kmod
+                        KeyDirection  # enum
+                        ],
+                  Action  # enum
+                  ] = field(default_factory=dict)
+```
+
+Do the same idea for a `mouse_map`. First an enum to track mouse button
+direction:
+
+```python
+class ButtonDirection(Enum):
+    """Enumerate names for MOUSEBUTTONUP and MOUSEBUTTONDOWN."""
+    UP = auto()
+    DOWN = auto()
+```
+
+Having separate `KeyDirection` and `ButtonDirection` enums are redundant, but I'm
+leaving them in for now because I think having these as distinct types might
+help me later.
+
+Mouse buttons get another special enum:
+
+```python
+class MouseButton(Enum):
+    """Enumerate the mouse button values from pygame.Event.button"""
+    LEFT = 1
+    MIDDLE = 2
+    RIGHT = 3
+    WHEELUP = 4
+    WHEELDOWN = 5
+
+    @classmethod
+    def from_event(cls, event: pygame.Event) -> MouseButton:
+        """Get MouseButton from event.button."""
+        return cls(event.button)
+```
+
+Unlike the keypress events which are named after the key, `pygame` mouse button
+events just identify the buttons by number. Even scrolling the mouse wheel is
+assigned a number for each scroll direction, for a grand total of five button
+numbers.
+
+I use an `enum` to give these names. This eliminates the need to comment which
+button is which number and it inserts a seam in my `engine` for separating
+between my `engine` code and `pygame` specifics.
+
+The `from_event()` method take the button number and gives me my enum name. I
+don't need to write a `match` statement.
+
+Here is the `InputMapper` with `key_map` and `mouse_map`:
+
+```python
+@dataclass
+class InputMapper:
+    """Map inputs (such as key presses) to actions.
+
+    key_map: {(key, keymod, keydirection): Action}
+    mouse_map: {(mousebutton, keymod, buttondirection): Action}
+
+    >>> mouse_map = input_mapper.mouse_map
+    >>> mouse_map
+    {(<MouseButton.LEFT: 1>, 192, <ButtonDirection.DOWN: 2>): <Action.START_PANNING: 24>}
+    """
+    key_map: dict[tuple[int,  # event.key
+                        int,  # kmod
+                        KeyDirection  # enum
+                        ],
+                  Action  # enum
+                  ] = field(default_factory=dict)
+    mouse_map: dict[tuple[MouseButton,  # event.button
+                          int,  # kmod
+                          ButtonDirection  # enum
+                          ],
+                    Action  # enum
+                    ] = field(default_factory=dict)
+```
+
 From a code readability standpoint, the constructor is a convenient place to
 define the event-to-action mapping. Since this is a `dataclass`, the
 `__init__()` is already defined for me, so I use the `__post_init__()`:
@@ -130,12 +261,23 @@ define the event-to-action mapping. Since this is a `dataclass`, the
 class InputMapper:
     ...
     def __post_init__(self) -> None:
+        no_modifier = pygame.KMOD_NONE
+        shift = pygame.KMOD_SHIFT
+        ctrl = pygame.KMOD_CTRL
+        shift_ctrl = pygame.KMOD_SHIFT | pygame.KMOD_CTRL
+
+        self.mouse_map = {
+                (MouseButton.LEFT, ctrl, ButtonDirection.DOWN): Action.START_PANNING,
+                (MouseButton.LEFT, no_modifier, ButtonDirection.UP): Action.STOP_PANNING,
+                (MouseButton.LEFT, ctrl, ButtonDirection.UP): Action.STOP_PANNING,
+                }
+
         self.key_map = {
-            (pygame.K_c, pygame.KMOD_NONE): Action.CLEAR_DEBUG_SNAPSHOT_ARTWORK,
-            (pygame.K_d, pygame.KMOD_NONE): Action.TOGGLE_DEBUG_ART_OVERLAY,
-            (pygame.K_b, pygame.KMOD_SHIFT): Action.CONTROLS_ADJUST_B_LESS,
-            (pygame.K_b, pygame.KMOD_NONE): Action.CONTROLS_ADJUST_B_MORE,
+            (pygame.K_c,      no_modifier, KeyDirection.DOWN): Action.CLEAR_DEBUG_SNAPSHOT_ARTWORK,
+            (pygame.K_d,      no_modifier, KeyDirection.DOWN): Action.TOGGLE_DEBUG_ART_OVERLAY,
             ...
+            (pygame.K_DOWN,   no_modifier, KeyDirection.UP):   Action.PLAYER_MOVE_DOWN_STOP,
+            }
 ```
 
 The `Action` is an `Enum`:
@@ -171,15 +313,22 @@ class Game:
     input_mapper: InputMapper = InputMapper()  # Map inputs to actions
     ...
     def ui_callback_to_map_event_to_action(self, event: pygame.event.Event, kmod: int) -> None:
-        ...
-        key_map = self.input_mapper.key_map
-        ...
+        input_mapper = self.input_mapper
+        kmod = self.ui.kmod_simplify(kmod)
         match event.type:
-            case pygame.KEYDOWN:
-                # Clean up kmod, then:
-                action = key_map.get((event.key, kmod))
+            case pygame.KEYDOWN | pygame.KEYUP:
+                # Get the keydirection
+                match event.type:
+                    case pygame.KEYDOWN:
+                        log.debug("KEYDOWN")
+                        key_direction = KeyDirection.DOWN
+                    case pygame.KEYUP:
+                        log.debug("KEYUP")
+                        key_direction = KeyDirection.UP
+                action = input_mapper.key_map.get((event.key, kmod, key_direction))
                 if action is not None:
-                    self._handle_action_events(action)
+                    self._handle_keyboard_action_events(action)
+            case pygame.MOUSEBUTTONDOWN:
 
 ```
 
@@ -206,6 +355,93 @@ class Game:
             case Action.TOGGLE_FULLSCREEN:
                 log.debug("User action: toggle fullscreen.")
                 game.renderer.toggle_fullscreen()
+```
+
+# Move code from UI to OngoingAction
+
+In my initial naive pass where everything lived in the engine UI code, I had
+this "player teleport" UI code that had to run *after* consuming events.
+
+```python
+    def consume_event_queue(self, log: logging.Logger) -> None:
+        for event in pygame.event.get():
+            ... # Handle events and set mouse.button_1 = True if button pressed
+        if self.mouse.button_1:
+            if kmod & pygame.KMOD_SHIFT:
+                ... # Code to teleport player
+```
+
+I consumed events where I set `mouse.button_1` to be `True` or `False`. After
+consuming all events, I check if I had the button held and if I had `Shift`
+held. If so, I would teleport the player to the mouse position. In this way I
+could `Shift` click-drag the player around.
+
+This is a special kind of action I call an "Ongoing Action" because it
+continues as long as the input is held. There are a few actions like this and
+instead of spreading them all over the code, I want them to be in one place.
+
+So I made `OngoingAction`:
+
+```python
+class OngoingAction:
+    """Actions that last for multiple frames such as click-drag.
+
+    - Panning is a Ctrl+Click-Drag
+    - Teleport (or pulling on the player) is a Shift+Click-Drag
+
+    The key modifiers and specific mouse buttons might change. But these will always be a
+    click-drag. It is simpler to just query the mouse position here than to use the mouse motion
+    events.
+    """
+
+    panning: Panning = Panning()
+    teleport_to_mouse_is_active: bool = False
+
+    def update(self, game: "Game") -> None:
+        """Update all ongoing actions."""
+        ongoing_action = self
+        ongoing_action.panning.update()
+        ongoing_action.teleport_to_mouse(game)
+
+    @staticmethod
+    def teleport_to_mouse(game: "Game") -> None:
+        """Teleport player to mouse, like pulling on player and NPCs."""
+        if game.ongoing_action.teleport_to_mouse_is_active:
+            ... # Code to teleport to mouse
+```
+
+I also deleted the state variable `mouse.button_1` and made state variable
+`OngoingAction.teleport_to_mouse`. I set this variable in my `UI` callback when I handle mouse action events.
+
+```python
+@dataclass
+class Game:
+    ...
+    def ui_callback_to_map_event_to_action(self, event: pygame.event.Event, kmod: int) -> None:
+        input_mapper = self.input_mapper
+        kmod = self.ui.kmod_simplify(kmod)
+        match event.type:
+            ...
+            case pygame.MOUSEBUTTONDOWN:
+                mouse_button = MouseButton.from_event(event)
+                ...
+                action = input_mapper.key_map.get((event.key, kmod, key_direction))
+                if action is not None:
+                    self._handle_mouse_action_events(action, event.pos)
+
+    def _handle_mouse_action_events(self,
+                                    action: Action,
+                                    position: tuple[int, int]
+                                    ) -> None:
+        game = self
+        match action:
+            ...
+            case Action.START_TELEPORT_TO_MOUSE:
+                log.debug("User action: start teleport player to mouse")
+                game.ongoing_action.teleport_to_mouse = True
+            case Action.STOP_TELEPORT_TO_MOUSE:
+                log.debug("User action: stop teleport player to mouse")
+                game.ongoing_action.teleport_to_mouse = False
 ```
 
 # Key Modifiers

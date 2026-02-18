@@ -130,9 +130,10 @@ class DebugGame:
 
         def debug_mouse_buttons() -> None:
             """Display mouse button state."""
-            debug.hud.print("|  +- mouse.button_:")
-            debug.hud.print(f"|     +- 1: {self.game.ui.mouse.button_1}")
-            debug.hud.print(f"|     +- 2: {self.game.ui.mouse.button_2}")
+            debug.hud.print("|  +- UI.mouse_pressed.:")
+            debug.hud.print(f"|     +- left: {self.game.ui.mouse_pressed.left}")
+            debug.hud.print(f"|     +- middle: {self.game.ui.mouse_pressed.middle}")
+            debug.hud.print(f"|     +- right: {self.game.ui.mouse_pressed.right}")
         debug_mouse_buttons()
 
     def player_forces(self, show_in_hud: bool) -> None:
@@ -155,11 +156,11 @@ class DebugGame:
     def panning(self, show_in_hud: bool) -> None:
         """Draw debug art to show panning and display state/values in HUD"""
         debug = self.game.debug
-        panning = self.game.ui.panning
+        panning = self.game.ongoing_action.panning
         if not show_in_hud: return
         coord_sys = self.game.coord_sys
         debug.hud.print(f"|\n+- UI -> Panning (Ctrl+Left-Click-Drag): {panning.is_active} ({FILE})")
-        debug.hud.print(f"|        +- .start: {panning.start.fmt(0.0)}")
+        debug.hud.print(f"|        +- .begin: {panning.begin.fmt(0.0)}")
         debug.hud.print(f"|        +- .end: {panning.end.fmt(0.0)}")
         debug.hud.print(f"|        +- .vector: {panning.vector.fmt(0.0)}")
         debug.hud.print("|           +- Panning updates the coord_sys:")
@@ -168,7 +169,7 @@ class DebugGame:
                         "pcs_origin + .vector")
         if panning.is_active:
             debug.art.lines_pcs.append(
-                    Line2D(start=panning.start, end=panning.end, color=Colors.panning))
+                    Line2D(start=panning.begin, end=panning.end, color=Colors.panning))
 
     def entities(self, show_in_hud: bool) -> None:
         """Show important attrs for every entity."""

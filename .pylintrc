@@ -17,7 +17,9 @@ max-module-lines=700
 
 # List of note tags to take in consideration, separated by a comma.
 # notes=TODO,LEFTOFF
-notes=LEFTOFF
+# notes=LEFTOFF
+# notes=NEXT
+notes=
 
 [MAIN]
 # max-branches=14

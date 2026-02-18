@@ -1,7 +1,27 @@
 # Python linters
 - pycodestyle: https://pycodestyle.pycqa.org/en/latest/
+    - You don't need to run pycodestyle if you run flake8
 - pylint: https://pylint.readthedocs.io/en/stable/
 - mypy: https://mypy.readthedocs.io/en/stable/
+
+## flake8
+
+You cannot turn off checks for code blocks with `flake8` like you can with `pylint`. But you can disable warnings for an entire file. At the top of the file:
+
+```python
+# flake8: noqa: E501
+```
+
+That particular error code is for `line-too-long`.
+
+For global settings, create a `flake8` section in your `tox.ini`:
+
+```
+[flake8]
+max-complexity = 10
+max-line-length = 100
+extend-ignore = F821,E701
+```
 
 ## mypy - type checking
 
