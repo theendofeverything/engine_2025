@@ -116,6 +116,7 @@ class ModifierKey(Enum):
     RELEASE_DRAG_PLAYER = pygame.K_RSHIFT | pygame.K_LSHIFT
 
 
+# pylint: disable=line-too-long
 @dataclass
 class InputMapper:
     """Map inputs (such as key presses) to actions.

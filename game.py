@@ -319,7 +319,7 @@ class Game:
         self.debug_game.window_size(True)
         # Game
         self.reset_art()  # Clear old art
-        self.ui.handle_events(log)  # Handle all user events
+        self.ui.consume_event_queue(log)  # Handle all user events
         self.ongoing_action.update(self)
         self.debug_game.mouse(False)  # Mouse position and buttons
         self.debug_game.panning(True)  # Panning; Ctrl+Left-Click-Drag to pan
@@ -335,6 +335,47 @@ class Game:
         self.renderer.render_all()  # Render all art and HUD
         self.timing.maintain_framerate(fps=60)  # Run at 60 FPS
 
+    @staticmethod
+    def lookup_action_for_key_event(
+            input_mapper: InputMapper,
+            event: pygame.event.Event,
+            kmod: int,
+            key_direction: KeyDirection
+            ) -> Action | None:
+        """Return the Action (enum) matching this key event."""
+        action = input_mapper.key_map.get(
+                (event.key,
+                 KeyModifier.from_kmod(kmod),
+                 key_direction))
+        return action
+
+    @staticmethod
+    def lookup_action_for_key_release_while_mouse_is_dragging(
+            input_mapper: InputMapper,
+            event: pygame.event.Event,
+            kmod: int
+            ) -> Action | None:
+        """Return the Action (enum) this release of a modifier key while mouse is click-dragging."""
+        match event.key:
+            # case ModifierKey.RELEASE_DRAG_PLAYER:
+            case pygame.K_RSHIFT | pygame.K_LSHIFT:
+                # log.debug("Shift released")
+                action = input_mapper.modifier_key_map.get(
+                                (ModifierKey.RELEASE_DRAG_PLAYER,
+                                 KeyModifier.from_kmod(kmod),
+                                 KeyDirection.UP))
+                return action
+            # case ModifierKey.RELEASE_PANNING:
+            case pygame.K_RCTRL | pygame.K_LCTRL:
+                # log.debug(f"Ctrl released. kmod: {kmod} == {pygame.KMOD_NONE}")
+                action = input_mapper.modifier_key_map.get(
+                        (ModifierKey.RELEASE_PANNING,
+                         KeyModifier.from_kmod(kmod),
+                         KeyDirection.UP))
+                return action
+            case _:
+                return None
+
     def ui_callback_to_map_event_to_action(self, event: pygame.event.Event, kmod: int) -> None:
         """Map UI events to actions and then pass the action to the action handler.
 
@@ -342,8 +383,19 @@ class Game:
             1. Register with the UI like this:
                 self.ui = UI(game=self, ...)  # Instantiate UI
                 self.ui.subscribe(self.ui_callback_to_map_event_to_action)  # Register callback
-            2. Define actions in the InputMapper.key_map
-            3. Define how to handle the actions in _handle_keyboard_action_events()
+            2. Define actions in input_mapper.py:
+                - InputMapper.key_map
+                - InputMapper.mouse_map
+                - InputMapper.modifier_key_map
+            3. Define how to handle the actions in game.py:
+                - _handle_keyboard_action_events()
+                - _handle_mouse_action_events()
+                - _handle_keyup_while_mouse_is_dragging()
+            4. Handle ongoing actions (click-dragging) in ongoing_action.py
+                - OngoingAction.update(game)
+            5. Game loop calls self.ui.consume_event_queue(log) which publishes all UI events
+            6. Game loop calls self.ongoing_action.update(self). OngoingAction.update(game) checks
+               if any ongoing actions are active and then updates them accordingly.
 
         This is a callback registered with UI. It simply maps events from the pygame event queue to
         actions and then passes the action to the action handler.
@@ -362,6 +414,7 @@ class Game:
         """
         input_mapper = self.input_mapper
         log = self.log
+        input_mapper = self.input_mapper
         kmod = self.ui.kmod_simplify(kmod)
         log.debug(f"Event: {event}")
         log.debug(f"Filtered kmod: {kmod}")
@@ -369,45 +422,31 @@ class Game:
         match event.type:
             case pygame.KEYDOWN:
                 log.debug(f"KEYDOWN: {pygame.key.name(event.key)}")
-                key_direction = KeyDirection.DOWN
-                log.debug(f"BOB: {event.key}")
-                action = input_mapper.key_map.get(
-                        (event.key,
-                         KeyModifier.from_kmod(kmod),
-                         key_direction))
+                action = self.lookup_action_for_key_event(
+                        input_mapper,
+                        event,
+                        kmod,
+                        KeyDirection.DOWN)
                 log.debug(f"action: {action}")
                 if action is not None:
                     self._handle_keyboard_action_events(action)
             case pygame.KEYUP:
                 log.debug(f"KEYUP: {pygame.key.name(event.key)}")
-                key_direction = KeyDirection.UP
-                action = input_mapper.key_map.get(
-                        (event.key,
-                         KeyModifier.from_kmod(kmod),
-                         key_direction))
+                action = self.lookup_action_for_key_event(
+                        input_mapper,
+                        event,
+                        kmod,
+                        KeyDirection.UP)
+                log.debug(f"action: {action}")
                 if action is not None:
                     self._handle_keyboard_action_events(action)
-                # Add something here to handle releasing modifier keys while mouse is click
-                # dragging.
-                match event.key:
-                    # case ModifierKey.RELEASE_DRAG_PLAYER:
-                    case pygame.K_RSHIFT | pygame.K_LSHIFT:
-                        log.debug("Shift released")
-                        action = input_mapper.modifier_key_map.get(
-                                (ModifierKey.RELEASE_DRAG_PLAYER,
-                                 KeyModifier.from_kmod(kmod),
-                                 key_direction))
-                        if action is not None:
-                            self._handle_keyup_while_mouse_is_dragging(action)
-                    # case ModifierKey.RELEASE_PANNING:
-                    case pygame.K_RCTRL | pygame.K_LCTRL:
-                        log.debug(f"Ctrl released. kmod: {kmod} == {pygame.KMOD_NONE}")
-                        action = input_mapper.modifier_key_map.get(
-                                (ModifierKey.RELEASE_PANNING,
-                                 KeyModifier.from_kmod(kmod),
-                                 key_direction))
-                        if action is not None:
-                            self._handle_keyup_while_mouse_is_dragging(action)
+                action = self.lookup_action_for_key_release_while_mouse_is_dragging(
+                        input_mapper,
+                        event,
+                        kmod)
+                log.debug(f"action: {action}")
+                if action is not None:
+                    self._handle_keyup_while_mouse_is_dragging(action)
             case pygame.MOUSEBUTTONDOWN:
                 mouse_button = MouseButton.from_event(event)
                 log.debug("Event MOUSEBUTTONDOWN, "

@@ -81,11 +81,6 @@ class UI:
     mouse_pressed: MousePressed = MousePressed()  # Track mouse button down/up
     subscribers:    list[Callable[[pygame.event.Event, int], None]] = field(default_factory=list)
 
-    def handle_events(self, log: logging.Logger) -> None:
-        """Handle events."""
-        self.consume_event_queue(log)
-        # self.update_panning()
-
     def consume_event_queue(self, log: logging.Logger) -> None:
         """Consume all events on the event queue.
 

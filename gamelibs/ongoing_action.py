@@ -20,7 +20,7 @@ Usage:
         ...
         def loop(self, log: logging.Logger) -> None:
             ...
-            self.ui.handle_events(log)  # Handle all user events
+            self.ui.consume_event_queue(log)  # Iterate over all user events
             self.ongoing_action.update(self)
 """
 from dataclasses import dataclass, field
