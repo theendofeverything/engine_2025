@@ -1,24 +1,16 @@
 # flake8: noqa: E501
 """Map inputs to actions.
 
-1. See KeyModifier and ModifierKey
-
-    Note that pygame has different codes for key modifiers and modifier keys:
-
-        key modifiers: mod key pressed while other events happen
-
-        modifier keys: pressing the mod key is the event
-
-    In other words:
-        I use the term "key modifier" if a modifier key is held while other things are happening.
-
-        I use the term "modifier key" when the pressing or releasing of the modifier key itself is
-        what triggers the event of interest.
+Note that pygame has two different codes for modifier keys depending on usage. For example:
+    pygame.K_RSHIFT -- Code to check if the Right-Shift key is having its own KEYDOWN or KEYUP event
+    pygame.KMOD_RSHIFT -- Code to check if Right-Shift is modifying another event
 """
 
 from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum, auto
+import sys
+import logging
 import pygame
 from engine.ui import MouseButton
 
@@ -87,35 +79,6 @@ class KeyModifier(Enum):
         return cls(kmod)
 
 
-class ModifierKey(Enum):
-    """Assign modifier keys to more specific actions.
-
-    Modifier keys are Shift, Ctrl, and Alt. They are usually used to modify the behavior of the
-    mouse or of other keys. But in the context of modifying the mouse, a KEYUP event for a modifier
-    key means "stop the ongoing action". This enum class maps the modifier keys for this exact
-    scenario.
-
-    An example of mapping to a specific action:
-        While "Ctrl + Click-Drag" panning, the user might release `Ctrl`. This is a KEYUP event.
-        Instead of testing for pygame.K_RCTRL | pygame.K_LCTRL, we test for
-        ModifierKey.RELEASE_PANNING. So we make the following mapping:
-
-        RELEASE_PANNING = pygame.K_RCTRL | pygame.K_LCTRL
-
-    For now I only map this to a KEYUP event. But I can imagine in the future adding something to
-    indicate in the UI when CTRL is pressed. In that case I would want to act on the KEYDOWN event
-    as well.
-
-    The ModifierKey mapping is not used on its own -- it is used in the InputMapper to combine it
-    with a specific KeyDirection (UP/DOWN) and KeyModifier (in case it matters that we are holding
-    other modifier keys while performing this action).
-
-    The action mapping is defined in InputMapper.modifier_key_map.
-    """
-    RELEASE_PANNING     = pygame.K_RCTRL | pygame.K_LCTRL
-    RELEASE_DRAG_PLAYER = pygame.K_RSHIFT | pygame.K_LSHIFT
-
-
 # pylint: disable=line-too-long
 @dataclass
 class InputMapper:
@@ -154,11 +117,6 @@ class InputMapper:
                           ],
                     Action  # enum
                     ] = field(default_factory=dict)
-    modifier_key_map: dict[tuple[ModifierKey,
-                                 KeyModifier,
-                                 KeyDirection],
-                           Action
-                           ] = field(default_factory=dict)
 
     # pylint: disable=line-too-long
     def __post_init__(self) -> None:
@@ -195,9 +153,29 @@ class InputMapper:
             (pygame.K_RIGHT,  KeyModifier.NO_MODIFIER, KeyDirection.UP):     Action.PLAYER_MOVE_RIGHT_STOP,
             (pygame.K_UP,     KeyModifier.NO_MODIFIER, KeyDirection.UP):     Action.PLAYER_MOVE_UP_STOP,
             (pygame.K_DOWN,   KeyModifier.NO_MODIFIER, KeyDirection.UP):     Action.PLAYER_MOVE_DOWN_STOP,
+            (pygame.K_RCTRL,  KeyModifier.NO_MODIFIER, KeyDirection.UP):     Action.STOP_PANNING,
+            (pygame.K_LCTRL,  KeyModifier.NO_MODIFIER, KeyDirection.UP):     Action.STOP_PANNING,
+            (pygame.K_RSHIFT, KeyModifier.NO_MODIFIER, KeyDirection.UP):     Action.STOP_DRAG_PLAYER,
+            (pygame.K_LSHIFT, KeyModifier.NO_MODIFIER, KeyDirection.UP):     Action.STOP_DRAG_PLAYER,
             }
 
-        self.modifier_key_map = {
-            (ModifierKey.RELEASE_PANNING, KeyModifier.NO_MODIFIER, KeyDirection.UP):     Action.STOP_PANNING,
-            (ModifierKey.RELEASE_DRAG_PLAYER, KeyModifier.NO_MODIFIER, KeyDirection.UP): Action.STOP_DRAG_PLAYER,
-            }
+    def action_for_key_event(
+            self,
+            log: logging.Logger,
+            event: pygame.event.Event,
+            kmod: int
+            ) -> Action | None:
+        """Return the Action (enum) matching this key event."""
+        input_mapper = self
+        match event.type:
+            case pygame.KEYDOWN: key_direction = KeyDirection.DOWN
+            case pygame.KEYUP: key_direction = KeyDirection.UP
+            case _: sys.exit()  # Should never happen!
+        log.debug(f"{key_direction}: {pygame.key.name(event.key)}")
+        action = input_mapper.key_map.get(
+                (event.key,
+                 KeyModifier.from_kmod(kmod),
+                 key_direction)
+                )
+        log.debug(f"action: {action}")
+        return action
