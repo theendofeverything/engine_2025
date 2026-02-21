@@ -320,7 +320,7 @@ class Game:
         self.reset_art()  # Clear old art
         self.ui.consume_event_queue(log)  # Handle all user events
         self.ongoing_action.update(self)
-        self.debug_game.mouse(False)  # Mouse position and buttons
+        self.debug_game.mouse(True)  # Mouse position and buttons
         self.debug_game.panning(True)  # Panning; Ctrl+Left-Click-Drag to pan
         self.debug_game.player_forces(False)  # Show arrow keys: UP/DOWN/LEFT/RIGHT
         self.debug_game.mode_controls(True)

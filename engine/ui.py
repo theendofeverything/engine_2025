@@ -37,35 +37,12 @@ import pathlib
 import logging
 from dataclasses import dataclass, field
 from typing import Callable
-from enum import Enum
 import pygame
 from .geometry_types import Vec2D, Point2D
 from .drawing_shapes import Line2D
 from .colors import Colors
 
 FILE = pathlib.Path(__file__).name
-
-
-@dataclass
-class MousePressed:
-    """Track mouse button pressed state."""
-    left: bool = False  # Track mouse button 1 down/up
-    middle: bool = False  # Track mouse button 2 down/up
-    right: bool = False  # Track mouse button 3 down/up
-
-
-class MouseButton(Enum):
-    """Enumerate the mouse button values from pygame.Event.button"""
-    LEFT = 1
-    MIDDLE = 2
-    RIGHT = 3
-    WHEELUP = 4
-    WHEELDOWN = 5
-
-    @classmethod
-    def from_event(cls, event: pygame.Event) -> MouseButton:
-        """Get MouseButton from an event (uses event.button)."""
-        return cls(event.button)
 
 
 @dataclass
@@ -78,8 +55,16 @@ class UI:
     bitfield of flags like pygame.KMOD_SHIFT).
     """
     game: "Game"
-    mouse_pressed: MousePressed = MousePressed()  # Track mouse button down/up
     subscribers:    list[Callable[[pygame.event.Event, int], None]] = field(default_factory=list)
+
+    def subscribe(self, callback: Callable[[pygame.event.Event, int], None]) -> None:
+        """Call ui.subscribe(callback) to register "callback" for receiving UI events."""
+        self.subscribers.append(callback)
+
+    def publish(self, event: pygame.event.Event, kmod: int) -> None:
+        """Publish the event to subscribers by calling all registered callbacks."""
+        for subscriber in self.subscribers:
+            subscriber(event, kmod)
 
     def consume_event_queue(self, log: logging.Logger) -> None:
         """Consume all events on the event queue.
@@ -92,23 +77,12 @@ class UI:
             match event.type:
                 case pygame.QUIT: sys.exit()
                 case pygame.WINDOWSIZECHANGED: self.handle_windowsizechanged_events(event, log)
-                case pygame.MOUSEBUTTONDOWN: self.track_mouse_pressed(event, True, log)
-                case pygame.MOUSEBUTTONUP: self.track_mouse_pressed(event, False, log)
                 case pygame.MOUSEWHEEL: self.handle_mousewheel_events(event, log)
                 case _: self.log_unused_events(event, log)
             # Let UI subscribers handle the event
             # NOTE: kmod is stale. Call get_mods() when publishing.
             # self.publish(event, kmod)
             self.publish(event, self.kmod_simplify(pygame.key.get_mods()))
-
-    def subscribe(self, callback: Callable[[pygame.event.Event, int], None]) -> None:
-        """Call ui.subscribe(callback) to register "callback" for receiving UI events."""
-        self.subscribers.append(callback)
-
-    def publish(self, event: pygame.event.Event, kmod: int) -> None:
-        """Publish the event to subscribers by calling all registered callbacks."""
-        for subscriber in self.subscribers:
-            subscriber(event, kmod)
 
     def handle_windowsizechanged_events(self,
                                         event: pygame.event.Event,
@@ -147,30 +121,6 @@ class UI:
         log.debug(f"Event MOUSEWHEEL, flipped: {event.flipped}, "
                   f"x:{event.x}, y:{event.y}, "
                   f"precise_x:{event.precise_x}, precise_y:{event.precise_y}")
-
-    def track_mouse_pressed(self,
-                            event: pygame.event.Event,
-                            is_pressed: bool,
-                            log: logging.Logger
-                            ) -> None:
-        """Track mouse button state."""
-        if is_pressed:
-            event_str = "MOUSEBUTTONDOWN"
-        else:
-            event_str = "MOUSEBUTTONUP"
-        log.debug(f"Event {event_str}, "
-                  f"pos: {event.pos}, "
-                  f"button: {event.button}")
-        mouse_button = MouseButton.from_event(event)
-        match mouse_button:
-            case MouseButton.LEFT:
-                self.mouse_pressed.left = is_pressed
-            case MouseButton.MIDDLE:
-                self.mouse_pressed.middle = is_pressed
-            case MouseButton.RIGHT:
-                self.mouse_pressed.right = is_pressed
-            case _:
-                log.debug(f"ERROR: Missing case for {mouse_button}")
 
     def log_unused_events(self, event: pygame.event.Event, log: logging.Logger) -> None:
         """Log events that I have not found a use for yet."""

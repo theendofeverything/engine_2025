@@ -12,7 +12,6 @@ from enum import Enum, auto
 import sys
 import logging
 import pygame
-from engine.ui import MouseButton
 
 
 class Action(Enum):
@@ -46,14 +45,37 @@ class Action(Enum):
     STOP_DRAG_PLAYER = auto()
 
 
-class KeyDirection(Enum):
-    """Enumerate names for KEYUP and KEYDOWN instead of just using bool."""
-    UP = auto()
-    DOWN = auto()
+class MouseButton(Enum):
+    """Enumerate the mouse button values from pygame.Event.button"""
+    LEFT = 1
+    MIDDLE = 2
+    RIGHT = 3
+    WHEELUP = 4
+    WHEELDOWN = 5
+
+    @classmethod
+    def from_event(cls, event: pygame.Event) -> MouseButton:
+        """Get MouseButton from an event (uses event.button)."""
+        return cls(event.button)
+
+
+# TODO: Integrate these names with the MouseButton enum
+@dataclass
+class MousePressed:
+    """Track mouse button pressed state."""
+    left: bool = False  # Track mouse button 1 down/up
+    middle: bool = False  # Track mouse button 2 down/up
+    right: bool = False  # Track mouse button 3 down/up
 
 
 class ButtonDirection(Enum):
     """Enumerate names for MOUSEBUTTONUP and MOUSEBUTTONDOWN."""
+    UP = auto()
+    DOWN = auto()
+
+
+class KeyDirection(Enum):
+    """Enumerate names for KEYUP and KEYDOWN instead of just using bool."""
     UP = auto()
     DOWN = auto()
 
@@ -79,6 +101,9 @@ class KeyModifier(Enum):
         return cls(kmod)
 
 
+
+
+
 # pylint: disable=line-too-long
 @dataclass
 class InputMapper:
@@ -94,14 +119,13 @@ class InputMapper:
     (100, <KeyModifier.NO_MODIFIER: 0>, <KeyDirection.DOWN: 2>): <Action.TOGGLE_DEBUG_ART_OVERLAY: 3>,
     (98, <KeyModifier.SHIFT: 3>, <KeyDirection.DOWN: 2>): <Action.CONTROLS_ADJUST_B_LESS: 11>,
     ...
-    (1073741905, <KeyModifier.NO_MODIFIER: 0>, <KeyDirection.UP: 1>): <Action.PLAYER_MOVE_DOWN_STOP: 23>}
 
     >>> mouse_map = input_mapper.mouse_map
     >>> mouse_map
     {(<MouseButton.LEFT: 1>, <KeyModifier.CTRL: 192>, <ButtonDirection.DOWN: 2>): <Action.START_PANNING: 24>,
     (<MouseButton.LEFT: 1>, <KeyModifier.CTRL: 192>, <ButtonDirection.UP: 1>): <Action.STOP_PANNING: 25>,
     (<MouseButton.MIDDLE: 2>, <KeyModifier.NO_MODIFIER: 0>, <ButtonDirection.DOWN: 2>): <Action.START_PANNING: 24>,
-    (<MouseButton.MIDDLE: 2>, <KeyModifier.NO_MODIFIER : 0>, <ButtonDirection.UP: 1>): <Action.STOP_PANNING: 25>,
+    (<MouseButton.MIDDLE: 2>, <KeyModifier.NO_MODIFIER: 0>, <ButtonDirection.UP: 1>): <Action.STOP_PANNING: 25>,
     (<MouseButton.LEFT: 1>, <KeyModifier.SHIFT: 3>, <ButtonDirection.DOWN: 2>): <Action.START_DRAG_PLAYER: 26>,
     (<MouseButton.LEFT: 1>, <KeyModifier.SHIFT: 3>, <ButtonDirection.UP: 1>): <Action.STOP_DRAG_PLAYER: 27>}
     """
@@ -117,6 +141,7 @@ class InputMapper:
                           ],
                     Action  # enum
                     ] = field(default_factory=dict)
+    mouse_pressed: MousePressed = MousePressed()  # Track mouse button down/up
 
     # pylint: disable=line-too-long
     def __post_init__(self) -> None:
@@ -189,8 +214,12 @@ class InputMapper:
         """Return the Action (enum) matching this mouse button event."""
         input_mapper = self
         match event.type:
-            case pygame.MOUSEBUTTONDOWN: button_direction = ButtonDirection.DOWN
-            case pygame.MOUSEBUTTONUP: button_direction = ButtonDirection.UP
+            case pygame.MOUSEBUTTONDOWN:
+                button_direction = ButtonDirection.DOWN
+                self.track_mouse_pressed(event, True, log)
+            case pygame.MOUSEBUTTONUP:
+                button_direction = ButtonDirection.UP
+                self.track_mouse_pressed(event, False, log)
             case _: sys.exit()  # Should never happen!
         mouse_button = MouseButton.from_event(event)
         log.debug(f"Event MOUSEBUTTON {button_direction}, "
@@ -204,3 +233,27 @@ class InputMapper:
                 )
         log.debug(f"action: {action}")
         return action
+
+    def track_mouse_pressed(self,
+                            event: pygame.event.Event,
+                            is_pressed: bool,
+                            log: logging.Logger
+                            ) -> None:
+        """Track mouse button state."""
+        if is_pressed:
+            event_str = "MOUSEBUTTONDOWN"
+        else:
+            event_str = "MOUSEBUTTONUP"
+        log.debug(f"Event {event_str}, "
+                  f"pos: {event.pos}, "
+                  f"button: {event.button}")
+        mouse_button = MouseButton.from_event(event)
+        match mouse_button:
+            case MouseButton.LEFT:
+                self.mouse_pressed.left = is_pressed
+            case MouseButton.MIDDLE:
+                self.mouse_pressed.middle = is_pressed
+            case MouseButton.RIGHT:
+                self.mouse_pressed.right = is_pressed
+            case _:
+                log.debug(f"ERROR: Missing case for {mouse_button}")
