@@ -98,7 +98,7 @@ import pygame
 from engine.debug import Debug
 from engine.timing import Timing, FrameCounter, ClockedEvent
 from engine.art import Art
-from engine.ui import UI, MouseButton
+from engine.ui import UI
 from engine.coord_sys import CoordinateSystem
 from engine.renderer import Renderer
 from engine.geometry_types import Point2D, Vec2D
@@ -107,7 +107,6 @@ from engine.colors import Colors
 from engine.entity import Entity, EntityType
 from gamelibs.ongoing_action import OngoingAction
 from gamelibs.input_mapper import Action, InputMapper, KeyModifier
-from gamelibs.input_mapper import ButtonDirection
 from gamelibs.debug_game import DebugGame, Mode
 
 FILE = pathlib.Path(__file__).name
@@ -345,11 +344,9 @@ class Game:
             2. Define actions in input_mapper.py:
                 - InputMapper.key_map
                 - InputMapper.mouse_map
-                - InputMapper.modifier_key_map
             3. Define how to handle the actions in game.py:
-                - _handle_action_for_key_event()
-                - _handle_mouse_action_events()
-                - _handle_action_for_key_release_during_mouse_drag()
+                - do_action_for_key_event()
+                - do_action_for_mouse_button_event()
             4. Handle ongoing actions (click-dragging) in ongoing_action.py
                 - OngoingAction.update(game)
             5. Game loop calls self.ui.consume_event_queue(log) which publishes all UI events
@@ -377,50 +374,17 @@ class Game:
         log.debug(f"Event: {event}")
         log.debug(f"Filtered kmod: {kmod}")
         log.debug(f"Mapped kmod: {KeyModifier.from_kmod(kmod)}")
-        # LEFT OFF HERE
         match event.type:
             case pygame.KEYDOWN | pygame.KEYUP:
                 # Map for keydown and keyup events
-                action = self.input_mapper.action_for_key_event(log, event, kmod)
-                if action is not None: self._handle_action_for_key_event(action)
-            case pygame.MOUSEBUTTONDOWN:
-                mouse_button = MouseButton.from_event(event)
-                log.debug("Event MOUSEBUTTONDOWN, "
-                          f"pos: {event.pos}, ({type(event.pos[0])}), "
-                          f"event.button: {event.button}, "
-                          f"MouseButton: {mouse_button}")
+                action = input_mapper.action_for_key_event(log, event, kmod)
+                if action is not None: self.do_action_for_key_event(action)
+            case pygame.MOUSEBUTTONDOWN | pygame.MOUSEBUTTONUP:
+                # Map for mouse buttondown and button up events
+                action = input_mapper.action_for_mouse_button_event(log, event, kmod)
+                if action is not None: self.do_action_for_mouse_button_event(action, event.pos)
 
-                button_direction = ButtonDirection.DOWN
-                action = input_mapper.mouse_map.get(
-                        (mouse_button, KeyModifier.from_kmod(kmod), button_direction))
-                log.debug(f"BOB1 ACTION: {action}")
-                log.debug(f"event.button: {event.button}")
-                log.debug(f"kmod: {kmod}")
-                log.debug(f"Mapped kmod: {KeyModifier.from_kmod(kmod)}")
-                log.debug(f"button_direction: {button_direction}")
-                if action is not None:
-                    self._handle_mouse_action_events(action, event.pos)
-            case pygame.MOUSEBUTTONUP:
-                mouse_button = MouseButton.from_event(event)
-                log.debug("Event MOUSEBUTTONDOWN, "
-                          f"pos: {event.pos}, ({type(event.pos[0])}), "
-                          f"event.button: {event.button}, "
-                          f"MouseButton: {mouse_button}")
-                button_direction = ButtonDirection.UP
-                action = input_mapper.mouse_map.get(
-                        (mouse_button, KeyModifier.from_kmod(kmod), button_direction))
-                log.debug(f"BOB2 ACTION: {action}")
-                log.debug(f"event.button: {event.button}")
-                log.debug(f"kmod: {kmod}")
-                log.debug(f"Mapped kmod: {KeyModifier.from_kmod(kmod)}")
-                log.debug(f"button_direction: {button_direction}")
-                if action is not None:
-                    self._handle_mouse_action_events(action, event.pos)
-
-    def _handle_mouse_action_events(self,
-                                    action: Action,
-                                    position: tuple[int, int]
-                                    ) -> None:
+    def do_action_for_mouse_button_event(self, action: Action, position: tuple[int, int]) -> None:
         """Handle actions for mouse events detected by the UI"""
         log = self.log
         game = self
@@ -440,7 +404,7 @@ class Game:
 
     # pylint: disable=too-many-statements
     # pylint: disable=too-many-branches
-    def _handle_action_for_key_event(self, action: Action) -> None:
+    def do_action_for_key_event(self, action: Action) -> None:
         """Handle actions for keyboard events detected by the UI"""
         log = self.log
         game = self

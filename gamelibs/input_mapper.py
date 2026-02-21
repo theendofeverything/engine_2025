@@ -179,3 +179,28 @@ class InputMapper:
                 )
         log.debug(f"action: {action}")
         return action
+
+    def action_for_mouse_button_event(
+            self,
+            log: logging.Logger,
+            event: pygame.event.Event,
+            kmod: int
+            ) -> Action | None:
+        """Return the Action (enum) matching this mouse button event."""
+        input_mapper = self
+        match event.type:
+            case pygame.MOUSEBUTTONDOWN: button_direction = ButtonDirection.DOWN
+            case pygame.MOUSEBUTTONUP: button_direction = ButtonDirection.UP
+            case _: sys.exit()  # Should never happen!
+        mouse_button = MouseButton.from_event(event)
+        log.debug(f"Event MOUSEBUTTON {button_direction}, "
+                  f"pos: {event.pos}, ({type(event.pos[0])}), "
+                  f"event.button: {event.button}, "
+                  f"MouseButton: {mouse_button}")
+        action = input_mapper.mouse_map.get(
+                (mouse_button,
+                 KeyModifier.from_kmod(kmod),
+                 button_direction)
+                )
+        log.debug(f"action: {action}")
+        return action
