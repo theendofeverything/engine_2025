@@ -8,10 +8,11 @@ Note that pygame has two different codes for modifier keys depending on usage. F
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from enum import Enum, auto
+from enum import Enum, IntEnum, auto
 import sys
 import logging
 import pygame
+from .ongoing_action import OngoingAction
 
 
 class Action(Enum):
@@ -45,8 +46,12 @@ class Action(Enum):
     STOP_DRAG_PLAYER = auto()
 
 
-class MouseButton(Enum):
-    """Enumerate the mouse button values from pygame.Event.button"""
+class MouseButton(IntEnum):
+    """Enumerate the mouse button values from pygame.Event.button.
+
+    >>> MouseButton.LEFT
+    <MouseButton.LEFT: 1>
+    """
     LEFT = 1
     MIDDLE = 2
     RIGHT = 3
@@ -59,13 +64,51 @@ class MouseButton(Enum):
         return cls(event.button)
 
 
-# TODO: Integrate these names with the MouseButton enum
-@dataclass
-class MousePressed:
-    """Track mouse button pressed state."""
-    left: bool = False  # Track mouse button 1 down/up
-    middle: bool = False  # Track mouse button 2 down/up
-    right: bool = False  # Track mouse button 3 down/up
+class Mouse:
+    """Track mouse state in a Global Singleton.
+
+    Button state begins with no buttons pressed:
+    >>> Mouse.is_pressed(MouseButton.LEFT)
+    False
+
+    Simulate a left-click:
+    >>> event = pygame.Event(pygame.MOUSEBUTTONDOWN, {'button': 1})
+
+    Update the button state:
+    >>> Mouse.update(event)
+
+    Check that we have updated the state of the left mouse button:
+    >>> Mouse.is_pressed(MouseButton.LEFT)
+    True
+
+    Convert pygame.Event.button int to a MouseButton enum:
+    >>> mouse_button = MouseButton.from_event(event)
+
+    Print the button state (TRUE) using its name (LEFT) instead of its value (1):
+    >>> print(f"Mouse.is_pressed({mouse_button.name}): {Mouse.is_pressed(mouse_button)}")
+    Mouse.is_pressed(LEFT): True
+    """
+    # Store states for all 5 buttons: Pressed (True) and NotPressed (False)
+    _state = {button.value: False for button in MouseButton}
+
+    @classmethod
+    def update(cls, event: pygame.Event) -> None:
+        """Update the state of all buttons in MouseButton."""
+        match event.type:
+            case pygame.MOUSEBUTTONDOWN:
+                cls._state[event.button] = True
+            case pygame.MOUSEBUTTONUP:
+                cls._state[event.button] = False
+
+    @classmethod
+    def is_pressed(cls, button: MouseButton) -> bool:
+        """Return True/False if button MouseButton is pressed.
+
+        If the "button" does not exist, return False instead of None:
+        >>> Mouse.is_pressed(6)
+        False
+        """
+        return cls._state.get(button, False)
 
 
 class ButtonDirection(Enum):
@@ -142,7 +185,6 @@ class InputMapper:
                           ],
                     Action  # enum
                     ] = field(default_factory=dict)
-    mouse_pressed: MousePressed = MousePressed()  # Track mouse button down/up
 
     # pylint: disable=line-too-long
     def __post_init__(self) -> None:
@@ -217,16 +259,16 @@ class InputMapper:
         match event.type:
             case pygame.MOUSEBUTTONDOWN:
                 button_direction = ButtonDirection.DOWN
-                self.track_mouse_pressed(event, True, log)
+                Mouse.update(event)
             case pygame.MOUSEBUTTONUP:
                 button_direction = ButtonDirection.UP
-                self.track_mouse_pressed(event, False, log)
+                Mouse.update(event)
             case _: sys.exit()  # Should never happen!
         mouse_button = MouseButton.from_event(event)
         log.debug(f"Event MOUSEBUTTON {button_direction}, "
                   f"pos: {event.pos}, ({type(event.pos[0])}), "
                   f"event.button: {event.button}, "
-                  f"MouseButton: {mouse_button}")
+                  f"Mouse.is_pressed({mouse_button.name}): {Mouse.is_pressed(mouse_button)}")
         action = input_mapper.mouse_map.get(
                 (mouse_button,
                  KeyModifier.from_kmod(kmod),
@@ -234,27 +276,3 @@ class InputMapper:
                 )
         log.debug(f"action: {action}")
         return action
-
-    def track_mouse_pressed(self,
-                            event: pygame.event.Event,
-                            is_pressed: bool,
-                            log: logging.Logger
-                            ) -> None:
-        """Track mouse button state."""
-        if is_pressed:
-            event_str = "MOUSEBUTTONDOWN"
-        else:
-            event_str = "MOUSEBUTTONUP"
-        log.debug(f"Event {event_str}, "
-                  f"pos: {event.pos}, "
-                  f"button: {event.button}")
-        mouse_button = MouseButton.from_event(event)
-        match mouse_button:
-            case MouseButton.LEFT:
-                self.mouse_pressed.left = is_pressed
-            case MouseButton.MIDDLE:
-                self.mouse_pressed.middle = is_pressed
-            case MouseButton.RIGHT:
-                self.mouse_pressed.right = is_pressed
-            case _:
-                log.debug(f"ERROR: Missing case for {mouse_button}")

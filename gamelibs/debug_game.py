@@ -11,6 +11,7 @@ from engine.coord_sys import CoordinateSystem
 from engine.geometry_types import Point2D, Vec2D
 from engine.colors import Colors
 from engine.drawing_shapes import Line2D
+from .input_mapper import Mouse, MouseButton
 
 FILE = pathlib.Path(__file__).name
 
@@ -111,7 +112,7 @@ class DebugGame:
         if not show_in_hud: return
         debug = self.game.debug
         coord_sys = self.game.coord_sys
-        debug.hud.print(f"|\n+- InputMapper -> mouse_pressed ({FILE})")
+        debug.hud.print(f"|\n+- Mouse -> is_pressed ({FILE})")
 
         def debug_mouse_position() -> None:
             """Display mouse position in GCS and PCS."""
@@ -130,10 +131,18 @@ class DebugGame:
 
         def debug_mouse_buttons() -> None:
             """Display mouse button state."""
-            debug.hud.print("|  +- UI.mouse_pressed.:")
-            debug.hud.print(f"|     +- left: {self.game.input_mapper.mouse_pressed.left}")
-            debug.hud.print(f"|     +- middle: {self.game.input_mapper.mouse_pressed.middle}")
-            debug.hud.print(f"|     +- right: {self.game.input_mapper.mouse_pressed.right}")
+            debug.hud.print("|  +- Mouse.is_pressed():")
+            mouse_button = MouseButton.LEFT
+            debug.hud.print(f"|     +- {mouse_button.name}: {Mouse.is_pressed(mouse_button)}")
+            mouse_button = MouseButton.MIDDLE
+            debug.hud.print(f"|     +- {mouse_button.name}: {Mouse.is_pressed(mouse_button)}")
+            mouse_button = MouseButton.RIGHT
+            debug.hud.print(f"|     +- {mouse_button.name}: {Mouse.is_pressed(mouse_button)}")
+            # The WHEELUP and WHEELDOWN are always False. Why?
+            mouse_button = MouseButton.WHEELUP
+            debug.hud.print(f"|     +- {mouse_button.name}: {Mouse.is_pressed(mouse_button)}")
+            mouse_button = MouseButton.WHEELDOWN
+            debug.hud.print(f"|     +- {mouse_button.name}: {Mouse.is_pressed(mouse_button)}")
         debug_mouse_buttons()
 
     def player_forces(self, show_in_hud: bool) -> None:
