@@ -105,7 +105,6 @@ from engine.geometry_types import Point2D, Vec2D
 from engine.drawing_shapes import Cross
 from engine.colors import Colors
 from engine.entity import Entity, EntityType
-from gamelibs.ongoing_action import OngoingAction
 from gamelibs.input_mapper import Action, InputMapper, KeyModifier
 from gamelibs.debug_game import DebugGame, Mode
 
@@ -161,7 +160,6 @@ class Game:
     #################################
     # Instance variables defined in the implicit __init__() of dataclass
     input_mapper: InputMapper = InputMapper()  # Map inputs to actions
-    ongoing_action: OngoingAction = OngoingAction()
     # Instance variables defined in __post_init__()
     debug_game: DebugGame = field(init=False)
 
@@ -198,7 +196,7 @@ class Game:
         # Set the GCS to fit the window size and center the GCS origin in the window.
         self.coord_sys = CoordinateSystem(
                 window_size=Vec2D.from_tuple(self.renderer.window.size),
-                panning=self.ongoing_action.panning)
+                panning=self.input_mapper.ongoing_action.panning)
 
         #######################
         # Create clocked events
@@ -243,7 +241,6 @@ class Game:
                 entities=self.entities,
                 entity_type=EntityType.PLAYER,
                 clocked_event_name="period_3",
-                # origin=Point2D(0.5, 0),
                 )
         self.entities["cross1"] = Entity(
                 debug=self.debug,
@@ -251,8 +248,6 @@ class Game:
                 entities=self.entities,
                 entity_type=EntityType.NPC,
                 clocked_event_name="period_3",
-                # clocked_event_name="period_1",
-                # origin=Point2D(0, 0.25),
                 )
         self.entities["cross2"] = Entity(
                 debug=self.debug,
@@ -261,8 +256,6 @@ class Game:
                 entity_type=EntityType.NPC,
                 clocked_event_name="period_3",
                 size=0.15,
-                # clocked_event_name="period_1",
-                # origin=Point2D(0, -0.5),
                 )
         # Create entities for background art
         # 5 x 5 grid of crosses named "bgnd1" ... "bgnd10"
@@ -319,7 +312,7 @@ class Game:
         # Game
         self.reset_art()  # Clear old art
         self.ui.consume_event_queue(log)  # Handle all user events
-        self.ongoing_action.update(self)
+        self.input_mapper.ongoing_action.update(self)
         self.debug_game.mouse(True)  # Mouse position and buttons
         self.debug_game.panning(True)  # Panning; Ctrl+Left-Click-Drag to pan
         self.debug_game.player_forces(False)  # Show arrow keys: UP/DOWN/LEFT/RIGHT
@@ -350,8 +343,9 @@ class Game:
             4. Handle ongoing actions (click-dragging) in ongoing_action.py
                 - OngoingAction.update(game)
             5. Game loop calls self.ui.consume_event_queue(log) which publishes all UI events
-            6. Game loop calls self.ongoing_action.update(self). OngoingAction.update(game) checks
-               if any ongoing actions are active and then updates them accordingly.
+            6. Game loop calls self.input_mapper.ongoing_action.update(self).
+               OngoingAction.update(game) checks if any ongoing actions are active and then updates
+               them accordingly.
 
         This is a callback registered with UI. It simply maps events from the pygame event queue to
         actions and then passes the action to the action handler.
@@ -391,16 +385,16 @@ class Game:
         match action:
             case Action.START_PANNING:
                 log.debug("User action: start panning")
-                game.ongoing_action.panning.start(position)
+                game.input_mapper.ongoing_action.panning.start(position)
             case Action.STOP_PANNING:
                 log.debug("User action: stop panning")
-                game.ongoing_action.panning.stop(self)
+                game.input_mapper.ongoing_action.panning.stop(self)
             case Action.START_DRAG_PLAYER:
                 log.debug("User action: start teleport player to mouse")
-                game.ongoing_action.drag_player_is_active = True
+                game.input_mapper.ongoing_action.drag_player_is_active = True
             case Action.STOP_DRAG_PLAYER:
                 log.debug("User action: stop teleport player to mouse")
-                game.ongoing_action.drag_player_is_active = False
+                game.input_mapper.ongoing_action.drag_player_is_active = False
 
     # pylint: disable=too-many-statements
     # pylint: disable=too-many-branches
@@ -490,10 +484,10 @@ class Game:
                 log.debug("Player move down")
             case Action.STOP_PANNING:
                 log.debug("User action: stop panning")
-                game.ongoing_action.panning.stop(self)
+                game.input_mapper.ongoing_action.panning.stop(self)
             case Action.STOP_DRAG_PLAYER:
                 log.debug("User action: stop teleport player to mouse")
-                game.ongoing_action.drag_player_is_active = False
+                game.input_mapper.ongoing_action.drag_player_is_active = False
 
     # def _handle_action_for_key_release_during_mouse_drag(self, action: Action) -> None:
     #     """Handle actions for key release events detected by UI while mouse is click-dragging."""
@@ -502,10 +496,10 @@ class Game:
     #     match action:
     #         case Action.STOP_PANNING:
     #             log.debug("User action: stop panning")
-    #             game.ongoing_action.panning.stop(self)
+    #             game.input_mapper.ongoing_action.panning.stop(self)
     #         case Action.STOP_DRAG_PLAYER:
     #             log.debug("User action: stop teleport player to mouse")
-    #             game.ongoing_action.drag_player_is_active = False
+    #             game.input_mapper.ongoing_action.drag_player_is_active = False
 
     def update_frame_counters(self) -> None:
         """Update the frame tick counters (animations are clocked by frame ticks).

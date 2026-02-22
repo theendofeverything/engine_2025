@@ -129,6 +129,7 @@ class InputMapper:
     (<MouseButton.LEFT: 1>, <KeyModifier.SHIFT: 3>, <ButtonDirection.DOWN: 2>): <Action.START_DRAG_PLAYER: 26>,
     (<MouseButton.LEFT: 1>, <KeyModifier.SHIFT: 3>, <ButtonDirection.UP: 1>): <Action.STOP_DRAG_PLAYER: 27>}
     """
+    ongoing_action: OngoingAction = OngoingAction()
     key_map: dict[tuple[int,  # event.key
                         KeyModifier,  # enum wrapper on pygame kmod
                         KeyDirection  # enum -- UP or DOWN

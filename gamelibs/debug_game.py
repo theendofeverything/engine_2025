@@ -156,7 +156,7 @@ class DebugGame:
     def panning(self, show_in_hud: bool) -> None:
         """Draw debug art to show panning and display state/values in HUD"""
         debug = self.game.debug
-        panning = self.game.ongoing_action.panning
+        panning = self.game.input_mapper.ongoing_action.panning
         if not show_in_hud: return
         coord_sys = self.game.coord_sys
         debug.hud.print(f"|\n+- UI -> Panning (Ctrl+Left-Click-Drag): {panning.is_active} ({FILE})")
