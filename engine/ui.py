@@ -5,18 +5,16 @@ Events:
     Window resized:
         See 'handle_windowsizechanged_events()'.
         Also see pygame documentation for 'pygame.event'.
-    Key pressed:
-        See 'ui_callback_to_map_event_to_action()' in 'Game':
-            'case pygame.KEYDOWN'
-            'case pygame.KEYUP'
-            '_handle_keyboard_action_events()'
-        See 'InputMapper.key_map'
+    Key down/up:
+        See 'subscriber_map_event_to_action()' in 'Game':
+            'case pygame.KEYDOWN | pygame.KEYUP'
+                'InputMapper.key_map'
+                'Game.do_action_for_key_event()'
     Mouse button down/up:
-        See 'ui_callback_to_map_event_to_action()' in 'Game':
-            'case pygame.MOUSEBUTTONDOWN'
-            'case pygame.MOUSEBUTTONUP'
-            '_handle_mouse_action_events()'
-        See 'InputMapper.mouse_map'
+        See 'subscriber_map_event_to_action()' in 'Game':
+            'case pygame.MOUSEBUTTONDOWN | pygame.MOUSEBUTTONUP'
+                'InputMapper.mouse_map'
+                'do_action_for_mouse_button_event()'
 
 User actions:
     Panning:

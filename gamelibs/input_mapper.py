@@ -81,12 +81,16 @@ class Mouse:
     >>> Mouse.is_pressed(MouseButton.LEFT)
     True
 
-    Convert pygame.Event.button int to a MouseButton enum:
+    Convert pygame.Event.button 'int' type to a MouseButton Enum:
     >>> mouse_button = MouseButton.from_event(event)
 
     Print the button state (TRUE) using its name (LEFT) instead of its value (1):
     >>> print(f"Mouse.is_pressed({mouse_button.name}): {Mouse.is_pressed(mouse_button)}")
     Mouse.is_pressed(LEFT): True
+
+    Note the use of 'MouseButton' vs 'MouseButton.name':
+        - 'MouseButton' gets the 'int' value (1, 2, etc.)
+        - 'MouseButton.name' gets the button name ('LEFT', 'MIDDLE', etc.)
     """
     # Store states for all 5 buttons: Pressed (True) and NotPressed (False)
     _state = {button.value: False for button in MouseButton}

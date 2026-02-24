@@ -1,3 +1,53 @@
+# UI
+
+LEFTOFF: I made a Vim shortcut to box a visual selection. Resume making this block diagram.
+
+```
++-------------+
+| Game.loop() |
++---+---------+
+    |
+    |
+    v
++---------------------------+
+| UI.consume_event_queue()  |
++---+-----------------------+
+    |
+    |
+    v
++-------------------------------------+
+| publish(                            |
+|     pygame.event.get(),             |
+|     simplify(pygame.key.get_mods()) |
+|     )                               |
++-------------------------------------+
+```
+
+The `UI` gets events from pygame and *publishes* them to its list of subscribers.
+The list has only one subscriber, which is the callback defined by `Game`.
+*Publish* simply means that `UI` calls this callback.
+
+`UI` does not need access to `Game` to call its callback. A callback is just a
+function that `Game` defines, there is no special syntax to make it a callback.
+The only requirement is that its function signature matches what `UI` is
+expecting. For `UI` to know about this function, `Game` loads `UI` with the
+name of this function in a `UI.subscribe()` method. Now `UI` uses that name to
+call the function.
+
+`UI` is just a thin layer to separate my `Game` code from `pygame`. It is not a
+complete decoupling: my `Game` code still needs to match against the
+`pygame.event.Event` types. But `UI` handles iterating over the `event` queue
+and it handles cleaning up the key modifiers.
+
+I only care about three modifier keys, `Shift`, `Ctrl`, and `Alt`, and I do not
+care which side modifier key (`Left` or `Right`) was pressed. I do not want to
+code for all possible combinations of `Left` or `Right` modifier keys. But
+`pygame` exposes this level of granularity, so to avoid lots of boilerplate
+code, `UI` cleans up the key modifiers before using them in the subscriber
+callback.
+
+*Note: Everything after this is a little out of date.*
+
 # Callbacks Handle Events
 
 Independent of using callbacks or not, this is how the `Game` asks the engine
