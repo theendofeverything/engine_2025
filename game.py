@@ -489,18 +489,6 @@ class Game:
                 log.debug("User action: stop teleport player to mouse")
                 game.input_mapper.ongoing_action.drag_player_is_active = False
 
-    # def _handle_action_for_key_release_during_mouse_drag(self, action: Action) -> None:
-    #     """Handle actions for key release events detected by UI while mouse is click-dragging."""
-    #     log = self.log
-    #     game = self
-    #     match action:
-    #         case Action.STOP_PANNING:
-    #             log.debug("User action: stop panning")
-    #             game.input_mapper.ongoing_action.panning.stop(self)
-    #         case Action.STOP_DRAG_PLAYER:
-    #             log.debug("User action: stop teleport player to mouse")
-    #             game.input_mapper.ongoing_action.drag_player_is_active = False
-
     def update_frame_counters(self) -> None:
         """Update the frame tick counters (animations are clocked by frame ticks).
 
@@ -531,7 +519,6 @@ class Game:
             self.draw_background_crosses()              # Draw application artwork
             self.draw_debug_crosses()                   # Draw debug artwork
 
-    # TODO: THIS IS NOT USED ANYMORE -- MOVE IT OUT AFTER ADDRESSING TODO BELOW
     def draw_background_crosses(self) -> None:
         """Draw some animated shapes in the background.
 
