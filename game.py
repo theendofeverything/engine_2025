@@ -191,7 +191,7 @@ class Game:
 
         # Handle all user interface events in ui.py (keyboard, mouse, panning, zoom)
         self.ui = UI(game=self)
-        self.ui.subscribe(self.ui_callback_to_map_event_to_action)
+        self.ui.subscribe(self.subscriber_map_event_to_action)
 
         # Set the GCS to fit the window size and center the GCS origin in the window.
         self.coord_sys = CoordinateSystem(
@@ -327,13 +327,13 @@ class Game:
         self.renderer.render_all()  # Render all art and HUD
         self.timing.maintain_framerate(fps=60)  # Run at 60 FPS
 
-    def ui_callback_to_map_event_to_action(self, event: pygame.event.Event, kmod: int) -> None:
+    def subscriber_map_event_to_action(self, event: pygame.event.Event, kmod: int) -> None:
         """Map UI events to actions and then pass the action to the action handler.
 
         Usage:
             1. Register with the UI like this:
                 self.ui = UI(game=self, ...)  # Instantiate UI
-                self.ui.subscribe(self.ui_callback_to_map_event_to_action)  # Register callback
+                self.ui.subscribe(self.subscriber_map_event_to_action)  # Register callback
             2. Define actions in input_mapper.py:
                 - InputMapper.key_map
                 - InputMapper.mouse_map
