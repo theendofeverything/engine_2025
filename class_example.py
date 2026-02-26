@@ -6,6 +6,8 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 
+
+# pylint: disable=too-few-public-methods
 class BoilerPlateVector:
     """The usual way to make a class for instantiation has the boilerplate __init__().
 
@@ -18,6 +20,7 @@ class BoilerPlateVector:
     """
     def __init__(self) -> None:
         self.components = [1, 2]
+
 
 class Vector:
     """Class as a global singleton.
@@ -53,7 +56,6 @@ class Vector:
     components: list[int | float] = [1, 2]  # <--- This is a class variable.
 
     @classmethod
-
     def update(cls, components: list[int | float]) -> None:
         """Update my components with new values."""
         cls.components = components
@@ -102,9 +104,10 @@ class AltVector:
     3.0
 
     >>> AltVector().components
-    AltVector(components=[1, 2])
+    [1, 2]
     """
-    components: list[int | float] = field(default_factory=lambda: AltVector([1,2]))  # <--- This is an instance variable.
+    # Since this is a dataclass, this is an instance variable, not a class variable.
+    components: list[int | float] = field(default_factory=lambda: [1, 2])
 
     def sum(self) -> int | float:
         """Return the sum of my components."""
