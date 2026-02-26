@@ -6,6 +6,7 @@ from .drawing_shapes import Line2D
 from .geometry_types import Point2D
 
 
+# NEXT: Try turning Art into a Global Singleton (see class_example.py)
 @dataclass
 class Art:
     """Container for all artwork to render."""

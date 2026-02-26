@@ -11,11 +11,13 @@ How am I doing artwork right now?
 +----------+
 |     Game |
 +----------+
-|          |     +-------+
-|      art | <-- | Art   |
-|          |     +-------+
-|          |     | lines | <-- list[Line2D]
-|          |     +-------+
+|          |     +---------------------------+
+|      art | <-- |              Art          |
+|          |     +---------------------------+
+|          |     | draw_lines(points, color) | <-- Art knows how to draw lines
+|          |     |                           |     and it puts them in 'lines'
+|          |     |                     lines | <-- list[Line2D]
+|          |     +---------------------------+
 |          |
 | entities | <-- dict[str, Entity]
 +----------+
@@ -31,6 +33,9 @@ How am I doing artwork right now?
 |         |     | point_offsets  | <-- list[Vec2D]
 |         |     |         color  | <-- An enum from Colors
 |         |     +----------------+
+|         |
+|  draw() | <--art-- Draw by calling art.draw_lines(points, color)
 +---------+
 ```
 
+`Entity.draw(art)` gives its `points` and `color` to `Art`.
