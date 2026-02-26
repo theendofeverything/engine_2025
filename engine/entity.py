@@ -577,7 +577,7 @@ class Entity:
         origin.y += movement.speed.vec.y
         origin.x += movement.speed.vec.x
 
-    def draw(self, art: Art) -> None:
+    def draw(self) -> None:
         """Draw entity in the GCS. Game must call update() before draw()."""
         artwork = self.artwork
-        art.draw_lines(artwork.animated_points, artwork.color)
+        Art.draw_lines(artwork.animated_points, artwork.color)

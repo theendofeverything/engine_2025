@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 import pygame
 from .drawing_shapes import Line2D
 from .colors import Colors
+from .art import Art
 
 
 @dataclass
@@ -68,7 +69,7 @@ class Renderer:
             for line_p in lines:
                 render_line_to_screen(line_p)
 
-        render_gcs_lines(lines=game.art.lines)
+        render_gcs_lines(lines=Art.lines)
         if game.debug.art.is_visible:
             render_gcs_lines(lines=game.debug.art.lines_gcs)
             render_pcs_lines(lines=game.debug.art.lines_pcs)

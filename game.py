@@ -134,7 +134,6 @@ class Game:
     Game(log=None,
          debug=Debug(...),
          timing=Timing(...),
-         art=Art(...),
          renderer=Renderer(...),
          ui=UI(...),
          coord_sys=CoordinateSystem(...),
@@ -148,7 +147,6 @@ class Game:
     log:        logging.Logger  # log created in main.py
     debug:      Debug = Debug()     # Display debug prints in HUD and overlay debug art
     timing:     Timing = Timing()   # Set up a clock to set frame rate and measure frame period
-    art:        Art = Art()         # Set up all artwork for rendering
     # Instance variables defined in __post_init__()
     renderer:   Renderer = field(init=False)
     ui:         UI = field(init=False)                      # Keyboard, mouse, zoom
@@ -502,14 +500,13 @@ class Game:
     def update_entities(self) -> None:
         """Update the state of all entities based on counters and events."""
         timing = self.timing
-        art = self.art
         for entity in self.entities.values():
             entity.update(timing)
-            entity.draw(art)
+            entity.draw()
 
     def reset_art(self) -> None:
         """Clear out old artwork: application and debug."""
-        self.art.reset()                                # Reset application artwork
+        Art.reset()                                     # Reset application artwork
         self.debug.art.reset()                          # Clear the debug artwork
 
     def draw_remaining_art(self) -> None:
@@ -561,8 +558,8 @@ class Game:
         for cross in crosses:
             for line in cross.lines:
                 # Randomize the line before appending it
-                wiggle_line = self.art.randomize_line(line, wiggle)
-                self.art.lines.append(wiggle_line)
+                wiggle_line = Art.randomize_line(line, wiggle)
+                Art.lines.append(wiggle_line)
 
     def draw_debug_crosses(self) -> None:
         """Draw a debug cross at the origin and at the player."""

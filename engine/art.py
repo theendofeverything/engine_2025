@@ -1,25 +1,21 @@
 """Art is comprised of vertices."""
-from dataclasses import dataclass, field
 import random
 from pygame.color import Color
 from .drawing_shapes import Line2D
 from .geometry_types import Point2D
 
 
-# NEXT: Try turning Art into a Global Singleton (see class_example.py)
-@dataclass
 class Art:
     """Container for all artwork to render."""
-    lines: list[Line2D] = field(default_factory=list)
+    lines: list[Line2D] = []
 
-    def __post_init__(self) -> None:
-        self.reset()
-
-    def reset(self) -> None:
+    @classmethod
+    def reset(cls) -> None:
         """Clear out all artwork."""
-        self.lines = []
+        cls.lines = []
 
-    def randomize_line(self, line: Line2D, wiggle: float = 0.01) -> Line2D:
+    @staticmethod
+    def randomize_line(line: Line2D, wiggle: float = 0.01) -> Line2D:
         """Randomize the start and end points of the line by 'wiggle'.
 
         wiggle (float):
@@ -36,10 +32,11 @@ class Art:
                       color=line.color
                       )
 
-    def draw_lines(self, points: list[Point2D], color: Color) -> None:
+    @classmethod
+    def draw_lines(cls, points: list[Point2D], color: Color) -> None:
         """Draw lines given a list of points."""
         # Draw lines between pairs of points
         for i in range(len(points)-1):
-            self.lines.append(Line2D(points[i], points[i+1], color))
+            cls.lines.append(Line2D(points[i], points[i+1], color))
         # Draw line from last point back to first point
-        self.lines.append(Line2D(points[-1], points[0], color))
+        cls.lines.append(Line2D(points[-1], points[0], color))
