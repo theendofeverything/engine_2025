@@ -46,7 +46,6 @@ import random
 from enum import Enum, auto
 from pygame import Color
 from .geometry_types import Point2D, Vec2D, DirectedLineSeg2D
-# from .drawing_shapes import Shape, Cross
 from .drawing_shapes import Cross, Line2D
 from .timing import Timing
 from .colors import Colors
@@ -191,18 +190,112 @@ class Movement:
                 movement.speed.vec.x = max(movement.speed.vec.x, 0)
 
 
-# Next: use shape: Shape
+class Shape(Enum):
+    """Names of things we draw.
+
+    Basic Enum behavior:
+    >>> shape = Shape.PLAYER
+    >>> shape
+    <Shape.PLAYER: 1>
+    >>> print(shape)
+    Shape.PLAYER
+    >>> type(Shape.PLAYER)
+    <enum 'Shape'>
+
+    Using the Enum to select a shape to instantiate
+    TODO: finish figuring out how to use this enum to select a shape!
+    shapes = {}
+    shapes[Shape.PLAYER] = lambda: Cross()
+    print(shapes[Shape.PLAYER]()) # Need args here!
+    """
+    PLAYER = auto()
+
+
+# TODO: How do I want to control what entities look like? _reset_points() controls that now, but
+# it should just reset the points to their initial locations for the entity, whatever that is.
+# For now that can be determined by a shape. Where should I store the shape? I can just base it
+# for now on the entity_type. So that can stay in _reset_points() for now.
 @dataclass
 class Artwork:
     """Entity points and the offsets to each point that are used in animation."""
-    # shape:          Shape
-    points:         list[Point2D] = field(default_factory=list)
-    point_offsets:  list[Vec2D] = field(default_factory=list)
+    entity:         Entity
     color:          Color = Colors.line
+    points:         list[Point2D] = field(default_factory=lambda: [])
+    point_offsets:  list[Vec2D] = field(default_factory=lambda: [])
 
     def __post_init__(self) -> None:
-        self.points = []
-        self.point_offsets = []
+        entity_type = self.entity.entity_type
+        artwork = self
+        match entity_type:
+            case EntityType.PLAYER:
+                artwork.color = Colors.line_player
+            case EntityType.NPC:
+                artwork.color = Colors.line_debug
+            case EntityType.BACKGROUND_ART:
+                artwork.color = Colors.line
+        self._reset_points()
+        self._initialize_point_offsets()
+
+    def _initialize_point_offsets(self) -> None:
+        artwork = self
+        for _ in artwork.points:
+            artwork.point_offsets.append(Vec2D(0, 0))
+
+    def _reset_points(self) -> None:
+        """Set the artwork vertices back to their non-wiggle values, plus any movement offset."""
+        artwork = self
+        artwork.points = []
+        entity_type = self.entity.entity_type
+        entity = self.entity
+        # TODO: decouple line color from shape description?
+        # I ignore this color anyway and assign it in self.draw()
+        #
+        match entity_type:
+            case EntityType.PLAYER | EntityType.NPC:
+                cross = Cross(
+                        origin=entity.origin,
+                        size=entity.size,
+                        rotate45=True,
+                        color=artwork.color)
+                for line in cross.lines:
+                    artwork.points.append(Point2D(line.start.x, line.start.y))
+                    artwork.points.append(Point2D(line.end.x, line.end.y))
+            case EntityType.BACKGROUND_ART:
+                cross = Cross(
+                        origin=entity.origin,
+                        size=entity.size,
+                        rotate45=False,
+                        color=artwork.color)
+                for line in cross.lines:
+                    artwork.points.append(Point2D(line.start.x, line.start.y))
+                    artwork.points.append(Point2D(line.end.x, line.end.y))
+
+    def animate(self, timing: Timing) -> None:
+        """Animate the entity.
+
+        Animation speed is clocked by Timing.frame_counters['game'].clocked_events[event_name].
+        """
+        # Update points to get new position and remove old offsets before animating new offsets.
+        self._reset_points()
+
+        artwork = self
+        entity = self.entity
+        # Use counter for wiggling animation
+        clocked_event = timing.frame_counters["game"].clocked_events[entity.clocked_event_name]
+        if clocked_event.is_period:
+            # artwork._reset_points()
+            if entity.is_excited:
+                amount_excited = entity.amount_excited.high
+            else:
+                amount_excited = entity.amount_excited.low
+            for offset in artwork.point_offsets:
+                offset.x = random.uniform(-1*amount_excited, amount_excited)
+                offset.y = random.uniform(-1*amount_excited, amount_excited)
+            # for point in artwork.points:
+            #     # TODO: instead of adjusting points here, adjust the amounts to offset each point.
+            #     # Then we always apply those offsets in _reset_points().
+            #     point.x += random.uniform(-1*amount_excited, amount_excited)
+            #     point.y += random.uniform(-1*amount_excited, amount_excited)
 
     @property
     def animated_points(self) -> list[Point2D]:
@@ -211,6 +304,8 @@ class Artwork:
         for point, offset in zip(self.points, self.point_offsets):
             points.append(Point2D(point.x + offset.x, point.y + offset.y))
         return points
+
+    # def randomize_point_offsets(self) -> None:
 
 
 class EntityType(Enum):
@@ -275,84 +370,16 @@ class Entity:
     # amount_excited is proportional to size in __post_init__()
     amount_excited:     AmountExcited = field(default_factory=lambda: AmountExcited())
     size:               float = 0.2
-    artwork:            Artwork = field(default_factory=lambda: Artwork())
+    artwork:            Artwork = field(init=False)
     movement:           Movement = field(default_factory=lambda: Movement())
 
     def __post_init__(self) -> None:
-        match self.entity_type:
-            case EntityType.PLAYER:
-                self.artwork.color = Colors.line_player
-            case EntityType.NPC:
-                self.artwork.color = Colors.line_debug
-            case EntityType.BACKGROUND_ART:
-                self.artwork.color = Colors.line
-        self._reset_points()
-        self._initialize_point_offsets()
+        self.artwork = Artwork(entity=self)
         # Game can override these, but here are the defaults
         self.movement.mass = self.size * 5  # e.g., if size is 0.2, mass is 1
         self.amount_excited.high = self.size / 10
         self.amount_excited.low = self.size / 40
         self.movement.dist_to_follow_entity = self.size * 1
-
-    def _initialize_point_offsets(self) -> None:
-        for _ in self.artwork.points:
-            self.artwork.point_offsets.append(Vec2D(0, 0))
-
-    def animate(self, timing: Timing) -> None:
-        """Animate the entity.
-
-        Animation speed is clocked by Timing.frame_counters['game'].clocked_events[event_name].
-        """
-        # Update points to get new position and remove old offsets before animating new offsets.
-        self._reset_points()
-        # Use counter for wiggling animation
-        clocked_event = timing.frame_counters["game"].clocked_events[self.clocked_event_name]
-        if clocked_event.is_period:
-            # self._reset_points()
-            if self.is_excited:
-                amount_excited = self.amount_excited.high
-            else:
-                amount_excited = self.amount_excited.low
-            for offset in self.artwork.point_offsets:
-                offset.x = random.uniform(-1*amount_excited, amount_excited)
-                offset.y = random.uniform(-1*amount_excited, amount_excited)
-            # for point in self.artwork.points:
-            #     # TODO: instead of adjusting points here, adjust the amounts to offset each point.
-            #     # Then we always apply those offsets in _reset_points().
-            #     point.x += random.uniform(-1*amount_excited, amount_excited)
-            #     point.y += random.uniform(-1*amount_excited, amount_excited)
-
-    # TODO: How do I want to control what entities look like? _reset_points() controls that now, but
-    # it should just reset the points to their initial locations for the entity, whatever that is.
-    # For now that can be determined by a shape. Where should I store the shape? I can just base it
-    # for now on the entity_type. So that can stay in _reset_points() for now.
-    def _reset_points(self) -> None:
-        """Set the artwork vertices back to their non-wiggle values, plus any movement offset."""
-        artwork = self.artwork
-        artwork.points = []
-        entity_type = self.entity_type
-        # TODO: decouple line color from shape description?
-        # I ignore this color anyway and assign it in self.draw()
-        #
-        match entity_type:
-            case EntityType.PLAYER | EntityType.NPC:
-                cross = Cross(
-                        origin=self.origin,
-                        size=self.size,
-                        rotate45=True,
-                        color=artwork.color)
-                for line in cross.lines:
-                    artwork.points.append(Point2D(line.start.x, line.start.y))
-                    artwork.points.append(Point2D(line.end.x, line.end.y))
-            case EntityType.BACKGROUND_ART:
-                cross = Cross(
-                        origin=self.origin,
-                        size=self.size,
-                        rotate45=False,
-                        color=artwork.color)
-                for line in cross.lines:
-                    artwork.points.append(Point2D(line.start.x, line.start.y))
-                    artwork.points.append(Point2D(line.end.x, line.end.y))
 
     def update(self, timing: Timing) -> None:
         """Update entity state based on the Timing -> Ticks and UI -> UIKeys.
@@ -400,7 +427,8 @@ class Entity:
                 pass
         # Update animation
         if not timing.frame_counters["game"].is_paused:
-            self.animate(timing)
+            artwork = self.artwork
+            artwork.animate(timing)
 
     def update_player_forces_from_ui(self) -> None:
         """Update movement state based on UI input from arrow keys."""
