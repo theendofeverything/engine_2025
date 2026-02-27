@@ -90,6 +90,15 @@ from dataclasses import dataclass, field
     components: list[int | float] = field(default_factory=lambda: [1, 2])
 ```
 
+Note: If we needed to calculate the default value, we would use a `__post_init__()`:
+
+```python
+    components: list[int | float] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.components = [1, 2]  # These values would be calculated
+```
+
 The next problem is that we can no longer access `components` with this syntax:
 
 ```python
