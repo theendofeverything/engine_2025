@@ -6,7 +6,7 @@ There are two coordinate systems:
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
-from gamelibs.ongoing_action import Panning
+from gamelibs.input_mapper import Panning
 from .geometry_types import Vec2D, Point2D
 from .geometry_operators import Matrix2DH
 
@@ -23,7 +23,7 @@ class CoordinateSystemScalingFactors:
             Scaling factor to transform from units of PCS to GCS.
             This is the inverse of scale_gcs_to_pcs.
 
-    >>> coord_sys = CoordinateSystem(window_size=Vec2D(16, 9), panning=Panning())
+    >>> coord_sys = CoordinateSystem(window_size=Vec2D(16, 9))
     >>> coord_sys.scaling.gcs_to_pcs
     8.0
     >>> coord_sys.scaling.pcs_to_gcs
@@ -62,7 +62,7 @@ class CoordinateSystemMatrices:
                             coord_sys.matrix.pcs_to_gcs
                             )
 
-    >>> coord_sys = CoordinateSystem(window_size=Vec2D(16, 9), panning=Panning())
+    >>> coord_sys = CoordinateSystem(window_size=Vec2D(16, 9))
 
     The matrix uses column vectors.
     The affine transformation matrix is the top-left 2x2.
@@ -98,12 +98,9 @@ class CoordinateSystemMatrices:
 class CoordinateSystem:
     """Game attributes for the coordinate systems.
 
-    >>> coord_sys = CoordinateSystem(window_size=Vec2D(20*16, 20*9), panning=Panning())
+    >>> coord_sys = CoordinateSystem(window_size=Vec2D(20*16, 20*9))
     >>> print(coord_sys)
     CoordinateSystem(window_size=Vec2D(x=320, y=180),
-                     panning=Panning(begin=Point2D(x=0, y=0),
-                        end=Point2D(x=0, y=0),
-                        is_active=False),
                      gcs_width=2,
                      pcs_origin=Point2D(x=160.0, y=90.0),
                      scaling=CoordinateSystemScalingFactors(coord_sys=...),
@@ -114,9 +111,10 @@ class CoordinateSystem:
     xfm(Vec2D, Matrix2DH) -> Vec2D:
         Transform vector between coordinate systems using a Matrix2DH from
         CoordinateSystemMatrices.
-        >>> coord_sys = CoordinateSystem(window_size=Vec2D(20*16, 20*9), panning=Panning())
         >>> coord_sys.xfm(Vec2D(20*16, 20*9), coord_sys.matrix.pcs_to_gcs)
         Vec2D(x=1.0, y=-0.5625)
+
+        >>> coord_sys = CoordinateSystem(window_size=Vec2D(20*16, 20*9))
 
         See xfm() docstring for explanation and more examples.
 
@@ -152,8 +150,6 @@ class CoordinateSystem:
             Mouse panning is included in the origin offset when calculating 'translation'.
     """
     window_size: Vec2D                                  # Track window size
-    # This will eventually move out to game_libs, for now Panning is "Panning"
-    panning:     "Panning"  # Track UI panning: in game __post_init__() do 'panning=self.ui.panning'
     gcs_width:   float = 2                              # Initial value GCS -1:1 fills screen width
 
     # Instance variables defined in __post_init__()
@@ -183,8 +179,8 @@ class CoordinateSystem:
                 - read "<--" as "thing-on-left uses thing-on-right"
                 - panning.vector = panning.end - panning.begin
         """
-        return Vec2D(x=self.pcs_origin.x + self.panning.vector.x,
-                     y=self.pcs_origin.y + self.panning.vector.y)
+        return Vec2D(x=self.pcs_origin.x + Panning.vector().x,
+                     y=self.pcs_origin.y + Panning.vector().y)
 
     @staticmethod
     def xfm(v: Vec2D, mat: Matrix2DH) -> Vec2D:
@@ -251,12 +247,12 @@ class CoordinateSystem:
         |    0     0      1|
 
         Dummy coordinate system:
-        >>> coord_sys = CoordinateSystem(window_size=Vec2D(0, 0), panning=Panning())
+        >>> coord_sys = CoordinateSystem(window_size=Vec2D(0, 0))
         >>> coord_sys.xfm(v, xfm)
         Vec2D(x=5, y=-5)
 
         Example 1A: Redo example 1 using the GCS to PCS matrix calculated by CoordinateSystem.
-        >>> coord_sys = CoordinateSystem(window_size=Vec2D(16, 9), panning=Panning())
+        >>> coord_sys = CoordinateSystem(window_size=Vec2D(16, 9))
         >>> coord_sys.pcs_origin = Point2D(0, 0) # Put origin at topleft to eliminate translation
         >>> print(coord_sys.matrix.gcs_to_pcs)
         |  8.0     0      0|
@@ -274,7 +270,7 @@ class CoordinateSystem:
         |    0     0      1|
 
         Dummy coordinate system
-        >>> coord_sys = CoordinateSystem(window_size=Vec2D(0, 0), panning=Panning())
+        >>> coord_sys = CoordinateSystem(window_size=Vec2D(0, 0))
         >>> coord_sys.xfm(v, xfm)
         Vec2D(x=3, y=4)
 
@@ -286,7 +282,7 @@ class CoordinateSystem:
         Note:
             The vector is different from Example 2 because matrix.gcs_to_pcs flips the y-axis
             direction.
-        >>> coord_sys = CoordinateSystem(window_size=Vec2D(2, 2), panning=Panning())
+        >>> coord_sys = CoordinateSystem(window_size=Vec2D(2, 2))
         >>> coord_sys.pcs_origin = Point2D(2, 3) # Put origin at 2,3 to show translation
         >>> print(coord_sys.matrix.gcs_to_pcs)
         |  1.0     0      2|
@@ -303,12 +299,12 @@ class CoordinateSystem:
         |    0     0      1|
 
         Dummy coordinate system
-        >>> coord_sys = CoordinateSystem(window_size=Vec2D(0, 0), panning=Panning())
+        >>> coord_sys = CoordinateSystem(window_size=Vec2D(0, 0))
         >>> coord_sys.xfm(v, xfm)
         Vec2D(x=7, y=-2)
 
         Example 3A: Redo example 3 using the GCS to PCS matrix calculated by CoordinateSystem.
-        >>> coord_sys = CoordinateSystem(window_size=Vec2D(16, 9), panning=Panning())
+        >>> coord_sys = CoordinateSystem(window_size=Vec2D(16, 9))
         >>> print(coord_sys.matrix.gcs_to_pcs)
         |  8.0     0    8.0|
         |    0  -8.0    4.5|

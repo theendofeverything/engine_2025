@@ -7,12 +7,154 @@ Note that pygame has two different codes for modifier keys depending on usage. F
 """
 
 from __future__ import annotations
-from dataclasses import dataclass, field
 from enum import Enum, IntEnum, auto
 import sys
 import logging
 import pygame
-from .ongoing_action import OngoingAction
+from engine.geometry_types import Point2D, Vec2D, DirectedLineSeg2D
+
+
+class Panning:
+    """Track mouse panning state.
+
+    Attributes:
+        is_active (bool):
+            Panning is in two states: either active (is_active=True) or inactive
+            (is_active=False).
+        begin (Point2D):
+            Position in the pixel coordinate system when panning transitioned to
+            the active state. While in the active state, 'begin' does not
+            change.
+        end (Point2D):
+            Latest mouse position in the pixel coordinate system while panning:
+            the game loads 'end' with the mouse position on every iteration of
+            the game loop.
+        vector (Vec2D):
+            Amount of mouse pan, obtained from end - begin.
+            The 'Panning.vector()' is picked up during rendering, as follows:
+                When the game loop renders drawing entities, it converts entity
+                coordinates from GCS to PCS:
+                    coord_sys.xfm(v:Vec2D, coord_sys.matrix.gcs_to_pcs)
+
+                That coordinate transform matrix is calculated using the origin
+                offset vector:
+                    coord_sys.translation
+
+                And coord_sys.translation is calculated using the
+                'Panning.vector()' (this attribute).
+
+    >>> mouse_pos = (123, 456)                          # Position when button 1 was pressed
+    >>> Panning.begin = Point2D.from_tuple(mouse_pos)   # Track panning begin position
+    >>> mouse_pos = (246, 456)                          # Position later while still panning
+    >>> Panning.end = Point2D.from_tuple(mouse_pos)     # Track latest panning position
+    >>> Panning.vector()                                # Report the latest panning vector
+    Vec2D(x=123, y=0)
+    """
+    begin:                  Point2D = Point2D(0, 0)     # Dummy initial value
+    end:                    Point2D = Point2D(0, 0)     # Zero-out the panning vector
+    is_active:              bool = False
+
+    @classmethod
+    def vector(cls) -> Vec2D:
+        """Return the panning vector: describes amount of mouse pan."""
+        return Vec2D.from_points(start=cls.begin, end=cls.end)
+
+    @classmethod
+    def start(cls, position: tuple[int | float, int | float]) -> None:
+        """User started panning."""
+        panning = cls
+        panning.is_active = True
+        panning.begin = Point2D.from_tuple(position)
+
+    @classmethod
+    def stop(cls, game: "Game") -> None:
+        """User stopped panning."""
+        panning = cls
+        panning.is_active = False
+        game.coord_sys.pcs_origin = game.coord_sys.translation.as_point()  # Set new origin
+        panning.begin = panning.end  # Zero-out the panning vector
+
+    @classmethod
+    def update(cls) -> None:
+        """Update 'panning.end': the latest point the mouse has panned to.
+
+        Dependency chain depicting how panning manifests as translating the game
+        view on the screen:
+            renderer <-- coord_sys.matrix.gcs_to_pcs <-- coord_sys.translation <-- Panning.vector()
+
+            In the above dependency chain:
+                - read "<--" as "thing-on-left uses thing-on-right"
+                - Panning.vector() = Panning.end - Panning.begin
+        """
+        panning = cls
+        if panning.is_active:
+            mouse_pos = pygame.mouse.get_pos()
+            panning.end = Point2D.from_tuple(mouse_pos)
+
+
+class OngoingAction:
+    """Actions that last for multiple frames such as click-drag.
+
+    - Panning is a Ctrl+Click-Drag
+    - Teleport (or pulling on the player) is a Shift+Click-Drag
+
+    The key modifiers and specific mouse buttons might change. But these will always be a
+    click-drag. It is simpler to just query the mouse position here than to use the mouse motion
+    events.
+
+    Details
+    OngoingAction is a helper struct to organize Game.
+
+    OngoingAction tracks panning and similar mouse actions:
+        - mouse panning state -- see Panning
+        - click-drag player teleport -- OngoingAction.drag_player_is_active
+
+    Tracking state is necessary for these sustained actions. Just handling events is insufficient.
+    For example, while Shift + left-mouse-button are held, drag the player around the screen. We can
+    detect when Shift is pressed and released and when the left-mouse-button is pressed and
+    released. But we need to track those states to know that the action is ongoing in the game loop
+    iterations after the press and before the release.
+
+    Usage:
+        from gamelibs.ongoing_action import OngoingAction
+
+        @dataclass
+        class Game:
+            ...
+            ongoing_action: OngoingAction = OngoingAction()
+            ...
+            def loop(self, log: logging.Logger) -> None:
+                ...
+                self.ui.consume_event_queue(log)  # Iterate over all user events
+                self.ongoing_action.update(self)
+    """
+
+    drag_player_is_active: bool = False
+
+    def update(self, game: "Game") -> None:
+        """Update all ongoing actions."""
+        ongoing_action = self
+        Panning.update()
+        ongoing_action.drag_player(game)
+
+    @staticmethod
+    def drag_player(game: "Game") -> None:
+        """Teleport player to mouse, like pulling on player and NPCs."""
+        # if game.input_mapper.ongoing_action.drag_player_is_active:
+        if InputMapper.ongoing_action.drag_player_is_active:
+            # Get mouse position in game coordinates
+            mouse_p = Point2D.from_tuple(pygame.mouse.get_pos())
+            mouse_g = game.coord_sys.xfm(
+                    mouse_p.as_vec(),
+                    game.coord_sys.matrix.pcs_to_gcs
+                    ).as_point()
+            player_to_mouse = DirectedLineSeg2D(
+                    start=game.entities["player"].origin,
+                    end=mouse_g)
+            # Teleport NPC2 to mouse
+            game.entities["cross2"].origin = player_to_mouse.parametric_point(1.0)
+            # Teleport NPC1 to half-way between player and NPC2
+            game.entities["cross1"].origin = player_to_mouse.parametric_point(0.5)
 
 
 class Action(Enum):
@@ -147,28 +289,20 @@ class KeyModifier(Enum):
         """Get a KeyModifier from the pygame kmod value returned by UI.kmod_simplify(kmod)."""
         return cls(kmod)
 
-
-
-
-
 # pylint: disable=line-too-long
-@dataclass
 class InputMapper:
     """Map inputs (such as key presses) to actions.
 
     key_map: {(key, keymod, keydirection): Action}
     mouse_map: {(mousebutton, keymod, buttondirection): Action}
 
-    >>> input_mapper = InputMapper()
-    >>> key_map = input_mapper.key_map
-    >>> key_map
+    >>> InputMapper.key_map
     {(99, <KeyModifier.NO_MODIFIER: 0>, <KeyDirection.DOWN: 2>): <Action.CLEAR_DEBUG_SNAPSHOT_ARTWORK: 2>,
     (100, <KeyModifier.NO_MODIFIER: 0>, <KeyDirection.DOWN: 2>): <Action.TOGGLE_DEBUG_ART_OVERLAY: 3>,
     (98, <KeyModifier.SHIFT: 3>, <KeyDirection.DOWN: 2>): <Action.CONTROLS_ADJUST_B_LESS: 11>,
     ...
 
-    >>> mouse_map = input_mapper.mouse_map
-    >>> mouse_map
+    >>> InputMapper.mouse_map
     {(<MouseButton.LEFT: 1>, <KeyModifier.CTRL: 192>, <ButtonDirection.DOWN: 2>): <Action.START_PANNING: 24>,
     (<MouseButton.LEFT: 1>, <KeyModifier.CTRL: 192>, <ButtonDirection.UP: 1>): <Action.STOP_PANNING: 25>,
     (<MouseButton.MIDDLE: 2>, <KeyModifier.NO_MODIFIER: 0>, <ButtonDirection.DOWN: 2>): <Action.START_PANNING: 24>,
@@ -182,26 +316,7 @@ class InputMapper:
                         KeyDirection  # enum -- UP or DOWN
                         ],
                   Action  # enum
-                  ] = field(default_factory=dict)
-    mouse_map: dict[tuple[MouseButton,  # enum wrapper on pygame event.button int
-                          KeyModifier,  # enum wrapper on pygame kmod
-                          ButtonDirection  # enum -- UP or DOWN
-                          ],
-                    Action  # enum
-                    ] = field(default_factory=dict)
-
-    # pylint: disable=line-too-long
-    def __post_init__(self) -> None:
-        self.mouse_map = {
-            (MouseButton.LEFT,   KeyModifier.PANNING,     ButtonDirection.DOWN): Action.START_PANNING,
-            (MouseButton.LEFT,   KeyModifier.PANNING,     ButtonDirection.UP):   Action.STOP_PANNING,
-            (MouseButton.MIDDLE, KeyModifier.NO_MODIFIER, ButtonDirection.DOWN): Action.START_PANNING,
-            (MouseButton.MIDDLE, KeyModifier.NO_MODIFIER, ButtonDirection.UP):   Action.STOP_PANNING,
-            (MouseButton.LEFT,   KeyModifier.SHIFT,    ButtonDirection.DOWN):    Action.START_DRAG_PLAYER,
-            (MouseButton.LEFT,   KeyModifier.SHIFT,    ButtonDirection.UP):      Action.STOP_DRAG_PLAYER,
-            }
-
-        self.key_map = {
+                  ] = {
             (pygame.K_c,      KeyModifier.NO_MODIFIER, KeyDirection.DOWN):   Action.CLEAR_DEBUG_SNAPSHOT_ARTWORK,
             (pygame.K_d,      KeyModifier.NO_MODIFIER, KeyDirection.DOWN):   Action.TOGGLE_DEBUG_ART_OVERLAY,
             (pygame.K_b,      KeyModifier.SHIFT,       KeyDirection.DOWN):   Action.CONTROLS_ADJUST_B_LESS,
@@ -230,21 +345,35 @@ class InputMapper:
             (pygame.K_RSHIFT, KeyModifier.NO_MODIFIER, KeyDirection.UP):     Action.STOP_DRAG_PLAYER,
             (pygame.K_LSHIFT, KeyModifier.NO_MODIFIER, KeyDirection.UP):     Action.STOP_DRAG_PLAYER,
             }
+    # pylint: disable=line-too-long
+    mouse_map: dict[tuple[MouseButton,  # enum wrapper on pygame event.button int
+                          KeyModifier,  # enum wrapper on pygame kmod
+                          ButtonDirection  # enum -- UP or DOWN
+                          ],
+                    Action  # enum
+                    ] = {
+            (MouseButton.LEFT,   KeyModifier.PANNING,     ButtonDirection.DOWN): Action.START_PANNING,
+            (MouseButton.LEFT,   KeyModifier.PANNING,     ButtonDirection.UP):   Action.STOP_PANNING,
+            (MouseButton.MIDDLE, KeyModifier.NO_MODIFIER, ButtonDirection.DOWN): Action.START_PANNING,
+            (MouseButton.MIDDLE, KeyModifier.NO_MODIFIER, ButtonDirection.UP):   Action.STOP_PANNING,
+            (MouseButton.LEFT,   KeyModifier.SHIFT,    ButtonDirection.DOWN):    Action.START_DRAG_PLAYER,
+            (MouseButton.LEFT,   KeyModifier.SHIFT,    ButtonDirection.UP):      Action.STOP_DRAG_PLAYER,
+            }
 
+    @classmethod
     def action_for_key_event(
-            self,
+            cls,
             log: logging.Logger,
             event: pygame.event.Event,
             kmod: int
             ) -> Action | None:
         """Return the Action (enum) matching this key event."""
-        input_mapper = self
         match event.type:
             case pygame.KEYDOWN: key_direction = KeyDirection.DOWN
             case pygame.KEYUP: key_direction = KeyDirection.UP
             case _: sys.exit()  # Should never happen!
         log.debug(f"{key_direction}: {pygame.key.name(event.key)}")
-        action = input_mapper.key_map.get(
+        action = cls.key_map.get(
                 (event.key,
                  KeyModifier.from_kmod(kmod),
                  key_direction)
@@ -252,14 +381,14 @@ class InputMapper:
         log.debug(f"action: {action}")
         return action
 
+    @classmethod
     def action_for_mouse_button_event(
-            self,
+            cls,
             log: logging.Logger,
             event: pygame.event.Event,
             kmod: int
             ) -> Action | None:
         """Return the Action (enum) matching this mouse button event."""
-        input_mapper = self
         match event.type:
             case pygame.MOUSEBUTTONDOWN:
                 button_direction = ButtonDirection.DOWN
@@ -273,7 +402,7 @@ class InputMapper:
                   f"pos: {event.pos}, ({type(event.pos[0])}), "
                   f"event.button: {event.button}, "
                   f"Mouse.is_pressed({mouse_button.name}): {Mouse.is_pressed(mouse_button)}")
-        action = input_mapper.mouse_map.get(
+        action = cls.mouse_map.get(
                 (mouse_button,
                  KeyModifier.from_kmod(kmod),
                  button_direction)

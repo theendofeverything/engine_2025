@@ -11,7 +11,7 @@ from engine.coord_sys import CoordinateSystem
 from engine.geometry_types import Point2D, Vec2D
 from engine.colors import Colors
 from engine.drawing_shapes import Line2D
-from .input_mapper import Mouse, MouseButton
+from .input_mapper import Mouse, MouseButton, Panning
 
 FILE = pathlib.Path(__file__).name
 
@@ -165,20 +165,19 @@ class DebugGame:
     def panning(self, show_in_hud: bool) -> None:
         """Draw debug art to show panning and display state/values in HUD"""
         debug = self.game.debug
-        panning = self.game.input_mapper.ongoing_action.panning
         if not show_in_hud: return
         coord_sys = self.game.coord_sys
-        debug.hud.print(f"|\n+- UI -> Panning (Ctrl+Left-Click-Drag): {panning.is_active} ({FILE})")
-        debug.hud.print(f"|        +- .begin: {panning.begin.fmt(0.0)}")
-        debug.hud.print(f"|        +- .end: {panning.end.fmt(0.0)}")
-        debug.hud.print(f"|        +- .vector: {panning.vector.fmt(0.0)}")
+        debug.hud.print(f"|\n+- Panning (Ctrl+Left-Click-Drag): {Panning.is_active} ({FILE})")
+        debug.hud.print(f"|        +- .begin: {Panning.begin.fmt(0.0)}")
+        debug.hud.print(f"|        +- .end: {Panning.end.fmt(0.0)}")
+        debug.hud.print(f"|        +- .vector: {Panning.vector().fmt(0.0)}")
         debug.hud.print("|           +- Panning updates the coord_sys:")
         debug.hud.print(f"|              +- coord_sys.pcs_origin:  {coord_sys.pcs_origin}")
         debug.hud.print(f"|              +- coord_sys.translation: {coord_sys.translation} = "
                         "pcs_origin + .vector")
-        if panning.is_active:
+        if Panning.is_active:
             debug.art.lines_pcs.append(
-                    Line2D(start=panning.begin, end=panning.end, color=Colors.panning))
+                    Line2D(start=Panning.begin, end=Panning.end, color=Colors.panning))
 
     def entities(self, show_in_hud: bool) -> None:
         """Show important attrs for every entity."""

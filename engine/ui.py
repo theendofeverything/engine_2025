@@ -18,8 +18,8 @@ Events:
 
 User actions:
     Panning:
-        See 'OngoingAction.panning.start()'
-        See 'OngoingAction.panning.stop()'
+        See 'Panning.start()'
+        See 'Panning.stop()'
     Zoom:
         See 'handle_mousewheel_events()', 'zoom_out()', and 'zoom_in()'.
     Press 'q': Quit.

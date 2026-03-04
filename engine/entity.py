@@ -210,6 +210,19 @@ class Shape(Enum):
     """
     PLAYER = auto()
 
+# class EntityShapeMapper:
+#     """This is where I define what each entity looks like.
+#
+#     Pass in entity and get the shape name.
+#     """
+
+# class ShapeDefines:
+#     """Define how to draw all shapes here.
+
+#     This has a dict of shape names and the functions to call that return a list of points that
+#     define that shape.
+#     """
+
 
 # TODO: How do I want to control what entities look like? _reset_points() controls that now, but
 # it should just reset the points to their initial locations for the entity, whatever that is.
