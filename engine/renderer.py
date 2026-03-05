@@ -5,6 +5,7 @@ import pygame
 from .drawing_shapes import Line2D
 from .colors import Colors
 from .art import Art
+from .debug import Debug
 
 
 @dataclass
@@ -34,10 +35,9 @@ class Renderer:
 
     def render_all(self) -> None:
         """Called from the game loop."""
-        game = self.game
         self.window_surface.fill(Colors.background)
         self.render_shapes()
-        if game.debug.hud.is_visible:
+        if Debug.hud.is_visible:
             self.render_debug_hud()
         self.window.flip()
 
@@ -70,20 +70,20 @@ class Renderer:
                 render_line_to_screen(line_p)
 
         render_gcs_lines(lines=Art.lines)
-        if game.debug.art.is_visible:
-            render_gcs_lines(lines=game.debug.art.lines_gcs)
-            render_pcs_lines(lines=game.debug.art.lines_pcs)
-            render_gcs_lines(lines=game.debug.art.snapshots)
+        if Debug.art.is_visible:
+            render_gcs_lines(lines=Debug.art.lines_gcs)
+            render_pcs_lines(lines=Debug.art.lines_pcs)
+            render_gcs_lines(lines=Debug.art.snapshots)
 
     def render_debug_hud(self) -> None:
         """Display values in the Debug HUD."""
         game = self.game
-        font = pygame.font.Font(game.debug_font, game.debug.hud.font_size.value)
+        font = pygame.font.Font(game.debug_font, Debug.hud.font_size.value)
         pos = (0, 0)
 
         # Iterate over lines of debug HUD text using debug.hud.lines.
         # Generate a texture for each line and blit that texture to the OS window.
-        for i, line in enumerate(game.debug.hud.lines):
+        for i, line in enumerate(Debug.hud.lines):
             text_surface = font.render(line, True, Colors.text)
             self.window_surface.blit(
                     text_surface,

@@ -147,17 +147,17 @@ class DebugHud:
         self._text = ""
 
 
-@dataclass
+# @dataclass
+# pylint: disable=too-few-public-methods
 class Debug:
     """Debug messages in the HUD and debug artwork."""
     hud:                    DebugHud = DebugHud()
     art:                    DebugArt = DebugArt()
-    snapshots:              dict[str, str] = field(init=False)
+    # snapshots:              dict[str, str] = field(init=False)
+    snapshots:              dict[str, str] = {}
 
-    def __post_init__(self) -> None:
-        self.snapshots = {}
-
-    def display_snapshots_in_hud(self) -> None:
+    @classmethod
+    def display_snapshots_in_hud(cls) -> None:
         """Display variable snapshots in the HUD.
 
         Variable snapshots are for displaying variables in the HUD for code that doesn't run on
@@ -192,8 +192,8 @@ class Debug:
         |
         ...
         """
-        snapshots = self.snapshots
-        hud = self.hud
+        snapshots = cls.snapshots
+        hud = cls.hud
         hud.print("\nSnapshots")
         for msg in snapshots.values():
             hud.print(f"|\n+- {msg}")

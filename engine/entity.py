@@ -45,14 +45,14 @@ import pathlib
 import random
 from enum import Enum, auto
 from pygame import Color
+# from src.game import Game
+from gamelibs.debug_game import DebugGame
 from .geometry_types import Point2D, Vec2D, DirectedLineSeg2D
 from .drawing_shapes import Cross, Line2D
 from .timing import Timing
 from .colors import Colors
 from .art import Art
 from .debug import Debug
-# from ..gamelibs.debug_game import DebugGame
-# from ..game import Game
 
 
 FILE = pathlib.Path(__file__).name
@@ -358,11 +358,11 @@ class Entity:
 
     >>> entities: dict[str, "Entity"] = {}
 
-    > entity = Entity(debug=Debug(), debug_game=DebugGame(), entities=entities,
+    > entity = Entity(debug_game=DebugGame(), entities=entities,
     ... entity_type=EntityType.BACKGROUND_ART, clocked_event_name = "period_3")
 
     > entity
-    Entity(debug=Debug(hud=..., art=...), debug_game=DebugGame(...), entities={},
+    Entity(debug_game=DebugGame(...), entities={},
         entity_type=<EntityType...>,
         entity_name='...',
         clocked_event_name='period_3',
@@ -372,7 +372,6 @@ class Entity:
         artwork=Artwork(...),
         movement=Movement(...))
     """
-    debug:              Debug
     debug_game:         "DebugGame"
     entities:           dict[str, Entity]               # Give each entity access to all others
     entity_type:        EntityType
@@ -504,7 +503,7 @@ class Entity:
             # Calculate displacement vector (displacement of NPC from the entity)
             from_entity_to_me = DirectedLineSeg2D(start=entity.origin, end=self.origin)
             if debug:
-                self.debug.art.lines_gcs.append(
+                Debug.art.lines_gcs.append(
                         Line2D(
                             start=from_entity_to_me.start,
                             end=from_entity_to_me.end,
@@ -556,7 +555,7 @@ class Entity:
                     (force.x < -force_feel) or (force.y < -force_feel))
 
             if debug:
-                hud = self.debug.hud
+                hud = Debug.hud
 
                 def debug_npc_forces() -> None:
                     hud.print("|")
@@ -593,7 +592,7 @@ class Entity:
         entity_name = self.entity_name
         # if debug:
         if debug and (entity_name == "bgnd1"):
-            hud = self.debug.hud
+            hud = Debug.hud
 
             def debug_npc_forces() -> None:
                 hud.print("|")

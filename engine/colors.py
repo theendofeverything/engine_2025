@@ -8,13 +8,8 @@ from pygame.color import Color
 class Colors:
     """Color names
 
-    Use as a name-spaced constant:
+    Do not instantiate. Use as a name-spaced constant:
     >>> Colors.text
-    Color(255, 255, 255, 255)
-
-    Or create an instance and use as a constant:
-    >>> colors = Colors()
-    >>> colors.text
     Color(255, 255, 255, 255)
     """
     background:     Color = Color(30, 60, 90)

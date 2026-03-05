@@ -132,7 +132,6 @@ class Game:
     >>> game = Game(log=None)
     >>> game
     Game(log=None,
-         debug=Debug(...),
          timing=Timing(...),
          renderer=Renderer(...),
          ui=UI(...),
@@ -145,7 +144,6 @@ class Game:
     ###################################
     # Instance variables defined in the implicit __init__() of dataclass
     log:        logging.Logger  # log created in main.py
-    debug:      Debug = Debug()     # Display debug prints in HUD and overlay debug art
     timing:     Timing = Timing()   # Set up a clock to set frame rate and measure frame period
     # Instance variables defined in __post_init__()
     renderer:   Renderer = field(init=False)
@@ -232,21 +230,18 @@ class Game:
         # origin: set initial location
         self.entities = {}
         self.entities["player"] = Entity(
-                debug=self.debug,
                 debug_game=self.debug_game,
                 entities=self.entities,
                 entity_type=EntityType.PLAYER,
                 clocked_event_name="period_3",
                 )
         self.entities["cross1"] = Entity(
-                debug=self.debug,
                 debug_game=self.debug_game,
                 entities=self.entities,
                 entity_type=EntityType.NPC,
                 clocked_event_name="period_3",
                 )
         self.entities["cross2"] = Entity(
-                debug=self.debug,
                 debug_game=self.debug_game,
                 entities=self.entities,
                 entity_type=EntityType.NPC,
@@ -267,7 +262,6 @@ class Game:
                 number = 1 + j + (i*num_crosses_x)
                 name = f"bgnd{number}"
                 self.entities[name] = Entity(
-                        debug=self.debug,
                         debug_game=self.debug_game,
                         entities=self.entities,
                         entity_type=EntityType.BACKGROUND_ART,
@@ -301,7 +295,7 @@ class Game:
     def loop(self, log: logging.Logger) -> None:
         """Loop until the user quits."""
         # Prologue: reset debug
-        self.debug.hud.reset()  # Clear the debug HUD
+        Debug.hud.reset()  # Clear the debug HUD
         self.debug_game.hud_begin()  # Load first values in debug HUD
         self.debug_game.fps(True)
         self.debug_game.window_size(True)
@@ -319,7 +313,7 @@ class Game:
         # Epilogue: update debug HUD, display, and timing
         self.update_frame_counters()  # Advance frame-based ticks
         self.debug_game.frame_counters(True)
-        self.debug.display_snapshots_in_hud()  # Print snapshots in HUD last
+        Debug.display_snapshots_in_hud()  # Print snapshots in HUD last
         self.renderer.render_all()  # Render all art and HUD
         self.timing.maintain_framerate(fps=60)  # Run at 60 FPS
 
@@ -402,30 +396,30 @@ class Game:
                 sys.exit()
             case Action.CLEAR_DEBUG_SNAPSHOT_ARTWORK:
                 log.debug("User action: clear debug snapshot artwork.")
-                game.debug.art.reset_snapshots()
+                Debug.art.reset_snapshots()
             case Action.TOGGLE_FULLSCREEN:
                 log.debug("User action: toggle fullscreen.")
                 game.renderer.toggle_fullscreen()
             case Action.TOGGLE_DEBUG_HUD:
                 log.debug("User action: toggle debug HUD.")
-                game.debug.hud.is_visible = not game.debug.hud.is_visible
+                Debug.hud.is_visible = not Debug.hud.is_visible
             case Action.TOGGLE_PAUSE:
                 log.debug("User action: toggle pause.")
                 game.timing.frame_counters["game"].toggle_pause()
                 game_is_paused = game.timing.frame_counters["game"].is_paused
-                game.debug.snapshots["pause"] = ("game.timing.frame_counters['game'].is_paused: "
-                                                 f"{game_is_paused}")
+                Debug.snapshots["pause"] = ("game.timing.frame_counters['game'].is_paused: "
+                                            f"{game_is_paused}")
             case Action.TOGGLE_DEBUG_ART_OVERLAY:
                 log.debug("User action: toggle debug art overlay.")
-                game.debug.art.is_visible = not game.debug.art.is_visible
+                Debug.art.is_visible = not Debug.art.is_visible
             case Action.FONT_SIZE_INCREASE:
-                game.debug.hud.font_size.increase()
+                Debug.hud.font_size.increase()
                 log.debug("User action: Increase debug HUD font size."
-                          f"Font size: {game.debug.hud.font_size.value}.")
+                          f"Font size: {Debug.hud.font_size.value}.")
             case Action.FONT_SIZE_DECREASE:
-                game.debug.hud.font_size.decrease()
+                Debug.hud.font_size.decrease()
                 log.debug(f"User action: Decrease debug HUD font size."
-                          f"Font size: {game.debug.hud.font_size.value}.")
+                          f"Font size: {Debug.hud.font_size.value}.")
             # TEMPORARY CODE FOR WORKING ON NPC MOTION
             case Action.CONTROLS_ADJUST_K_LESS:
                 game.debug_game.controls["k"] /= 2
@@ -502,7 +496,7 @@ class Game:
     def reset_art(self) -> None:
         """Clear out old artwork: application and debug."""
         Art.reset()                                     # Reset application artwork
-        self.debug.art.reset()                          # Clear the debug artwork
+        Debug.art.reset()                          # Clear the debug artwork
 
     def draw_remaining_art(self) -> None:
         """Update art and debug art"""
@@ -571,4 +565,4 @@ class Game:
         # Copy the line artwork to debug.art.lines
         for cross in crosses:
             for line in cross.lines:
-                self.debug.art.lines_gcs.append(line)
+                Debug.art.lines_gcs.append(line)
