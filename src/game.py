@@ -55,7 +55,7 @@
 * [x] Replace code using 'pygame.display'
     * Use the pygame-ce version: 'window = pygame.Window', 'window_surface = window.get_surface()'
     * Then 'pygame.display.flip()' becomes 'window.flip()'
-    * Then 'pygame.display.get_window_size()' becomes 'game.renderer.window.size'
+    * Then 'pygame.display.get_window_size()' becomes 'Context.renderer.window.size'
 * [ ] Set up a Makefile recipe to run doctests only for the active Vim buffer
 * [x] Control the speed of the animation using a ClockedEvent.
     * [ ] Animation state persists across frames, even when the Entity is moving
@@ -134,7 +134,6 @@ class Game:
     >>> game
     Game(log=None,
          timing=Timing(...),
-         renderer=Renderer(...),
          ui=UI(...),
          coord_sys=CoordinateSystem(...),
          entities={...})
@@ -146,8 +145,6 @@ class Game:
     log:        logging.Logger  # log created in main.py
     timing:     Timing = Timing()   # Set up a clock to set frame rate and measure frame period
     # Instance variables defined in __post_init__()
-    # renderer:   Renderer = field(init=False)
-    renderer:   Renderer = Renderer()
     ui:         UI = UI()
     coord_sys:  CoordinateSystem = field(init=False)        # Track state of PCS and GCS
     entities:   dict[str, Entity] = field(init=False)   # Game characters like the player
@@ -161,6 +158,7 @@ class Game:
 
     def __post_init__(self) -> None:
         Context.register_game(self)
+        Context.register_renderer(Renderer())
         # Load pygame
         pygame.init()
         pygame.font.init()
@@ -173,25 +171,24 @@ class Game:
         #   Surface size will automatically adjust to the new size value.
         #   It is not necessary to create a new window_surface with the new window size.
         #   See handle_windowsizechanged_events.
-        # self.renderer = Renderer(game=self)
-        self.renderer.window.title = "Example game"
-        # self.renderer.window.size = (60*16, 60*9)
-        # self.renderer.window.size = (60*16, 60*14)
-        self.renderer.window.size = (700, 700)
-        self.renderer.window.resizable = True
+        Context.renderer.window.title = "Example game"
+        # Context.renderer.window.size = (60*16, 60*9)
+        # Context.renderer.window.size = (60*16, 60*14)
+        Context.renderer.window.size = (700, 700)
+        Context.renderer.window.resizable = True
         # Additional window settings used during development:
-        self.renderer.window.always_on_top = True
-        # self.renderer.window.position = (950, 0)
-        self.renderer.window.position = (0, 0)
-        # self.renderer.window.opacity = 0.8              # This is neat
-        # self.renderer.toggle_fullscreen()               # Start in fullscreen
+        Context.renderer.window.always_on_top = True
+        # Context.renderer.window.position = (950, 0)
+        Context.renderer.window.position = (0, 0)
+        # Context.renderer.window.opacity = 0.8              # This is neat
+        # Context.renderer.toggle_fullscreen()               # Start in fullscreen
 
         # Handle all user interface events in ui.py (keyboard, mouse, panning, zoom)
         self.ui.subscribe(self.subscriber_map_event_to_action)
 
         # Set the GCS to fit the window size and center the GCS origin in the window.
         self.coord_sys = CoordinateSystem(
-                window_size=Vec2D.from_tuple(self.renderer.window.size)
+                window_size=Vec2D.from_tuple(Context.renderer.window.size)
                 )
 
         #######################
@@ -289,7 +286,7 @@ class Game:
     def run(self) -> None:
         """Run the game."""
         log = self.log
-        log.debug(f"Window supports OpenGL: {self.renderer.window.opengl}")
+        log.debug(f"Window supports OpenGL: {Context.renderer.window.opengl}")
         log.debug(f"Entities: {self.entities}")
         while True:
             self.loop(log)
@@ -316,7 +313,7 @@ class Game:
         self.update_frame_counters()  # Advance frame-based ticks
         DebugGame.frame_counters(True)
         Debug.display_snapshots_in_hud()  # Print snapshots in HUD last
-        self.renderer.render_all()  # Render all art and HUD
+        Context.renderer.render_all()  # Render all art and HUD
         self.timing.maintain_framerate(fps=60)  # Run at 60 FPS
 
     def subscriber_map_event_to_action(self, event: pygame.event.Event, kmod: int) -> None:
@@ -401,7 +398,7 @@ class Game:
                 Debug.art.reset_snapshots()
             case Action.TOGGLE_FULLSCREEN:
                 log.debug("User action: toggle fullscreen.")
-                game.renderer.toggle_fullscreen()
+                Context.renderer.toggle_fullscreen()
             case Action.TOGGLE_DEBUG_HUD:
                 log.debug("User action: toggle debug HUD.")
                 Debug.hud.is_visible = not Debug.hud.is_visible

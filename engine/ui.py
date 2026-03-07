@@ -98,11 +98,11 @@ class UI:
         game.coord_sys.pcs_origin.x += translation.x
         game.coord_sys.pcs_origin.y += translation.y
         log.debug(f"Event WINDOWSIZECHANGED, new size: ({event.x}, {event.y})")
-        log.debug(f"... game.renderer.window.size: {game.renderer.window.size}")
+        log.debug(f"... Context.renderer.window.size: {Context.renderer.window.size}")
         # NOTE: from pygame-ce docs:
         # Don't use window.get_surface() when using hardware rendering
-        log.debug(f"... game.renderer.window_surface.get_size(): "
-                  f"{game.renderer.window_surface.get_size()}")
+        log.debug(f"... Context.renderer.window_surface.get_size(): "
+                  f"{Context.renderer.window_surface.get_size()}")
 
     def handle_mousewheel_events(self,
                                  event: pygame.event.Event,
