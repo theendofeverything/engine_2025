@@ -12,7 +12,7 @@ from engine.geometry_types import Point2D, Vec2D
 from engine.colors import Colors
 from engine.drawing_shapes import Line2D
 from engine.debug import Debug
-# from src.game import Game
+from src.context import Context
 from .input_mapper import Mouse, MouseButton, Panning
 
 FILE = pathlib.Path(__file__).name
@@ -28,7 +28,7 @@ class Mode(Enum):
 @dataclass
 class DebugGame:
     """Debug game code."""
-    game: "Game"
+    # game: "Game"
     # game: Game
     mode: Mode = Mode.MODE_2
     controls:   dict[str, float] = field(default_factory=dict)
@@ -73,7 +73,7 @@ class DebugGame:
     def fps(self, show_in_hud: bool) -> None:
         """Display frame duration in milliseconds and rate in FPS."""
         if not show_in_hud: return
-        timing = self.game.timing
+        timing = Context.game.timing
         # # Old: use get_fps() -- it averages every 10 frames
         # fps = timing.clock.get_fps()
         # if timing.ticks["video"].counters["hud_fps"].clocked:
@@ -91,7 +91,7 @@ class DebugGame:
     def window_size(self, show_in_hud: bool) -> None:
         """Display window size and center."""
         if not show_in_hud: return
-        coord_sys: CoordinateSystem = self.game.coord_sys
+        coord_sys: CoordinateSystem = Context.game.coord_sys
         Debug.hud.print(f"|\n+- OS window (in pixels) ({FILE})")
         # Size
         window_size: Vec2D = coord_sys.window_size
@@ -110,7 +110,7 @@ class DebugGame:
     def mouse(self, show_in_hud: bool) -> None:
         """Debug mouse position and buttons."""
         if not show_in_hud: return
-        coord_sys = self.game.coord_sys
+        coord_sys = Context.game.coord_sys
         Debug.hud.print(f"|\n+- Mouse -> is_pressed ({FILE})")
 
         def debug_mouse_position() -> None:
@@ -149,7 +149,7 @@ class DebugGame:
         if not show_in_hud: return
         Debug.hud.print(f"|\n+- Movement -> PlayerForce ({FILE})")
         player_forces = ""
-        entities = self.game.entities
+        entities = Context.game.entities
         if entities["player"].movement.player_force.left:
             player_forces += "LEFT"
         if entities["player"].movement.player_force.right:
@@ -163,7 +163,7 @@ class DebugGame:
     def panning(self, show_in_hud: bool) -> None:
         """Draw debug art to show panning and display state/values in HUD"""
         if not show_in_hud: return
-        coord_sys = self.game.coord_sys
+        coord_sys = Context.game.coord_sys
         Debug.hud.print(f"|\n+- Panning (Ctrl+Left-Click-Drag): {Panning.is_active} ({FILE})")
         Debug.hud.print(f"|        +- .begin: {Panning.begin.fmt(0.0)}")
         Debug.hud.print(f"|        +- .end: {Panning.end.fmt(0.0)}")
@@ -181,7 +181,7 @@ class DebugGame:
         if not show_in_hud: return
         heading = f"|\n+- Entities ({FILE})"
         Debug.hud.print(heading)
-        entities = self.game.entities
+        entities = Context.game.entities
 
         iterate_over_specific_entity_attrs = True
         if iterate_over_specific_entity_attrs:
@@ -216,7 +216,7 @@ class DebugGame:
     def frame_counters(self, show_in_hud: bool) -> None:
         """Show frame counters in HUD."""
         if not show_in_hud: return
-        timing = self.game.timing
+        timing = Context.game.timing
         heading = f"|\n+- Timing -> FrameCounter ({FILE})"
         Debug.hud.print(heading)
         # Video frame counters

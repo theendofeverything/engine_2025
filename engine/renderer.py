@@ -2,6 +2,7 @@
 """
 from dataclasses import dataclass, field
 import pygame
+from src.context import Context
 from .drawing_shapes import Line2D
 from .colors import Colors
 from .art import Art
@@ -11,7 +12,6 @@ from .debug import Debug
 @dataclass
 class Renderer:
     """Renderer."""
-    game:                   "Game"
     window:                 pygame.Window = field(init=False)
     window_surface:         pygame.Surface = field(init=False)
     is_fullscreen:          bool = False
@@ -43,7 +43,7 @@ class Renderer:
 
     def render_shapes(self) -> None:
         """Render GCS shapes to the screen."""
-        game = self.game
+        game = Context.game
 
         def render_line_to_screen(line: Line2D) -> None:
             """Render a line in PCS to the screen."""
@@ -77,7 +77,7 @@ class Renderer:
 
     def render_debug_hud(self) -> None:
         """Display values in the Debug HUD."""
-        game = self.game
+        game = Context.game
         font = pygame.font.Font(game.debug_font, Debug.hud.font_size.value)
         pos = (0, 0)
 

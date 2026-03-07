@@ -36,6 +36,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Callable
 import pygame
+from src.context import Context
 from .geometry_types import Vec2D, Point2D
 from .drawing_shapes import Line2D
 from .colors import Colors
@@ -52,7 +53,6 @@ class UI:
     callback is called with two arguments: the event (pygame.event.Event) and the key modifiers (a
     bitfield of flags like pygame.KMOD_SHIFT).
     """
-    game: "Game"
     subscribers:    list[Callable[[pygame.event.Event, int], None]] = field(default_factory=list)
 
     def subscribe(self, callback: Callable[[pygame.event.Event, int], None]) -> None:
@@ -86,7 +86,8 @@ class UI:
                                         event: pygame.event.Event,
                                         log: logging.Logger) -> None:
         """User resized the window. Update origin and window size."""
-        game = self.game
+        # game = self.game
+        game = Context.game
         # Store the current PCS location of the window center.
         old_window_center = game.coord_sys.window_center
         # Update window_size to the new size.
@@ -142,7 +143,8 @@ class UI:
         zoom. Use the new zoom scale to convert the offset vector back to PCS units. Add the offset
         vector to the PCS origin. Be careful of the minus sign!
         """
-        game = self.game
+        # game = self.game
+        game = Context.game
         debug = False
         mouse_pos = pygame.mouse.get_pos()
         mouse_p = Point2D.from_tuple(mouse_pos)

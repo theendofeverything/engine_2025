@@ -107,6 +107,7 @@ from engine.colors import Colors
 from engine.entity import Entity, EntityType
 from gamelibs.input_mapper import Action, InputMapper, KeyModifier, Panning
 from gamelibs.debug_game import DebugGame, Mode
+from .context import Context
 
 FILE = pathlib.Path(__file__).name
 
@@ -146,8 +147,9 @@ class Game:
     log:        logging.Logger  # log created in main.py
     timing:     Timing = Timing()   # Set up a clock to set frame rate and measure frame period
     # Instance variables defined in __post_init__()
-    renderer:   Renderer = field(init=False)
-    ui:         UI = field(init=False)                      # Keyboard, mouse, zoom
+    # renderer:   Renderer = field(init=False)
+    renderer:   Renderer = Renderer()
+    ui:         UI = UI()
     coord_sys:  CoordinateSystem = field(init=False)        # Track state of PCS and GCS
     entities:   dict[str, Entity] = field(init=False)   # Game characters like the player
 
@@ -155,14 +157,16 @@ class Game:
     # Game-defined instance variables
     #################################
     # Instance variables defined in __post_init__()
-    debug_game: DebugGame = field(init=False)
+    # debug_game: DebugGame = field(init=False)
+    debug_game: DebugGame = DebugGame()
 
     def __post_init__(self) -> None:
+        Context.register_game(self)
         # Load pygame
         pygame.init()
         pygame.font.init()
         self.debug_font = "fonts/ProggyClean.ttf"
-        self.debug_game = DebugGame(game=self)
+        # self.debug_game = DebugGame(game=self)
 
         # Handle rendering in renderer.py
         # Note: The window size is just an initial value.
@@ -170,7 +174,7 @@ class Game:
         #   Surface size will automatically adjust to the new size value.
         #   It is not necessary to create a new window_surface with the new window size.
         #   See handle_windowsizechanged_events.
-        self.renderer = Renderer(game=self)
+        # self.renderer = Renderer(game=self)
         self.renderer.window.title = "Example game"
         # self.renderer.window.size = (60*16, 60*9)
         # self.renderer.window.size = (60*16, 60*14)
@@ -184,7 +188,6 @@ class Game:
         # self.renderer.toggle_fullscreen()               # Start in fullscreen
 
         # Handle all user interface events in ui.py (keyboard, mouse, panning, zoom)
-        self.ui = UI(game=self)
         self.ui.subscribe(self.subscriber_map_event_to_action)
 
         # Set the GCS to fit the window size and center the GCS origin in the window.
