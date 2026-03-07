@@ -133,8 +133,7 @@ class Game:
     Game code is divided up as follows:
     >>> game = Game()
     >>> game
-    Game(ui=UI(...),
-         coord_sys=CoordinateSystem(...),
+    Game(coord_sys=CoordinateSystem(...),
          entities={...})
     """
     ###################################
@@ -142,16 +141,8 @@ class Game:
     ###################################
     # Instance variables defined in the implicit __init__() of dataclass
     # Instance variables defined in __post_init__()
-    ui:         UI = UI()
     coord_sys:  CoordinateSystem = field(init=False)    # Track state of PCS and GCS
     entities:   dict[str, Entity] = field(init=False)   # Game characters like the player
-
-    #################################
-    # Game-defined instance variables
-    #################################
-    # Instance variables defined in __post_init__()
-    # debug_game: DebugGame = field(init=False)
-    # debug_game: DebugGame = DebugGame()
 
     def __post_init__(self) -> None:
         Context.register_game(self)
@@ -182,7 +173,7 @@ class Game:
         # Context.renderer.toggle_fullscreen()               # Start in fullscreen
 
         # Handle all user interface events in ui.py (keyboard, mouse, panning, zoom)
-        self.ui.subscribe(self.subscriber_map_event_to_action)
+        UI.subscribe(self.subscriber_map_event_to_action)
 
         # Set the GCS to fit the window size and center the GCS origin in the window.
         self.coord_sys = CoordinateSystem(
@@ -297,7 +288,7 @@ class Game:
         DebugGame.window_size(True)
         # Game
         self.reset_art()  # Clear old art
-        self.ui.consume_event_queue()  # Handle all user events
+        UI.consume_event_queue()  # Handle all user events
         InputMapper.ongoing_action.update(self)
         DebugGame.mouse(True)  # mouse position and buttons
         DebugGame.panning(True)  # Panning; Ctrl+Left-Click-Drag to pan
@@ -318,8 +309,7 @@ class Game:
 
         Usage:
             1. Register with the UI like this:
-                self.ui = UI(game=self, ...)  # Instantiate UI
-                self.ui.subscribe(self.subscriber_map_event_to_action)  # Register callback
+                UI.subscribe(self.subscriber_map_event_to_action)  # Register callback
             2. Define actions in input_mapper.py:
                 - InputMapper.key_map
                 - InputMapper.mouse_map
@@ -328,7 +318,7 @@ class Game:
                 - do_action_for_mouse_button_event()
             4. Handle ongoing actions (click-dragging) in ongoing_action.py
                 - OngoingAction.update(game)
-            5. Game loop calls self.ui.consume_event_queue() which publishes all UI events
+            5. Game loop calls UI.consume_event_queue() which publishes all UI events
             6. Game loop calls InputMapper.ongoing_action.update(self).
                OngoingAction.update(game) checks if any ongoing actions are active and then updates
                them accordingly.

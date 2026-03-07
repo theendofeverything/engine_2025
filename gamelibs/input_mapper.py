@@ -127,7 +127,7 @@ class OngoingAction:
             ...
             def loop(self) -> None:
                 ...
-                self.ui.consume_event_queue()  # Iterate over all user events
+                UI.consume_event_queue()  # Iterate over all user events
                 self.ongoing_action.update(self)
     """
 

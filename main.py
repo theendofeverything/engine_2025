@@ -68,7 +68,8 @@ if __name__ == "__main__":
     # If the following code is outside this block, it runs when I run pytest to pick up the doctest
     # unit tests. That means running unit tests runs the game, which:
     # 1) is not what I want -- running unit tests should just run tests
-    # 2) when I quit the game, the unit tests do not run
+    # 2) prevents me from actually running tests: quitting the game triggers shutdown and my unit
+    #    tests never run
     log.debug("Run \"%s\"",
               Path()
               .joinpath(Path(__file__).parent.name)

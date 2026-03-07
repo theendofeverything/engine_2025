@@ -33,7 +33,6 @@ from __future__ import annotations
 import sys                  # Exit with sys.exit()
 import pathlib
 import logging
-from dataclasses import dataclass, field
 from typing import Callable
 import pygame
 from src.context import Context
@@ -45,7 +44,6 @@ FILE = pathlib.Path(__file__).name
 log = logging.getLogger(__name__)
 
 
-@dataclass
 class UI:
     """Handle user interface events.
 
@@ -54,18 +52,21 @@ class UI:
     callback is called with two arguments: the event (pygame.event.Event) and the key modifiers (a
     bitfield of flags like pygame.KMOD_SHIFT).
     """
-    subscribers:    list[Callable[[pygame.event.Event, int], None]] = field(default_factory=list)
+    subscribers:    list[Callable[[pygame.event.Event, int], None]] = []
 
-    def subscribe(self, callback: Callable[[pygame.event.Event, int], None]) -> None:
-        """Call ui.subscribe(callback) to register "callback" for receiving UI events."""
-        self.subscribers.append(callback)
+    @classmethod
+    def subscribe(cls, callback: Callable[[pygame.event.Event, int], None]) -> None:
+        """Call UI.subscribe(callback) to register "callback" for receiving UI events."""
+        cls.subscribers.append(callback)
 
-    def publish(self, event: pygame.event.Event, kmod: int) -> None:
+    @classmethod
+    def publish(cls, event: pygame.event.Event, kmod: int) -> None:
         """Publish the event to subscribers by calling all registered callbacks."""
-        for subscriber in self.subscribers:
+        for subscriber in cls.subscribers:
             subscriber(event, kmod)
 
-    def consume_event_queue(self) -> None:
+    @classmethod
+    def consume_event_queue(cls) -> None:
         """Consume all events on the event queue.
 
         All events are logged, including unused events.
@@ -75,17 +76,17 @@ class UI:
             # Handle event on the engine side
             match event.type:
                 case pygame.QUIT: sys.exit()
-                case pygame.WINDOWSIZECHANGED: self.handle_windowsizechanged_events(event)
-                case pygame.MOUSEWHEEL: self.handle_mousewheel_events(event)
-                case _: self.log_unused_events(event)
+                case pygame.WINDOWSIZECHANGED: cls.handle_windowsizechanged_events(event)
+                case pygame.MOUSEWHEEL: cls.handle_mousewheel_events(event)
+                case _: cls.log_unused_events(event)
             # Let UI subscribers handle the event
             # NOTE: kmod is stale. Call get_mods() when publishing.
-            # self.publish(event, kmod)
-            self.publish(event, self.kmod_simplify(pygame.key.get_mods()))
+            # cls.publish(event, kmod)
+            cls.publish(event, cls.kmod_simplify(pygame.key.get_mods()))
 
-    def handle_windowsizechanged_events(self, event: pygame.event.Event) -> None:
+    @staticmethod
+    def handle_windowsizechanged_events(event: pygame.event.Event) -> None:
         """User resized the window. Update origin and window size."""
-        # game = self.game
         game = Context.game
         # Store the current PCS location of the window center.
         old_window_center = game.coord_sys.window_center
@@ -103,22 +104,24 @@ class UI:
         log.debug(f"... Context.renderer.window_surface.get_size(): "
                   f"{Context.renderer.window_surface.get_size()}")
 
-    def handle_mousewheel_events(self, event: pygame.event.Event) -> None:
+    @classmethod
+    def handle_mousewheel_events(cls, event: pygame.event.Event) -> None:
         """Handle mousewheel events."""
         match event.y:
             case -1:
                 log.debug("ZOOM OUT")
-                self.zoom_out()
+                cls.zoom_out()
             case 1:
                 log.debug("ZOOM IN")
-                self.zoom_in()
+                cls.zoom_in()
             case _:
                 log.debug("Unexpected y-value")
         log.debug(f"Event MOUSEWHEEL, flipped: {event.flipped}, "
                   f"x:{event.x}, y:{event.y}, "
                   f"precise_x:{event.precise_x}, precise_y:{event.precise_y}")
 
-    def log_unused_events(self, event: pygame.event.Event) -> None:
+    @staticmethod
+    def log_unused_events(event: pygame.event.Event) -> None:
         """Log events that I have not found a use for yet."""
         match event.type:
             case pygame.MOUSEBUTTONDOWN:
@@ -133,14 +136,14 @@ class UI:
                 log.debug(f"Event WINDOWRESIZED, new size: ({event.x}, {event.y})")
             case _: log.debug(event)
 
-    def _zoom(self, scale: float) -> None:
+    @staticmethod
+    def _zoom(scale: float) -> None:
         """Private zoom function used by zoom_in() and zoom_out().
 
         Zoom about a point: use mouse position to create an offset in GCS units before and after the
         zoom. Use the new zoom scale to convert the offset vector back to PCS units. Add the offset
         vector to the PCS origin. Be careful of the minus sign!
         """
-        # game = self.game
         game = Context.game
         debug = False
         mouse_pos = pygame.mouse.get_pos()
@@ -181,19 +184,22 @@ class UI:
         game.coord_sys.pcs_origin.x -= offset_p.x
         game.coord_sys.pcs_origin.y += offset_p.y
 
-    def zoom_out(self) -> None:
+    @classmethod
+    def zoom_out(cls) -> None:
         """Zoom out."""
-        self._zoom(scale=1.1)
+        cls._zoom(scale=1.1)
 
-    def zoom_in(self) -> None:
+    @classmethod
+    def zoom_in(cls) -> None:
         """Zoom in."""
-        self._zoom(scale=0.9)
+        cls._zoom(scale=0.9)
 
     ##############
     # API FOR GAME
     ##############
 
-    def kmod_simplify(self, kmod: int) -> int:
+    @staticmethod
+    def kmod_simplify(kmod: int) -> int:
         """Filter out irrelevant keymods and combine left/right keymods.
 
         This reduces the many keymod left/right combinations to the following set:
