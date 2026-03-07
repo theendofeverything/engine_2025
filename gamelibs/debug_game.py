@@ -3,7 +3,6 @@
 """Debug game code using the debug engine.
 """
 
-from dataclasses import dataclass, field
 import pathlib
 from enum import Enum, auto
 import pygame
@@ -25,31 +24,16 @@ class Mode(Enum):
     MODE_3 = auto()
 
 
-@dataclass
+# @dataclass
 class DebugGame:
     """Debug game code."""
     # game: "Game"
     # game: Game
     mode: Mode = Mode.MODE_2
-    controls:   dict[str, float] = field(default_factory=dict)
+    controls:   dict[str, float] = {"k": 1.28, "b": 0.512}
 
-    def __post_init__(self) -> None:
-        self.define_controls()
-
-    def define_controls(self) -> None:
-        """Define variables that connect to user input from the HUD."""
-        # TODO: use case match to set the following based on the default Mode
-        # Nice springy motion
-        # self.controls["k"] = 0.04
-        # self.controls["b"] = 0.064
-        # Nice linked motion
-        self.controls["k"] = 1.28
-        self.controls["b"] = 0.512
-        # Nice following motion
-        # self.controls["k"] = 0.005
-        # self.controls["b"] = 0.064
-
-    def hud_begin(self) -> None:
+    @staticmethod
+    def hud_begin() -> None:
         """The first values displayed in the HUD are printed in this function."""
         debug_hud = f"Debug HUD ({FILE})"
         # Version values
@@ -70,7 +54,8 @@ class DebugGame:
         # Debug.hud.print(f"Locals ({FILE})")         # Local debug prints (e.g., from UI)
         # Debug.hud.print("------")
 
-    def fps(self, show_in_hud: bool) -> None:
+    @staticmethod
+    def fps(show_in_hud: bool) -> None:
         """Display frame duration in milliseconds and rate in FPS."""
         if not show_in_hud: return
         timing = Context.game.timing
@@ -88,7 +73,8 @@ class DebugGame:
         Debug.hud.print(f"|   +- FPS: {fps:0.1f}")
         Debug.hud.print(f"|   +- Period: {ms_per_frame:d}ms")
 
-    def window_size(self, show_in_hud: bool) -> None:
+    @staticmethod
+    def window_size(show_in_hud: bool) -> None:
         """Display window size and center."""
         if not show_in_hud: return
         coord_sys: CoordinateSystem = Context.game.coord_sys
@@ -107,7 +93,8 @@ class DebugGame:
         Debug.hud.print(f"|  +- window_center: {window_center.fmt(0.0)} PCS"
                         f", {gcs_window_center} GCS")
 
-    def mouse(self, show_in_hud: bool) -> None:
+    @staticmethod
+    def mouse(show_in_hud: bool) -> None:
         """Debug mouse position and buttons."""
         if not show_in_hud: return
         coord_sys = Context.game.coord_sys
@@ -144,7 +131,8 @@ class DebugGame:
             Debug.hud.print(f"|     +- {mouse_button.name}: {Mouse.is_pressed(mouse_button)}")
         debug_mouse_buttons()
 
-    def player_forces(self, show_in_hud: bool) -> None:
+    @staticmethod
+    def player_forces(show_in_hud: bool) -> None:
         """Debug key presses for game controls."""
         if not show_in_hud: return
         Debug.hud.print(f"|\n+- Movement -> PlayerForce ({FILE})")
@@ -160,7 +148,8 @@ class DebugGame:
             player_forces += "DOWN"
         Debug.hud.print(f"|  +- player_forces: {player_forces}")
 
-    def panning(self, show_in_hud: bool) -> None:
+    @staticmethod
+    def panning(show_in_hud: bool) -> None:
         """Draw debug art to show panning and display state/values in HUD"""
         if not show_in_hud: return
         coord_sys = Context.game.coord_sys
@@ -176,7 +165,8 @@ class DebugGame:
             Debug.art.lines_pcs.append(
                     Line2D(start=Panning.begin, end=Panning.end, color=Colors.panning))
 
-    def entities(self, show_in_hud: bool) -> None:
+    @staticmethod
+    def entities(show_in_hud: bool) -> None:
         """Show important attrs for every entity."""
         if not show_in_hud: return
         heading = f"|\n+- Entities ({FILE})"
@@ -213,7 +203,8 @@ class DebugGame:
                         case _:
                             Debug.hud.print(f"|     +- {attr}: {attr_value}")
 
-    def frame_counters(self, show_in_hud: bool) -> None:
+    @staticmethod
+    def frame_counters(show_in_hud: bool) -> None:
         """Show frame counters in HUD."""
         if not show_in_hud: return
         timing = Context.game.timing
@@ -237,10 +228,11 @@ class DebugGame:
         for clocked_event in timing.frame_counters["game"].clocked_events.values():
             Debug.hud.print(f"|        +- {clocked_event}")
 
-    def mode_controls(self, show_in_hud: bool) -> None:
+    @classmethod
+    def mode_controls(cls, show_in_hud: bool) -> None:
         """Display the mode controls in the HUD"""
         if not show_in_hud: return
-        Debug.hud.print(f"|\n+- DebugGame.mode: {self.mode}")
+        Debug.hud.print(f"|\n+- DebugGame.mode: {cls.mode}")
         Debug.hud.print(f"+- DebugGame.controls: dict[str, float | ] ({FILE})")
-        for name, value in self.controls.items():
+        for name, value in cls.controls.items():
             Debug.hud.print(f"|  +- controls['{name}']: {value}")

@@ -137,8 +137,7 @@ class Game:
          renderer=Renderer(...),
          ui=UI(...),
          coord_sys=CoordinateSystem(...),
-         entities={...},
-         debug_game=DebugGame(...))
+         entities={...})
     """
     ###################################
     # Engine-defined instance variables
@@ -158,7 +157,7 @@ class Game:
     #################################
     # Instance variables defined in __post_init__()
     # debug_game: DebugGame = field(init=False)
-    debug_game: DebugGame = DebugGame()
+    # debug_game: DebugGame = DebugGame()
 
     def __post_init__(self) -> None:
         Context.register_game(self)
@@ -233,19 +232,19 @@ class Game:
         # origin: set initial location
         self.entities = {}
         self.entities["player"] = Entity(
-                debug_game=self.debug_game,
+                # debug_game=self.debug_game,
                 entities=self.entities,
                 entity_type=EntityType.PLAYER,
                 clocked_event_name="period_3",
                 )
         self.entities["cross1"] = Entity(
-                debug_game=self.debug_game,
+                # debug_game=self.debug_game,
                 entities=self.entities,
                 entity_type=EntityType.NPC,
                 clocked_event_name="period_3",
                 )
         self.entities["cross2"] = Entity(
-                debug_game=self.debug_game,
+                # debug_game=self.debug_game,
                 entities=self.entities,
                 entity_type=EntityType.NPC,
                 clocked_event_name="period_3",
@@ -265,7 +264,7 @@ class Game:
                 number = 1 + j + (i*num_crosses_x)
                 name = f"bgnd{number}"
                 self.entities[name] = Entity(
-                        debug_game=self.debug_game,
+                        # debug_game=self.debug_game,
                         entities=self.entities,
                         entity_type=EntityType.BACKGROUND_ART,
                         size=size,
@@ -299,23 +298,23 @@ class Game:
         """Loop until the user quits."""
         # Prologue: reset debug
         Debug.hud.reset()  # Clear the debug HUD
-        self.debug_game.hud_begin()  # Load first values in debug HUD
-        self.debug_game.fps(True)
-        self.debug_game.window_size(True)
+        DebugGame.hud_begin()  # Load first values in debug HUD
+        DebugGame.fps(True)
+        DebugGame.window_size(True)
         # Game
         self.reset_art()  # Clear old art
         self.ui.consume_event_queue(log)  # Handle all user events
         InputMapper.ongoing_action.update(self)
-        self.debug_game.mouse(True)  # mouse position and buttons
-        self.debug_game.panning(True)  # Panning; Ctrl+Left-Click-Drag to pan
-        self.debug_game.player_forces(False)  # Show arrow keys: UP/DOWN/LEFT/RIGHT
-        self.debug_game.mode_controls(True)
+        DebugGame.mouse(True)  # mouse position and buttons
+        DebugGame.panning(True)  # Panning; Ctrl+Left-Click-Drag to pan
+        DebugGame.player_forces(False)  # Show arrow keys: UP/DOWN/LEFT/RIGHT
+        DebugGame.mode_controls(True)
         self.update_entities()
-        self.debug_game.entities(False)
+        DebugGame.entities(False)
         self.draw_remaining_art()  # Draw any remaining art not already drawn
         # Epilogue: update debug HUD, display, and timing
         self.update_frame_counters()  # Advance frame-based ticks
-        self.debug_game.frame_counters(True)
+        DebugGame.frame_counters(True)
         Debug.display_snapshots_in_hud()  # Print snapshots in HUD last
         self.renderer.render_all()  # Render all art and HUD
         self.timing.maintain_framerate(fps=60)  # Run at 60 FPS
@@ -425,29 +424,29 @@ class Game:
                           f"Font size: {Debug.hud.font_size.value}.")
             # TEMPORARY CODE FOR WORKING ON NPC MOTION
             case Action.CONTROLS_ADJUST_K_LESS:
-                game.debug_game.controls["k"] /= 2
+                DebugGame.controls["k"] /= 2
             case Action.CONTROLS_ADJUST_K_MORE:
-                game.debug_game.controls["k"] *= 2
+                DebugGame.controls["k"] *= 2
             case Action.CONTROLS_ADJUST_B_LESS:
-                game.debug_game.controls["b"] /= 2
+                DebugGame.controls["b"] /= 2
             case Action.CONTROLS_ADJUST_B_MORE:
-                game.debug_game.controls["b"] *= 2
+                DebugGame.controls["b"] *= 2
             # Set spring constant and damping: three modes.
             case Action.CONTROLS_PICK_MODE_1:
                 log.debug("User action: Select mode 1 -- springy linked motion")
-                game.debug_game.mode = Mode.MODE_1
-                game.debug_game.controls["k"] = 0.04
-                game.debug_game.controls["b"] = 0.064
+                DebugGame.mode = Mode.MODE_1
+                DebugGame.controls["k"] = 0.04
+                DebugGame.controls["b"] = 0.064
             case Action.CONTROLS_PICK_MODE_2:
                 log.debug("User action: Select mode 2 -- rigid linked motion")
-                game.debug_game.mode = Mode.MODE_2
-                game.debug_game.controls["k"] = 1.28
-                game.debug_game.controls["b"] = 0.512
+                DebugGame.mode = Mode.MODE_2
+                DebugGame.controls["k"] = 1.28
+                DebugGame.controls["b"] = 0.512
             case Action.CONTROLS_PICK_MODE_3:
                 log.debug("User action: Select mode 3 -- separate entities following motion")
-                game.debug_game.mode = Mode.MODE_3
-                game.debug_game.controls["k"] = 0.005
-                game.debug_game.controls["b"] = 0.064
+                DebugGame.mode = Mode.MODE_3
+                DebugGame.controls["k"] = 0.005
+                DebugGame.controls["b"] = 0.064
             case Action.PLAYER_MOVE_LEFT_GO:
                 log.debug("Player move left")
                 entities["player"].movement.player_force.left = True

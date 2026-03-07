@@ -372,7 +372,7 @@ class Entity:
         artwork=Artwork(...),
         movement=Movement(...))
     """
-    debug_game:         "DebugGame"
+    # debug_game:         "DebugGame"
     entities:           dict[str, Entity]               # Give each entity access to all others
     entity_type:        EntityType
     entity_name:        str = "NameMe"                  # Match name of entities dict key
@@ -529,7 +529,8 @@ class Entity:
             v = movement.speed.vec
             # Update forces
             # TODO: set up a better way to connect variables to user input from HUD
-            controls = self.debug_game.controls
+            # controls = self.debug_game.controls
+            controls = DebugGame.controls
             # fk(n) = -1*k*d(n-1)
             force_spring = Force(
                     vec=Vec2D(
