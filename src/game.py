@@ -133,7 +133,6 @@ class Game:
     >>> game = Game(log=None)
     >>> game
     Game(log=None,
-         timing=Timing(...),
          ui=UI(...),
          coord_sys=CoordinateSystem(...),
          entities={...})
@@ -143,10 +142,9 @@ class Game:
     ###################################
     # Instance variables defined in the implicit __init__() of dataclass
     log:        logging.Logger  # log created in main.py
-    timing:     Timing = Timing()   # Set up a clock to set frame rate and measure frame period
     # Instance variables defined in __post_init__()
     ui:         UI = UI()
-    coord_sys:  CoordinateSystem = field(init=False)        # Track state of PCS and GCS
+    coord_sys:  CoordinateSystem = field(init=False)    # Track state of PCS and GCS
     entities:   dict[str, Entity] = field(init=False)   # Game characters like the player
 
     #################################
@@ -159,6 +157,7 @@ class Game:
     def __post_init__(self) -> None:
         Context.register_game(self)
         Context.register_renderer(Renderer())
+        Context.register_timing(Timing())
         # Load pygame
         pygame.init()
         pygame.font.init()
@@ -195,9 +194,9 @@ class Game:
         # Create clocked events
         #######################
         # Add a FrameCounter for the game.
-        self.timing.frame_counters["game"] = FrameCounter()
+        Context.timing.frame_counters["game"] = FrameCounter()
         # Add ClockedEvents to the frame counter.
-        frame_counter = self.timing.frame_counters["game"]
+        frame_counter = Context.timing.frame_counters["game"]
         frame_counter.clocked_events["every_frame"] = ClockedEvent(
                 frame_counter,
                 period=1
@@ -314,7 +313,7 @@ class Game:
         DebugGame.frame_counters(True)
         Debug.display_snapshots_in_hud()  # Print snapshots in HUD last
         Context.renderer.render_all()  # Render all art and HUD
-        self.timing.maintain_framerate(fps=60)  # Run at 60 FPS
+        Context.timing.maintain_framerate(fps=60)  # Run at 60 FPS
 
     def subscriber_map_event_to_action(self, event: pygame.event.Event, kmod: int) -> None:
         """Map UI events to actions and then pass the action to the action handler.
@@ -387,7 +386,6 @@ class Game:
     def do_action_for_key_event(self, action: Action) -> None:
         """Handle actions for keyboard events detected by the UI"""
         log = self.log
-        game = self
         entities = self.entities
         match action:
             case Action.QUIT:
@@ -404,9 +402,9 @@ class Game:
                 Debug.hud.is_visible = not Debug.hud.is_visible
             case Action.TOGGLE_PAUSE:
                 log.debug("User action: toggle pause.")
-                game.timing.frame_counters["game"].toggle_pause()
-                game_is_paused = game.timing.frame_counters["game"].is_paused
-                Debug.snapshots["pause"] = ("game.timing.frame_counters['game'].is_paused: "
+                Context.timing.frame_counters["game"].toggle_pause()
+                game_is_paused = Context.timing.frame_counters["game"].is_paused
+                Debug.snapshots["pause"] = ("Context.timing.frame_counters['game'].is_paused: "
                                             f"{game_is_paused}")
             case Action.TOGGLE_DEBUG_ART_OVERLAY:
                 log.debug("User action: toggle debug art overlay.")
@@ -481,13 +479,13 @@ class Game:
         Video frames always update.
         Game frames only update if the game is not paused.
         """
-        timing = self.timing
+        timing = Context.timing
         for frame_counter in timing.frame_counters.values():
             frame_counter.update()
 
     def update_entities(self) -> None:
         """Update the state of all entities based on counters and events."""
-        timing = self.timing
+        timing = Context.timing
         for entity in self.entities.values():
             entity.update(timing)
             entity.draw()

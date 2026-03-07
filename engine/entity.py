@@ -28,14 +28,14 @@ Entity Documentation (WIP)
                             update_entities()
                              |
                              v
-    Game.Timing ─▶ Entity.update() -> Paused? --┐
-                                        |       |
-                                       YES      NO
-                             ┌─---------┘       |
-                             |                  Entity.move()
-                             |
-                             v
-    Game.Art ────▶ Entity.draw()
+    Context.Timing ─▶ Entity.update() -> Paused? --┐
+                                           |       |
+                                          YES      NO
+                                ┌─---------┘       |
+                                |                  Entity.move()
+                                |
+                                v
+    Game.Art ───────▶ Entity.draw()
 
 """
 

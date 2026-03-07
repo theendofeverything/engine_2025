@@ -58,7 +58,7 @@ class DebugGame:
     def fps(show_in_hud: bool) -> None:
         """Display frame duration in milliseconds and rate in FPS."""
         if not show_in_hud: return
-        timing = Context.game.timing
+        timing = Context.timing
         # # Old: use get_fps() -- it averages every 10 frames
         # fps = timing.clock.get_fps()
         # if timing.ticks["video"].counters["hud_fps"].clocked:
@@ -207,7 +207,7 @@ class DebugGame:
     def frame_counters(show_in_hud: bool) -> None:
         """Show frame counters in HUD."""
         if not show_in_hud: return
-        timing = Context.game.timing
+        timing = Context.timing
         heading = f"|\n+- Timing -> FrameCounter ({FILE})"
         Debug.hud.print(heading)
         # Video frame counters
