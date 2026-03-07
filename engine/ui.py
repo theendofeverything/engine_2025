@@ -42,6 +42,7 @@ from .drawing_shapes import Line2D
 from .colors import Colors
 
 FILE = pathlib.Path(__file__).name
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -64,7 +65,7 @@ class UI:
         for subscriber in self.subscribers:
             subscriber(event, kmod)
 
-    def consume_event_queue(self, log: logging.Logger) -> None:
+    def consume_event_queue(self) -> None:
         """Consume all events on the event queue.
 
         All events are logged, including unused events.
@@ -74,17 +75,15 @@ class UI:
             # Handle event on the engine side
             match event.type:
                 case pygame.QUIT: sys.exit()
-                case pygame.WINDOWSIZECHANGED: self.handle_windowsizechanged_events(event, log)
-                case pygame.MOUSEWHEEL: self.handle_mousewheel_events(event, log)
-                case _: self.log_unused_events(event, log)
+                case pygame.WINDOWSIZECHANGED: self.handle_windowsizechanged_events(event)
+                case pygame.MOUSEWHEEL: self.handle_mousewheel_events(event)
+                case _: self.log_unused_events(event)
             # Let UI subscribers handle the event
             # NOTE: kmod is stale. Call get_mods() when publishing.
             # self.publish(event, kmod)
             self.publish(event, self.kmod_simplify(pygame.key.get_mods()))
 
-    def handle_windowsizechanged_events(self,
-                                        event: pygame.event.Event,
-                                        log: logging.Logger) -> None:
+    def handle_windowsizechanged_events(self, event: pygame.event.Event) -> None:
         """User resized the window. Update origin and window size."""
         # game = self.game
         game = Context.game
@@ -104,9 +103,7 @@ class UI:
         log.debug(f"... Context.renderer.window_surface.get_size(): "
                   f"{Context.renderer.window_surface.get_size()}")
 
-    def handle_mousewheel_events(self,
-                                 event: pygame.event.Event,
-                                 log: logging.Logger) -> None:
+    def handle_mousewheel_events(self, event: pygame.event.Event) -> None:
         """Handle mousewheel events."""
         match event.y:
             case -1:
@@ -121,7 +118,7 @@ class UI:
                   f"x:{event.x}, y:{event.y}, "
                   f"precise_x:{event.precise_x}, precise_y:{event.precise_y}")
 
-    def log_unused_events(self, event: pygame.event.Event, log: logging.Logger) -> None:
+    def log_unused_events(self, event: pygame.event.Event) -> None:
         """Log events that I have not found a use for yet."""
         match event.type:
             case pygame.MOUSEBUTTONDOWN:

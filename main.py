@@ -47,13 +47,15 @@
 """
 import atexit               # Register a function to run on exit
 from pathlib import Path    # Get file paths
-import logging
 import pygame
 from engine.log import setup_logging
 from src.game import Game
 
 
-def shutdown(file: str, log: logging.Logger) -> None:
+log = setup_logging()
+
+
+def shutdown(file: str) -> None:
     """Safe shutdown on exit, such as sys.exit()."""
     log.debug("Shutdown %s", Path(file).name)
     pygame.font.quit()
@@ -62,11 +64,15 @@ def shutdown(file: str, log: logging.Logger) -> None:
 
 
 if __name__ == "__main__":
-    _log = setup_logging()
-    _log.debug("Run \"%s\"",
-               Path()
-               .joinpath(Path(__file__).parent.name)
-               .joinpath(Path(__file__).name)
-               )
-    atexit.register(shutdown, __file__, _log)
-    Game(_log).run()
+    # NOTE: The following MUST be in this __name__ == "__main__" block or unit tests will not run!
+    # If the following code is outside this block, it runs when I run pytest to pick up the doctest
+    # unit tests. That means running unit tests runs the game, which:
+    # 1) is not what I want -- running unit tests should just run tests
+    # 2) when I quit the game, the unit tests do not run
+    log.debug("Run \"%s\"",
+              Path()
+              .joinpath(Path(__file__).parent.name)
+              .joinpath(Path(__file__).name)
+              )
+    atexit.register(shutdown, __file__)
+    Game().run()

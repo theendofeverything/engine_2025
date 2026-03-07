@@ -110,6 +110,7 @@ from gamelibs.debug_game import DebugGame, Mode
 from .context import Context
 
 FILE = pathlib.Path(__file__).name
+log = logging.getLogger(__name__)
 
 
 # pylint: disable=too-many-instance-attributes
@@ -130,10 +131,9 @@ class Game:
         _p: PCS
 
     Game code is divided up as follows:
-    >>> game = Game(log=None)
+    >>> game = Game()
     >>> game
-    Game(log=None,
-         ui=UI(...),
+    Game(ui=UI(...),
          coord_sys=CoordinateSystem(...),
          entities={...})
     """
@@ -141,7 +141,6 @@ class Game:
     # Engine-defined instance variables
     ###################################
     # Instance variables defined in the implicit __init__() of dataclass
-    log:        logging.Logger  # log created in main.py
     # Instance variables defined in __post_init__()
     ui:         UI = UI()
     coord_sys:  CoordinateSystem = field(init=False)    # Track state of PCS and GCS
@@ -284,13 +283,12 @@ class Game:
 
     def run(self) -> None:
         """Run the game."""
-        log = self.log
         log.debug(f"Window supports OpenGL: {Context.renderer.window.opengl}")
         log.debug(f"Entities: {self.entities}")
         while True:
-            self.loop(log)
+            self.loop()
 
-    def loop(self, log: logging.Logger) -> None:
+    def loop(self) -> None:
         """Loop until the user quits."""
         # Prologue: reset debug
         Debug.hud.reset()  # Clear the debug HUD
@@ -299,7 +297,7 @@ class Game:
         DebugGame.window_size(True)
         # Game
         self.reset_art()  # Clear old art
-        self.ui.consume_event_queue(log)  # Handle all user events
+        self.ui.consume_event_queue()  # Handle all user events
         InputMapper.ongoing_action.update(self)
         DebugGame.mouse(True)  # mouse position and buttons
         DebugGame.panning(True)  # Panning; Ctrl+Left-Click-Drag to pan
@@ -330,7 +328,7 @@ class Game:
                 - do_action_for_mouse_button_event()
             4. Handle ongoing actions (click-dragging) in ongoing_action.py
                 - OngoingAction.update(game)
-            5. Game loop calls self.ui.consume_event_queue(log) which publishes all UI events
+            5. Game loop calls self.ui.consume_event_queue() which publishes all UI events
             6. Game loop calls InputMapper.ongoing_action.update(self).
                OngoingAction.update(game) checks if any ongoing actions are active and then updates
                them accordingly.
@@ -350,23 +348,21 @@ class Game:
         if the tuple does not exist in InputMapper.key_map. If the tuple does not exist, dict.get()
         returns None.
         """
-        log = self.log
         log.debug(f"Event: {event}")
         log.debug(f"Filtered kmod: {kmod}")
         log.debug(f"Mapped kmod: {KeyModifier.from_kmod(kmod)}")
         match event.type:
             case pygame.KEYDOWN | pygame.KEYUP:
                 # Map for keydown and keyup events
-                action = InputMapper.action_for_key_event(log, event, kmod)
+                action = InputMapper.action_for_key_event(event, kmod)
                 if action is not None: self.do_action_for_key_event(action)
             case pygame.MOUSEBUTTONDOWN | pygame.MOUSEBUTTONUP:
                 # Map for mouse buttondown and button up events
-                action = InputMapper.action_for_mouse_button_event(log, event, kmod)
+                action = InputMapper.action_for_mouse_button_event(event, kmod)
                 if action is not None: self.do_action_for_mouse_button_event(action, event.pos)
 
     def do_action_for_mouse_button_event(self, action: Action, position: tuple[int, int]) -> None:
         """Handle actions for mouse events detected by the UI"""
-        log = self.log
         match action:
             case Action.START_PANNING:
                 log.debug("User action: start panning")
@@ -385,7 +381,6 @@ class Game:
     # pylint: disable=too-many-branches
     def do_action_for_key_event(self, action: Action) -> None:
         """Handle actions for keyboard events detected by the UI"""
-        log = self.log
         entities = self.entities
         match action:
             case Action.QUIT:

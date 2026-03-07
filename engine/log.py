@@ -14,22 +14,24 @@ In __main__:
     log = setup_logging()
     log.debug("Run %s", Path(__file__).name)
 
-Pass 'log' to a function:
-
-    Game().run(log)
-
-Now that Game().run() can use 'log', even if it is defined in another file.
-The file where 'Game' is defined does not need to import logging.
-
-You can also use 'log' in lib code without explicitly passing 'log' in from
-the main application. The next section details this use case.
-
-
-Setup to log in lib code
-------------------------
+Setup to log in modules (lib code)
+----------------------------------
 At top of lib code module:
     import logging
     log = logging.getLogger(__name__)
+
+Do not use log in modules (lib code) by passing to a function
+-------------------------------------------------------------
+I used to log in lib code by passing 'log' to a function:
+
+    Game().run(log)
+
+Game().run() can use 'log' even though the log is defined in another file.
+The file where 'Game' is defined does not need to import logging, except for type hinting.
+
+The problem with this approach is I end up passing 'log' to every function that does logging.
+This is just noise in the function signatures.
+
 """
 import logging
 

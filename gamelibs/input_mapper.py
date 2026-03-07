@@ -13,6 +13,8 @@ import logging
 import pygame
 from engine.geometry_types import Point2D, Vec2D, DirectedLineSeg2D
 
+log = logging.getLogger(__name__)
+
 
 class Panning:
     """Track mouse panning state.
@@ -123,9 +125,9 @@ class OngoingAction:
             ...
             ongoing_action: OngoingAction = OngoingAction()
             ...
-            def loop(self, log: logging.Logger) -> None:
+            def loop(self) -> None:
                 ...
-                self.ui.consume_event_queue(log)  # Iterate over all user events
+                self.ui.consume_event_queue()  # Iterate over all user events
                 self.ongoing_action.update(self)
     """
 
@@ -363,7 +365,6 @@ class InputMapper:
     @classmethod
     def action_for_key_event(
             cls,
-            log: logging.Logger,
             event: pygame.event.Event,
             kmod: int
             ) -> Action | None:
@@ -384,7 +385,6 @@ class InputMapper:
     @classmethod
     def action_for_mouse_button_event(
             cls,
-            log: logging.Logger,
             event: pygame.event.Event,
             kmod: int
             ) -> Action | None:
