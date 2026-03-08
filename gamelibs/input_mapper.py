@@ -12,6 +12,7 @@ import sys
 import logging
 import pygame
 from engine.geometry_types import Point2D, Vec2D, DirectedLineSeg2D
+from src.context import Context
 
 log = logging.getLogger(__name__)
 
@@ -69,11 +70,13 @@ class Panning:
         panning.begin = Point2D.from_tuple(position)
 
     @classmethod
-    def stop(cls, game: "Game") -> None:
+    def stop(cls) -> None:
         """User stopped panning."""
         panning = cls
         panning.is_active = False
-        game.coord_sys.pcs_origin = game.coord_sys.translation.as_point()  # Set new origin
+        # game.coord_sys.pcs_origin = game.coord_sys.translation.as_point()  # Set new origin
+        # Set new origin
+        Context.game.coord_sys.pcs_origin = Context.game.coord_sys.translation.as_point()
         panning.begin = panning.end  # Zero-out the panning vector
 
     @classmethod

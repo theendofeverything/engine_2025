@@ -371,7 +371,8 @@ class Game:
                 action = InputMapper.action_for_mouse_button_event(event, kmod)
                 if action is not None: self.do_action_for_mouse_button_event(action, event.pos)
 
-    def do_action_for_mouse_button_event(self, action: Action, position: tuple[int, int]) -> None:
+    @staticmethod
+    def do_action_for_mouse_button_event(action: Action, position: tuple[int, int]) -> None:
         """Handle actions for mouse events detected by the UI"""
         match action:
             case Action.START_PANNING:
@@ -379,7 +380,7 @@ class Game:
                 Panning.start(position)
             case Action.STOP_PANNING:
                 log.debug("User action: stop panning")
-                Panning.stop(self)
+                Panning.stop()
             case Action.START_DRAG_PLAYER:
                 log.debug("User action: start teleport player to mouse")
                 InputMapper.ongoing_action.drag_player_is_active = True
@@ -473,7 +474,7 @@ class Game:
                 log.debug("Player move down")
             case Action.STOP_PANNING:
                 log.debug("User action: stop panning")
-                Panning.stop(self)
+                Panning.stop()
             case Action.STOP_DRAG_PLAYER:
                 log.debug("User action: stop teleport player to mouse")
                 InputMapper.ongoing_action.drag_player_is_active = False
