@@ -148,29 +148,10 @@ class Game:
         Context.register_game(self)
         Context.register_renderer(Renderer())
         Context.register_timing(Timing())
-        # Load pygame
-        pygame.init()
-        pygame.font.init()
+        pygame.init()  # Load pygame
+        pygame.font.init()  # Load font module
         self.debug_font = "fonts/ProggyClean.ttf"
-        # self.debug_game = DebugGame(game=self)
-
-        # Handle rendering in renderer.py
-        # Note: The window size is just an initial value.
-        #   On WINDOWSIZECHANGED events, the window size and the software rendering
-        #   Surface size will automatically adjust to the new size value.
-        #   It is not necessary to create a new window_surface with the new window size.
-        #   See handle_windowsizechanged_events.
-        Context.renderer.window.title = "Example game"
-        # Context.renderer.window.size = (60*16, 60*9)
-        # Context.renderer.window.size = (60*16, 60*14)
-        Context.renderer.window.size = (700, 700)
-        Context.renderer.window.resizable = True
-        # Additional window settings used during development:
-        Context.renderer.window.always_on_top = True
-        # Context.renderer.window.position = (950, 0)
-        Context.renderer.window.position = (0, 0)
-        # Context.renderer.window.opacity = 0.8              # This is neat
-        # Context.renderer.toggle_fullscreen()               # Start in fullscreen
+        self.configure_window()
 
         # Handle all user interface events in ui.py (keyboard, mouse, panning, zoom)
         UI.subscribe(self.subscriber_map_event_to_action)
@@ -271,6 +252,27 @@ class Game:
         # Set NPC to follow the player
         self.entities["cross1"].movement.follow_entity = "player"
         self.entities["cross2"].movement.follow_entity = "cross1"
+
+    @staticmethod
+    def configure_window() -> None:
+        """Configure the game window."""
+        renderer: Renderer = Context.renderer  # Handle rendering in renderer.py
+        renderer.window.title = "Example game"
+        # Note: The window size is just an initial value.
+        #   On WINDOWSIZECHANGED events, the window size and the software rendering
+        #   Surface size will automatically adjust to the new size value.
+        #   It is not necessary to create a new window_surface with the new window size.
+        #   See handle_windowsizechanged_events.
+        # renderer.window.size = (60*16, 60*9)
+        # renderer.window.size = (60*16, 60*14)
+        renderer.window.size = (700, 700)
+        renderer.window.resizable = True
+        # Additional window settings used during development:
+        renderer.window.always_on_top = True
+        # renderer.window.position = (950, 0)
+        renderer.window.position = (0, 0)
+        # renderer.window.opacity = 0.8              # This is neat
+        # renderer.toggle_fullscreen()               # Start in fullscreen
 
     def run(self) -> None:
         """Run the game."""
