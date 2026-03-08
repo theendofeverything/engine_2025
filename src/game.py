@@ -89,7 +89,6 @@
 * [ ] Document how I am doing callbacks for the UI code
 """
 
-from dataclasses import dataclass, field
 import sys
 import random
 import pathlib
@@ -107,13 +106,13 @@ from engine.colors import Colors
 from engine.entity import Entity, EntityType
 from gamelibs.input_mapper import Action, InputMapper, KeyModifier, Panning
 from gamelibs.debug_game import DebugGame, Mode
-from .context import Context
+from .context import Context, namespace
 
 FILE = pathlib.Path(__file__).name
 log = logging.getLogger(__name__)
 
 
-@dataclass
+@namespace
 class Game:
     """Top-level game code.
 
@@ -130,42 +129,40 @@ class Game:
         _p: PCS
 
     Game code is divided up as follows:
-    >>> game = Game()
-    >>> game.setup()
-    >>> game
-    Game(coord_sys=CoordinateSystem(...),
+    >>> Game.setup()
+    >>> print(Game.state_str())
+    Game(debug_font='fonts/ProggyClean.ttf',
         entities={...},
-        debug_font='fonts/ProggyClean.ttf')
+        coord_sys=CoordinateSystem(...))
     """
-    ###################################
-    # Engine-defined instance variables
-    ###################################
-    # Instance variables defined in the implicit __init__() of dataclass
-    # Instance variables defined in __post_init__()
-    coord_sys:  CoordinateSystem = field(init=False)    # Track state of PCS and GCS
-    entities:   dict[str, Entity] = field(init=False)   # Game characters like the player
     debug_font: str = "fonts/ProggyClean.ttf"
+    entities:   dict[str, Entity] = {}
+    coord_sys:  CoordinateSystem
 
-    def setup(self) -> None:
-        """Setup game data"""
-        Context.register_game(self)  # Global access to instance of Game()
+    def __init__(self) -> None:
+        """Prevent accidental instantiation."""
+        raise RuntimeError("Game is a Namespace Class and cannot be instantiated.")
+
+    @classmethod
+    def setup(cls) -> None:
+        """Setup game state. Return a str for checking Game state in a unit test."""
+        Context.register_game(cls)  # Global access to instance of Game()
         Context.register_renderer(Renderer())  # Global access to instance of Renderer()
         Context.register_timing(Timing())  # Global access to instance of Timing()
-        self._create_clocked_events()  # Set up events in Timing that trigger every N frames
+        cls._create_clocked_events()  # Set up events in Timing that trigger every N frames
 
-        UI.subscribe(self._subscriber_map_event_to_action)  # See _subscriber_map_event_to_action()
+        UI.subscribe(cls._subscriber_map_event_to_action)  # See _subscriber_map_event_to_action()
 
         pygame.init()  # Load pygame
         pygame.font.init()  # Load font module
 
-        self._configure_game_window()  # Window renderer config
+        cls._configure_game_window()  # Window renderer config
         # Set the GCS to fit the window size and center the GCS origin in the window.
-        self.coord_sys = CoordinateSystem(
+        cls.coord_sys = CoordinateSystem(
                 window_size=Vec2D.from_tuple(Context.renderer.window.size)
                 )
 
-        self.entities = {}
-        self._create_entities(self.entities, self.coord_sys)  # Create entities (like the Player)
+        cls._create_entities(cls.entities, cls.coord_sys)  # Create entities (like the Player)
 
     @staticmethod
     def _create_entities(
@@ -289,14 +286,16 @@ class Game:
         # renderer.window.opacity = 0.8              # This is neat
         # renderer.toggle_fullscreen()               # Start in fullscreen
 
-    def run(self) -> None:
+    @classmethod
+    def run(cls) -> None:
         """Run the game."""
         log.debug(f"Window supports OpenGL: {Context.renderer.window.opengl}")
-        log.debug(f"Entities: {self.entities}")
+        log.debug(f"Entities: {cls.entities}")
         while True:
-            self.loop()
+            cls._loop()
 
-    def loop(self) -> None:
+    @classmethod
+    def _loop(cls) -> None:
         """Loop until the user quits."""
         # Prologue: reset debug
         Debug.hud.reset()  # Clear the debug HUD
@@ -304,24 +303,25 @@ class Game:
         DebugGame.fps(True)
         DebugGame.window_size(True)
         # Game
-        self.reset_art()  # Clear old art
+        cls._reset_art()  # Clear old art
         UI.consume_event_queue()  # Handle all user events
         InputMapper.ongoing_action.update()
         DebugGame.mouse(True)  # mouse position and buttons
         DebugGame.panning(True)  # Panning; Ctrl+Left-Click-Drag to pan
         DebugGame.player_forces(False)  # Show arrow keys: UP/DOWN/LEFT/RIGHT
         DebugGame.mode_controls(True)
-        self.update_entities()
+        cls._update_entities()
         DebugGame.entities(False)
-        self.draw_remaining_art()  # Draw any remaining art not already drawn
+        cls._draw_remaining_art()  # Draw any remaining art not already drawn
         # Epilogue: update debug HUD, display, and timing
-        self.update_frame_counters()  # Advance frame-based ticks
+        cls._update_frame_counters()  # Advance frame-based ticks
         DebugGame.frame_counters(True)
         Debug.display_snapshots_in_hud()  # Print snapshots in HUD last
         Context.renderer.render_all()  # Render all art and HUD
         Context.timing.maintain_framerate(fps=60)  # Run at 60 FPS
 
-    def _subscriber_map_event_to_action(self, event: pygame.event.Event, kmod: int) -> None:
+    @classmethod
+    def _subscriber_map_event_to_action(cls, event: pygame.event.Event, kmod: int) -> None:
         """Map UI events to actions and then pass the action to the action handler.
 
         UI events include keyboard, mouse, panning, zoom, etc.
@@ -329,17 +329,17 @@ class Game:
 
         Usage:
             1. Register with the UI like this:
-                UI.subscribe(self._subscriber_map_event_to_action)  # Register callback
+                UI.subscribe(cls._subscriber_map_event_to_action)  # Register callback
             2. Define actions in input_mapper.py:
                 - InputMapper.key_map
                 - InputMapper.mouse_map
             3. Define how to handle the actions in game.py:
-                - do_action_for_key_event()
-                - do_action_for_mouse_button_event()
+                - _do_action_for_key_event()
+                - _do_action_for_mouse_button_event()
             4. Handle ongoing actions (click-dragging) in ongoing_action.py
                 - OngoingAction.update(game)
             5. Game loop calls UI.consume_event_queue() which publishes all UI events
-            6. Game loop calls InputMapper.ongoing_action.update(self).
+            6. Game loop calls InputMapper.ongoing_action.update(cls).
                OngoingAction.update(game) checks if any ongoing actions are active and then updates
                them accordingly.
 
@@ -365,14 +365,14 @@ class Game:
             case pygame.KEYDOWN | pygame.KEYUP:
                 # Map for keydown and keyup events
                 action = InputMapper.action_for_key_event(event, kmod)
-                if action is not None: self.do_action_for_key_event(action)
+                if action is not None: cls._do_action_for_key_event(action)
             case pygame.MOUSEBUTTONDOWN | pygame.MOUSEBUTTONUP:
                 # Map for mouse buttondown and button up events
                 action = InputMapper.action_for_mouse_button_event(event, kmod)
-                if action is not None: self.do_action_for_mouse_button_event(action, event.pos)
+                if action is not None: cls._do_action_for_mouse_button_event(action, event.pos)
 
     @staticmethod
-    def do_action_for_mouse_button_event(action: Action, position: tuple[int, int]) -> None:
+    def _do_action_for_mouse_button_event(action: Action, position: tuple[int, int]) -> None:
         """Handle actions for mouse events detected by the UI"""
         match action:
             case Action.START_PANNING:
@@ -390,9 +390,10 @@ class Game:
 
     # pylint: disable=too-many-statements
     # pylint: disable=too-many-branches
-    def do_action_for_key_event(self, action: Action) -> None:
+    @classmethod
+    def _do_action_for_key_event(cls, action: Action) -> None:
         """Handle actions for keyboard events detected by the UI"""
-        entities = self.entities
+        entities = cls.entities
         match action:
             case Action.QUIT:
                 log.debug("User action: quit.")
@@ -480,7 +481,7 @@ class Game:
                 InputMapper.ongoing_action.drag_player_is_active = False
 
     @staticmethod
-    def update_frame_counters() -> None:
+    def _update_frame_counters() -> None:
         """Update the frame tick counters (animations are clocked by frame ticks).
 
         Video frames always update.
@@ -490,27 +491,30 @@ class Game:
         for frame_counter in timing.frame_counters.values():
             frame_counter.update()
 
-    def update_entities(self) -> None:
+    @classmethod
+    def _update_entities(cls) -> None:
         """Update the state of all entities based on counters and events."""
         timing = Context.timing
-        for entity in self.entities.values():
+        for entity in cls.entities.values():
             entity.update(timing)
             entity.draw()
 
     @staticmethod
-    def reset_art() -> None:
+    def _reset_art() -> None:
         """Clear out old artwork: application and debug."""
         Art.reset()                                     # Reset application artwork
         Debug.art.reset()                          # Clear the debug artwork
 
-    def draw_remaining_art(self) -> None:
+    @classmethod
+    def _draw_remaining_art(cls) -> None:
         """Update art and debug art"""
         draw_more_stuff = False
         if draw_more_stuff:
-            self.draw_background_crosses()              # Draw application artwork
-            self.draw_debug_crosses()                   # Draw debug artwork
+            cls._draw_background_crosses()              # Draw application artwork
+            cls._draw_debug_crosses()                   # Draw debug artwork
 
-    def draw_background_crosses(self) -> None:
+    @classmethod
+    def _draw_background_crosses(cls) -> None:
         """Draw some animated shapes in the background.
 
         Note: Framerate tanks when I zoom out too far -- zooming increases number of crosses because
@@ -522,7 +526,7 @@ class Game:
         down their animation speeds and assign different amounts of drift to each dependent on the
         location of the player character.
         """
-        coord_sys = self.coord_sys
+        coord_sys = cls.coord_sys
         crosses: list[Cross] = []
         # Put a cross every 0.2 units.
         #
@@ -555,14 +559,15 @@ class Game:
                 wiggle_line = Art.randomize_line(line, wiggle)
                 Art.lines.append(wiggle_line)
 
-    def draw_debug_crosses(self) -> None:
+    @classmethod
+    def _draw_debug_crosses(cls) -> None:
         """Draw a debug cross at the origin and at the player."""
         # Create debug artwork that uses lines
         crosses: list[Cross] = [
                 Cross(origin=Point2D(0, 0),
                       size=0.1,
                       color=Colors.line_debug),
-                Cross(origin=self.entities["player"].origin,
+                Cross(origin=cls.entities["player"].origin,
                       size=0.1,
                       rotate45=True,
                       color=Colors.line_debug),

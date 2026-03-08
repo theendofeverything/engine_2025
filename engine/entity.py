@@ -25,7 +25,7 @@ Entity Documentation (WIP)
                             loop()
                              |
                              v
-                            update_entities()
+                            _update_entities()
                              |
                              v
     Context.Timing ─▶ Entity.update() -> Paused? --┐

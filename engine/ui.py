@@ -9,12 +9,12 @@ Events:
         See 'subscriber_map_event_to_action()' in 'Game':
             'case pygame.KEYDOWN | pygame.KEYUP'
                 'InputMapper.key_map'
-                'Game.do_action_for_key_event()'
+                'Game._do_action_for_key_event()'
     Mouse button down/up:
         See 'subscriber_map_event_to_action()' in 'Game':
             'case pygame.MOUSEBUTTONDOWN | pygame.MOUSEBUTTONUP'
                 'InputMapper.mouse_map'
-                'do_action_for_mouse_button_event()'
+                '_do_action_for_mouse_button_event()'
 
 User actions:
     Panning:
