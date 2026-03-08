@@ -138,28 +138,27 @@ class OngoingAction:
 
     def update(self) -> None:
         """Update all ongoing actions."""
-        ongoing_action = self
         Panning.update()
-        ongoing_action.drag_player(Context.game)
+        self.drag_player()
 
     @staticmethod
-    def drag_player(game: "Game") -> None:
+    def drag_player() -> None:
         """Teleport player to mouse, like pulling on player and NPCs."""
         # if game.input_mapper.ongoing_action.drag_player_is_active:
         if InputMapper.ongoing_action.drag_player_is_active:
             # Get mouse position in game coordinates
             mouse_p = Point2D.from_tuple(pygame.mouse.get_pos())
-            mouse_g = game.coord_sys.xfm(
+            mouse_g = Context.game.coord_sys.xfm(
                     mouse_p.as_vec(),
-                    game.coord_sys.matrix.pcs_to_gcs
+                    Context.game.coord_sys.matrix.pcs_to_gcs
                     ).as_point()
             player_to_mouse = DirectedLineSeg2D(
-                    start=game.entities["player"].origin,
+                    start=Context.game.entities["player"].origin,
                     end=mouse_g)
             # Teleport NPC2 to mouse
-            game.entities["cross2"].origin = player_to_mouse.parametric_point(1.0)
+            Context.game.entities["cross2"].origin = player_to_mouse.parametric_point(1.0)
             # Teleport NPC1 to half-way between player and NPC2
-            game.entities["cross1"].origin = player_to_mouse.parametric_point(0.5)
+            Context.game.entities["cross1"].origin = player_to_mouse.parametric_point(0.5)
 
 
 class Action(Enum):
