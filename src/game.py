@@ -181,19 +181,16 @@ class Game:
         origin: set initial location
         """
         entities["player"] = Entity(
-                # debug_game=self.debug_game,
                 entities=entities,
                 entity_type=EntityType.PLAYER,
                 clocked_event_name="period_3",
                 )
         entities["cross1"] = Entity(
-                # debug_game=self.debug_game,
                 entities=entities,
                 entity_type=EntityType.NPC,
                 clocked_event_name="period_3",
                 )
         entities["cross2"] = Entity(
-                # debug_game=self.debug_game,
                 entities=entities,
                 entity_type=EntityType.NPC,
                 clocked_event_name="period_3",
@@ -212,7 +209,6 @@ class Game:
                 number = 1 + j + (i*num_crosses_x)
                 name = f"bgnd{number}"
                 entities[name] = Entity(
-                        # debug_game=self.debug_game,
                         entities=entities,
                         entity_type=EntityType.BACKGROUND_ART,
                         size=size,
@@ -465,15 +461,15 @@ class Game:
                 entities["player"].movement.player_force.down = True
             case Action.PLAYER_MOVE_LEFT_STOP:
                 log.debug("Player move left")
-                self.entities["player"].movement.player_force.left = False
+                entities["player"].movement.player_force.left = False
             case Action.PLAYER_MOVE_RIGHT_STOP:
                 log.debug("Player move right")
-                self.entities["player"].movement.player_force.right = False
+                entities["player"].movement.player_force.right = False
             case Action.PLAYER_MOVE_UP_STOP:
                 log.debug("Player move up")
-                self.entities["player"].movement.player_force.up = False
+                entities["player"].movement.player_force.up = False
             case Action.PLAYER_MOVE_DOWN_STOP:
-                self.entities["player"].movement.player_force.down = False
+                entities["player"].movement.player_force.down = False
                 log.debug("Player move down")
             case Action.STOP_PANNING:
                 log.debug("User action: stop panning")
@@ -482,7 +478,8 @@ class Game:
                 log.debug("User action: stop teleport player to mouse")
                 InputMapper.ongoing_action.drag_player_is_active = False
 
-    def update_frame_counters(self) -> None:
+    @staticmethod
+    def update_frame_counters() -> None:
         """Update the frame tick counters (animations are clocked by frame ticks).
 
         Video frames always update.
@@ -499,7 +496,8 @@ class Game:
             entity.update(timing)
             entity.draw()
 
-    def reset_art(self) -> None:
+    @staticmethod
+    def reset_art() -> None:
         """Clear out old artwork: application and debug."""
         Art.reset()                                     # Reset application artwork
         Debug.art.reset()                          # Clear the debug artwork
