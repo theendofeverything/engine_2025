@@ -113,7 +113,6 @@ FILE = pathlib.Path(__file__).name
 log = logging.getLogger(__name__)
 
 
-# pylint: disable=too-many-instance-attributes
 @dataclass
 class Game:
     """Top-level game code.
@@ -132,9 +131,11 @@ class Game:
 
     Game code is divided up as follows:
     >>> game = Game()
+    >>> game.setup()
     >>> game
     Game(coord_sys=CoordinateSystem(...),
-         entities={...})
+        entities={...},
+        debug_font='fonts/ProggyClean.ttf')
     """
     ###################################
     # Engine-defined instance variables
@@ -143,27 +144,107 @@ class Game:
     # Instance variables defined in __post_init__()
     coord_sys:  CoordinateSystem = field(init=False)    # Track state of PCS and GCS
     entities:   dict[str, Entity] = field(init=False)   # Game characters like the player
+    debug_font: str = "fonts/ProggyClean.ttf"
 
-    def __post_init__(self) -> None:
-        Context.register_game(self)
-        Context.register_renderer(Renderer())
-        Context.register_timing(Timing())
+    def setup(self) -> None:
+        """Setup game data"""
+        Context.register_game(self)  # Global access to instance of Game()
+        Context.register_renderer(Renderer())  # Global access to instance of Renderer()
+        Context.register_timing(Timing())  # Global access to instance of Timing()
+        self._create_clocked_events()  # Set up events in Timing that trigger every N frames
+
+        UI.subscribe(self._subscriber_map_event_to_action)  # See _subscriber_map_event_to_action()
+
         pygame.init()  # Load pygame
         pygame.font.init()  # Load font module
-        self.debug_font = "fonts/ProggyClean.ttf"
-        self.configure_window()
 
-        # Handle all user interface events in ui.py (keyboard, mouse, panning, zoom)
-        UI.subscribe(self.subscriber_map_event_to_action)
-
+        self._configure_game_window()  # Window renderer config
         # Set the GCS to fit the window size and center the GCS origin in the window.
         self.coord_sys = CoordinateSystem(
                 window_size=Vec2D.from_tuple(Context.renderer.window.size)
                 )
 
-        #######################
-        # Create clocked events
-        #######################
+        self.entities = {}
+        self._create_entities(self.entities, self.coord_sys)  # Create entities (like the Player)
+
+    @staticmethod
+    def _create_entities(
+            entities: dict[str, Entity],
+            coord_sys: CoordinateSystem
+            ) -> None:
+        """Create entities (like the Player)
+
+        Entity parameters
+        -----------------
+        size: Use entity size as mass and include mass in the acceleration calc
+        clocked_event_name: controls animation speed
+        origin: set initial location
+        """
+        entities["player"] = Entity(
+                # debug_game=self.debug_game,
+                entities=entities,
+                entity_type=EntityType.PLAYER,
+                clocked_event_name="period_3",
+                )
+        entities["cross1"] = Entity(
+                # debug_game=self.debug_game,
+                entities=entities,
+                entity_type=EntityType.NPC,
+                clocked_event_name="period_3",
+                )
+        entities["cross2"] = Entity(
+                # debug_game=self.debug_game,
+                entities=entities,
+                entity_type=EntityType.NPC,
+                clocked_event_name="period_3",
+                size=0.15,
+                )
+        # Create entities for background art
+        # 5 x 5 grid of crosses named "bgnd1" ... "bgnd10"
+        size = 0.07
+        num_crosses_x = 13
+        num_crosses_y = 13
+        dist = Vec2D(x=2*size, y=2*size)
+        start = Point2D(x=-1*coord_sys.gcs_width/2 + 0.1,
+                        y=-1*coord_sys.gcs_width/2 + 0.1)
+        for i in range(num_crosses_x):
+            for j in range(num_crosses_y):
+                number = 1 + j + (i*num_crosses_x)
+                name = f"bgnd{number}"
+                entities[name] = Entity(
+                        # debug_game=self.debug_game,
+                        entities=entities,
+                        entity_type=EntityType.BACKGROUND_ART,
+                        size=size,
+                        origin=Point2D(start.x + i*dist.x,
+                                       start.y + j*dist.y),
+                        )
+                me = entities[name]
+                # Respond to the player
+                me.movement.follow_entities = ["player", "cross1", "cross2"]
+                # Be excited in general
+                me.amount_excited.low *= 2
+                # Get very excited when player is near
+                me.amount_excited.high *= 2
+        # Entities track their own name for display in the debug HUD
+        for name, entity in entities.items():
+            entity.entity_name = name
+
+        # Set NPC to follow the player
+        entities["cross1"].movement.follow_entity = "player"
+        entities["cross2"].movement.follow_entity = "cross1"
+
+    @staticmethod
+    def _create_clocked_events() -> None:
+        """Add a game FrameCounter to Timing.
+
+        Fill the Timing.FrameCounter with clocked events for various frame periods:
+
+        every_frame: Event is clocked every frame
+        period_1: Event is clocked every frame
+        period_2: Event is clocked every two frames
+        ...
+        """
         # Add a FrameCounter for the game.
         Context.timing.frame_counters["game"] = FrameCounter()
         # Add ClockedEvents to the frame counter.
@@ -191,72 +272,10 @@ class Game:
         for name, clocked_event in frame_counter.clocked_events.items():
             clocked_event.event_name = name
 
-        ###################################
-        # Create entities (like the Player)
-        ###################################
-        # size: Use entity size as mass and include mass in the acceleration calc
-        # clocked_event_name: controls animation speed
-        # origin: set initial location
-        self.entities = {}
-        self.entities["player"] = Entity(
-                # debug_game=self.debug_game,
-                entities=self.entities,
-                entity_type=EntityType.PLAYER,
-                clocked_event_name="period_3",
-                )
-        self.entities["cross1"] = Entity(
-                # debug_game=self.debug_game,
-                entities=self.entities,
-                entity_type=EntityType.NPC,
-                clocked_event_name="period_3",
-                )
-        self.entities["cross2"] = Entity(
-                # debug_game=self.debug_game,
-                entities=self.entities,
-                entity_type=EntityType.NPC,
-                clocked_event_name="period_3",
-                size=0.15,
-                )
-        # Create entities for background art
-        # 5 x 5 grid of crosses named "bgnd1" ... "bgnd10"
-        size = 0.07
-        num_crosses_x = 13
-        num_crosses_y = 13
-        dist = Vec2D(x=2*size, y=2*size)
-        coord_sys = self.coord_sys
-        start = Point2D(x=-1*coord_sys.gcs_width/2 + 0.1,
-                        y=-1*coord_sys.gcs_width/2 + 0.1)
-        for i in range(num_crosses_x):
-            for j in range(num_crosses_y):
-                number = 1 + j + (i*num_crosses_x)
-                name = f"bgnd{number}"
-                self.entities[name] = Entity(
-                        # debug_game=self.debug_game,
-                        entities=self.entities,
-                        entity_type=EntityType.BACKGROUND_ART,
-                        size=size,
-                        origin=Point2D(start.x + i*dist.x,
-                                       start.y + j*dist.y),
-                        )
-                me = self.entities[name]
-                # Respond to the player
-                me.movement.follow_entities = ["player", "cross1", "cross2"]
-                # Be excited in general
-                me.amount_excited.low *= 2
-                # Get very excited when player is near
-                me.amount_excited.high *= 2
-        # Entities track their own name for display in the debug HUD
-        for name, entity in self.entities.items():
-            entity.entity_name = name
-
-        # Set NPC to follow the player
-        self.entities["cross1"].movement.follow_entity = "player"
-        self.entities["cross2"].movement.follow_entity = "cross1"
-
     @staticmethod
-    def configure_window() -> None:
-        """Configure the game window."""
-        renderer: Renderer = Context.renderer  # Handle rendering in renderer.py
+    def _configure_game_window() -> None:
+        """Configure game window rendering."""
+        renderer: Renderer = Context.renderer  # Renderer in engine/renderer.py
         renderer.window.title = "Example game"
         # Note: The window size is just an initial value.
         #   On WINDOWSIZECHANGED events, the window size and the software rendering
@@ -306,12 +325,15 @@ class Game:
         Context.renderer.render_all()  # Render all art and HUD
         Context.timing.maintain_framerate(fps=60)  # Run at 60 FPS
 
-    def subscriber_map_event_to_action(self, event: pygame.event.Event, kmod: int) -> None:
+    def _subscriber_map_event_to_action(self, event: pygame.event.Event, kmod: int) -> None:
         """Map UI events to actions and then pass the action to the action handler.
+
+        UI events include keyboard, mouse, panning, zoom, etc.
+        UI is defined in 'engine/ui.py'.
 
         Usage:
             1. Register with the UI like this:
-                UI.subscribe(self.subscriber_map_event_to_action)  # Register callback
+                UI.subscribe(self._subscriber_map_event_to_action)  # Register callback
             2. Define actions in input_mapper.py:
                 - InputMapper.key_map
                 - InputMapper.mouse_map

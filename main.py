@@ -76,4 +76,7 @@ if __name__ == "__main__":
               .joinpath(Path(__file__).name)
               )
     atexit.register(shutdown, __file__)
-    Game().run()
+    game = Game()
+    game.setup()
+    game.run()
+    # Game().run()
