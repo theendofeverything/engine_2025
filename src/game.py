@@ -306,7 +306,7 @@ class Game:
         # Game
         self.reset_art()  # Clear old art
         UI.consume_event_queue()  # Handle all user events
-        InputMapper.ongoing_action.update(self)
+        InputMapper.ongoing_action.update()
         DebugGame.mouse(True)  # mouse position and buttons
         DebugGame.panning(True)  # Panning; Ctrl+Left-Click-Drag to pan
         DebugGame.player_forces(False)  # Show arrow keys: UP/DOWN/LEFT/RIGHT

@@ -136,11 +136,11 @@ class OngoingAction:
 
     drag_player_is_active: bool = False
 
-    def update(self, game: "Game") -> None:
+    def update(self) -> None:
         """Update all ongoing actions."""
         ongoing_action = self
         Panning.update()
-        ongoing_action.drag_player(game)
+        ongoing_action.drag_player(Context.game)
 
     @staticmethod
     def drag_player(game: "Game") -> None:
