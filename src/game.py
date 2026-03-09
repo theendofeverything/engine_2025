@@ -107,6 +107,7 @@ from engine.entity import Entity, EntityType
 from engine.panning import Panning
 from gamelibs.input_mapper import Action, InputMapper, KeyModifier
 # from gamelibs.input_mapper import Panning
+from gamelibs.ongoing_action import OngoingAction
 from gamelibs.debug_game import DebugGame, Mode
 from .context import Context, namespace
 
@@ -303,7 +304,8 @@ class Game:
         # Game
         cls._reset_art()  # Clear old art
         UI.consume_event_queue()  # Handle all user events
-        InputMapper.ongoing_action.update()
+        Panning.update()  # If user is mouse panning, get latest mouse position
+        OngoingAction.update()
         DebugGame.mouse(True)  # mouse position and buttons
         DebugGame.panning(True)  # Panning; Ctrl+Left-Click-Drag to pan
         DebugGame.player_forces(False)  # Show arrow keys: UP/DOWN/LEFT/RIGHT
@@ -381,10 +383,10 @@ class Game:
                 Panning.stop()
             case Action.START_DRAG_PLAYER:
                 log.debug("User action: start teleport player to mouse")
-                InputMapper.ongoing_action.drag_player_is_active = True
+                OngoingAction.drag_player_is_active = True
             case Action.STOP_DRAG_PLAYER:
                 log.debug("User action: stop teleport player to mouse")
-                InputMapper.ongoing_action.drag_player_is_active = False
+                OngoingAction.drag_player_is_active = False
 
     # pylint: disable=too-many-statements
     # pylint: disable=too-many-branches
@@ -476,7 +478,7 @@ class Game:
                 Panning.stop()
             case Action.STOP_DRAG_PLAYER:
                 log.debug("User action: stop teleport player to mouse")
-                InputMapper.ongoing_action.drag_player_is_active = False
+                OngoingAction.drag_player_is_active = False
 
     @staticmethod
     def _update_frame_counters() -> None:
