@@ -12,11 +12,12 @@ import sys
 import logging
 import pygame
 from engine.geometry_types import Point2D, Vec2D, DirectedLineSeg2D
-from src.context import Context
+from src.context import Context, namespace
 
 log = logging.getLogger(__name__)
 
 
+@namespace
 class Panning:
     """Track mouse panning state.
 
@@ -294,6 +295,7 @@ class KeyModifier(Enum):
         return cls(kmod)
 
 # pylint: disable=line-too-long
+@namespace
 class InputMapper:
     """Map inputs (such as key presses) to actions.
 

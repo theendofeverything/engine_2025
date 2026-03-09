@@ -1,10 +1,16 @@
-"""Art is comprised of vertices."""
+"""Art is comprised of vertices.
+
+I define Art as a Namespace Class. Since there are no circular dependencies, I could also just get
+rid of the class and use the module "art" as the namespace.
+"""
 import random
 from pygame.color import Color
+from src.context import namespace
 from .drawing_shapes import Line2D
 from .geometry_types import Point2D
 
 
+@namespace
 class Art:
     """Container for all artwork to render."""
     lines: list[Line2D] = []

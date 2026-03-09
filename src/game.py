@@ -139,10 +139,6 @@ class Game:
     entities:   dict[str, Entity] = {}
     coord_sys:  CoordinateSystem
 
-    def __init__(self) -> None:
-        """Prevent accidental instantiation."""
-        raise RuntimeError("Game is a Namespace Class and cannot be instantiated.")
-
     @classmethod
     def setup(cls) -> None:
         """Setup game state. Return a str for checking Game state in a unit test."""
