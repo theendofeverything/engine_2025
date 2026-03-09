@@ -11,8 +11,10 @@ from engine.geometry_types import Point2D, Vec2D
 from engine.colors import Colors
 from engine.drawing_shapes import Line2D
 from engine.debug import Debug
+from engine.panning import Panning
 from src.context import Context
-from .input_mapper import Mouse, MouseButton, Panning
+from .input_mapper import Mouse, MouseButton
+# from .input_mapper import Panning
 
 FILE = pathlib.Path(__file__).name
 

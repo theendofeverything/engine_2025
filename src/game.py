@@ -104,7 +104,9 @@ from engine.geometry_types import Point2D, Vec2D
 from engine.drawing_shapes import Cross
 from engine.colors import Colors
 from engine.entity import Entity, EntityType
-from gamelibs.input_mapper import Action, InputMapper, KeyModifier, Panning
+from engine.panning import Panning
+from gamelibs.input_mapper import Action, InputMapper, KeyModifier
+# from gamelibs.input_mapper import Panning
 from gamelibs.debug_game import DebugGame, Mode
 from .context import Context, namespace
 

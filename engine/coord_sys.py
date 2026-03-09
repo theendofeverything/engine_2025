@@ -6,7 +6,8 @@ There are two coordinate systems:
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
-from gamelibs.input_mapper import Panning
+# from gamelibs.input_mapper import Panning
+from .panning import Panning
 from .geometry_types import Vec2D, Point2D
 from .geometry_operators import Matrix2DH
 
