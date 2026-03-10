@@ -12,8 +12,9 @@ from engine.colors import Colors
 from engine.drawing_shapes import Line2D
 from engine.debug import Debug
 from engine.panning import Panning
+from engine.mouse import Mouse, ButtonName
 from src.context import Context
-from .input_mapper import Mouse, MouseButton
+# from .input_mapper import Mouse, ButtonName
 # from .input_mapper import Panning
 
 FILE = pathlib.Path(__file__).name
@@ -120,16 +121,16 @@ class DebugGame:
         def debug_mouse_buttons() -> None:
             """Display mouse button state."""
             Debug.hud.print("|  +- Mouse.is_pressed():")
-            mouse_button = MouseButton.LEFT
+            mouse_button = ButtonName.LEFT
             Debug.hud.print(f"|     +- {mouse_button.name}: {Mouse.is_pressed(mouse_button)}")
-            mouse_button = MouseButton.MIDDLE
+            mouse_button = ButtonName.MIDDLE
             Debug.hud.print(f"|     +- {mouse_button.name}: {Mouse.is_pressed(mouse_button)}")
-            mouse_button = MouseButton.RIGHT
+            mouse_button = ButtonName.RIGHT
             Debug.hud.print(f"|     +- {mouse_button.name}: {Mouse.is_pressed(mouse_button)}")
             # The WHEELUP and WHEELDOWN are always False. Why?
-            mouse_button = MouseButton.WHEELUP
+            mouse_button = ButtonName.WHEELUP
             Debug.hud.print(f"|     +- {mouse_button.name}: {Mouse.is_pressed(mouse_button)}")
-            mouse_button = MouseButton.WHEELDOWN
+            mouse_button = ButtonName.WHEELDOWN
             Debug.hud.print(f"|     +- {mouse_button.name}: {Mouse.is_pressed(mouse_button)}")
         debug_mouse_buttons()
 

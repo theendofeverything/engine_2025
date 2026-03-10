@@ -7,11 +7,12 @@ Note that pygame has two different codes for modifier keys depending on usage. F
 """
 
 from __future__ import annotations
-from enum import Enum, IntEnum, auto
+from enum import Enum, auto
 import sys
 import logging
 import pygame
 from src.context import namespace
+from engine.mouse import Mouse, ButtonName, ButtonDirection
 
 log = logging.getLogger(__name__)
 
@@ -47,81 +48,6 @@ class Action(Enum):
     STOP_DRAG_PLAYER = auto()
 
 
-class MouseButton(IntEnum):
-    """Enumerate the mouse button values from pygame.Event.button.
-
-    >>> MouseButton.LEFT
-    <MouseButton.LEFT: 1>
-    """
-    LEFT = 1
-    MIDDLE = 2
-    RIGHT = 3
-    WHEELUP = 4
-    WHEELDOWN = 5
-
-    @classmethod
-    def from_event(cls, event: pygame.Event) -> MouseButton:
-        """Get MouseButton from an event (uses event.button)."""
-        return cls(event.button)
-
-
-class Mouse:
-    """Track mouse state in a Global Singleton.
-
-    Button state begins with no buttons pressed:
-    >>> Mouse.is_pressed(MouseButton.LEFT)
-    False
-
-    Simulate a left-click:
-    >>> event = pygame.Event(pygame.MOUSEBUTTONDOWN, {'button': 1})
-
-    Update the button state:
-    >>> Mouse.update(event)
-
-    Check that we have updated the state of the left mouse button:
-    >>> Mouse.is_pressed(MouseButton.LEFT)
-    True
-
-    Convert pygame.Event.button 'int' type to a MouseButton Enum:
-    >>> mouse_button = MouseButton.from_event(event)
-
-    Print the button state (TRUE) using its name (LEFT) instead of its value (1):
-    >>> print(f"Mouse.is_pressed({mouse_button.name}): {Mouse.is_pressed(mouse_button)}")
-    Mouse.is_pressed(LEFT): True
-
-    Note the use of 'MouseButton' vs 'MouseButton.name':
-        - 'MouseButton' gets the 'int' value (1, 2, etc.)
-        - 'MouseButton.name' gets the button name ('LEFT', 'MIDDLE', etc.)
-    """
-    # Store states for all 5 buttons: Pressed (True) and NotPressed (False)
-    _state = {button.value: False for button in MouseButton}
-
-    @classmethod
-    def update(cls, event: pygame.Event) -> None:
-        """Update the state of all buttons in MouseButton."""
-        match event.type:
-            case pygame.MOUSEBUTTONDOWN:
-                cls._state[event.button] = True
-            case pygame.MOUSEBUTTONUP:
-                cls._state[event.button] = False
-
-    @classmethod
-    def is_pressed(cls, button: MouseButton) -> bool:
-        """Return True/False if button MouseButton is pressed.
-
-        If the "button" does not exist, return False instead of None:
-        >>> Mouse.is_pressed(6)
-        False
-        """
-        return cls._state.get(button, False)
-
-
-class ButtonDirection(Enum):
-    """Enumerate names for MOUSEBUTTONUP and MOUSEBUTTONDOWN."""
-    UP = auto()
-    DOWN = auto()
-
-
 class KeyDirection(Enum):
     """Enumerate names for KEYUP and KEYDOWN instead of just using bool."""
     UP = auto()
@@ -148,6 +74,7 @@ class KeyModifier(Enum):
         """Get a KeyModifier from the pygame kmod value returned by UI.kmod_simplify(kmod)."""
         return cls(kmod)
 
+
 # pylint: disable=line-too-long
 @namespace
 class InputMapper:
@@ -163,12 +90,12 @@ class InputMapper:
     ...
 
     >>> InputMapper.mouse_map
-    {(<MouseButton.LEFT: 1>, <KeyModifier.CTRL: 192>, <ButtonDirection.DOWN: 2>): <Action.START_PANNING: 24>,
-    (<MouseButton.LEFT: 1>, <KeyModifier.CTRL: 192>, <ButtonDirection.UP: 1>): <Action.STOP_PANNING: 25>,
-    (<MouseButton.MIDDLE: 2>, <KeyModifier.NO_MODIFIER: 0>, <ButtonDirection.DOWN: 2>): <Action.START_PANNING: 24>,
-    (<MouseButton.MIDDLE: 2>, <KeyModifier.NO_MODIFIER: 0>, <ButtonDirection.UP: 1>): <Action.STOP_PANNING: 25>,
-    (<MouseButton.LEFT: 1>, <KeyModifier.SHIFT: 3>, <ButtonDirection.DOWN: 2>): <Action.START_DRAG_PLAYER: 26>,
-    (<MouseButton.LEFT: 1>, <KeyModifier.SHIFT: 3>, <ButtonDirection.UP: 1>): <Action.STOP_DRAG_PLAYER: 27>}
+    {(<ButtonName.LEFT: 1>, <KeyModifier.CTRL: 192>, <ButtonDirection.DOWN: 2>): <Action.START_PANNING: 24>,
+    (<ButtonName.LEFT: 1>, <KeyModifier.CTRL: 192>, <ButtonDirection.UP: 1>): <Action.STOP_PANNING: 25>,
+    (<ButtonName.MIDDLE: 2>, <KeyModifier.NO_MODIFIER: 0>, <ButtonDirection.DOWN: 2>): <Action.START_PANNING: 24>,
+    (<ButtonName.MIDDLE: 2>, <KeyModifier.NO_MODIFIER: 0>, <ButtonDirection.UP: 1>): <Action.STOP_PANNING: 25>,
+    (<ButtonName.LEFT: 1>, <KeyModifier.SHIFT: 3>, <ButtonDirection.DOWN: 2>): <Action.START_DRAG_PLAYER: 26>,
+    (<ButtonName.LEFT: 1>, <KeyModifier.SHIFT: 3>, <ButtonDirection.UP: 1>): <Action.STOP_DRAG_PLAYER: 27>}
     """
     key_map: dict[tuple[int,  # event.key
                         KeyModifier,  # enum wrapper on pygame kmod
@@ -205,18 +132,18 @@ class InputMapper:
             (pygame.K_LSHIFT, KeyModifier.NO_MODIFIER, KeyDirection.UP):     Action.STOP_DRAG_PLAYER,
             }
     # pylint: disable=line-too-long
-    mouse_map: dict[tuple[MouseButton,  # enum wrapper on pygame event.button int
+    mouse_map: dict[tuple[ButtonName,  # enum wrapper on pygame event.button int
                           KeyModifier,  # enum wrapper on pygame kmod
                           ButtonDirection  # enum -- UP or DOWN
                           ],
                     Action  # enum
                     ] = {
-            (MouseButton.LEFT,   KeyModifier.PANNING,     ButtonDirection.DOWN): Action.START_PANNING,
-            (MouseButton.LEFT,   KeyModifier.PANNING,     ButtonDirection.UP):   Action.STOP_PANNING,
-            (MouseButton.MIDDLE, KeyModifier.NO_MODIFIER, ButtonDirection.DOWN): Action.START_PANNING,
-            (MouseButton.MIDDLE, KeyModifier.NO_MODIFIER, ButtonDirection.UP):   Action.STOP_PANNING,
-            (MouseButton.LEFT,   KeyModifier.SHIFT,    ButtonDirection.DOWN):    Action.START_DRAG_PLAYER,
-            (MouseButton.LEFT,   KeyModifier.SHIFT,    ButtonDirection.UP):      Action.STOP_DRAG_PLAYER,
+            (ButtonName.LEFT,   KeyModifier.PANNING,     ButtonDirection.DOWN): Action.START_PANNING,
+            (ButtonName.LEFT,   KeyModifier.PANNING,     ButtonDirection.UP):   Action.STOP_PANNING,
+            (ButtonName.MIDDLE, KeyModifier.NO_MODIFIER, ButtonDirection.DOWN): Action.START_PANNING,
+            (ButtonName.MIDDLE, KeyModifier.NO_MODIFIER, ButtonDirection.UP):   Action.STOP_PANNING,
+            (ButtonName.LEFT,   KeyModifier.SHIFT,    ButtonDirection.DOWN):    Action.START_DRAG_PLAYER,
+            (ButtonName.LEFT,   KeyModifier.SHIFT,    ButtonDirection.UP):      Action.STOP_DRAG_PLAYER,
             }
 
     @classmethod
@@ -254,7 +181,7 @@ class InputMapper:
                 button_direction = ButtonDirection.UP
                 Mouse.update(event)
             case _: sys.exit()  # Should never happen!
-        mouse_button = MouseButton.from_event(event)
+        mouse_button = ButtonName.from_event(event)
         log.debug(f"Event MOUSEBUTTON {button_direction}, "
                   f"pos: {event.pos}, ({type(event.pos[0])}), "
                   f"event.button: {event.button}, "
