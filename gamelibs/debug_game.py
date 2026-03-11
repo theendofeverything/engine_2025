@@ -12,7 +12,8 @@ from engine.colors import Colors
 from engine.drawing_shapes import Line2D
 from engine.debug import Debug
 from engine.panning import Panning
-from engine.mouse import Mouse, ButtonName
+# from engine.mouse import Mouse, ButtonName
+from engine import mouse
 from src.context import Context
 # from .input_mapper import Mouse, ButtonName
 # from .input_mapper import Panning
@@ -101,7 +102,7 @@ class DebugGame:
         """Debug mouse position and buttons."""
         if not show_in_hud: return
         coord_sys = Context.game.coord_sys
-        Debug.hud.print(f"|\n+- Mouse -> is_pressed ({FILE})")
+        Debug.hud.print(f"|\n+- mouse -> is_pressed ({FILE})")
 
         def debug_mouse_position() -> None:
             """Display mouse position in GCS and PCS."""
@@ -120,18 +121,18 @@ class DebugGame:
 
         def debug_mouse_buttons() -> None:
             """Display mouse button state."""
-            Debug.hud.print("|  +- Mouse.is_pressed():")
-            mouse_button = ButtonName.LEFT
-            Debug.hud.print(f"|     +- {mouse_button.name}: {Mouse.is_pressed(mouse_button)}")
-            mouse_button = ButtonName.MIDDLE
-            Debug.hud.print(f"|     +- {mouse_button.name}: {Mouse.is_pressed(mouse_button)}")
-            mouse_button = ButtonName.RIGHT
-            Debug.hud.print(f"|     +- {mouse_button.name}: {Mouse.is_pressed(mouse_button)}")
+            Debug.hud.print("|  +- mouse.is_pressed():")
+            mouse_button = mouse.ButtonName.LEFT
+            Debug.hud.print(f"|     +- {mouse_button.name}: {mouse.is_pressed(mouse_button)}")
+            mouse_button = mouse.ButtonName.MIDDLE
+            Debug.hud.print(f"|     +- {mouse_button.name}: {mouse.is_pressed(mouse_button)}")
+            mouse_button = mouse.ButtonName.RIGHT
+            Debug.hud.print(f"|     +- {mouse_button.name}: {mouse.is_pressed(mouse_button)}")
             # The WHEELUP and WHEELDOWN are always False. Why?
-            mouse_button = ButtonName.WHEELUP
-            Debug.hud.print(f"|     +- {mouse_button.name}: {Mouse.is_pressed(mouse_button)}")
-            mouse_button = ButtonName.WHEELDOWN
-            Debug.hud.print(f"|     +- {mouse_button.name}: {Mouse.is_pressed(mouse_button)}")
+            mouse_button = mouse.ButtonName.WHEELUP
+            Debug.hud.print(f"|     +- {mouse_button.name}: {mouse.is_pressed(mouse_button)}")
+            mouse_button = mouse.ButtonName.WHEELDOWN
+            Debug.hud.print(f"|     +- {mouse_button.name}: {mouse.is_pressed(mouse_button)}")
         debug_mouse_buttons()
 
     @staticmethod

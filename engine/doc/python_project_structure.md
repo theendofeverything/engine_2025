@@ -200,6 +200,40 @@ context.game_handle = ?  # How do I talk about THIS module?
 
 I have not tried this approach yet. I skipped straight to the next approach.
 
+One disadvantage of this approach is that you lose a little control over the
+name of the Namespace Class. The name becomes the module name.
+
+For example, I defined Namespace Class `Mouse` in module `engine/mouse.py`. User code did:
+
+```python
+from engine.mouse import Mouse
+...
+Mouse.blah
+```
+
+And the doctests in `mouse.py` used `Mouse.blah`:
+
+```python
+>>> Mouse.is_pressed(ButtonName.LEFT)
+False
+```
+
+When I pulled all of the members out of `Mouse` up to the module level, user code changed to:
+
+```python
+from engine import mouse
+...
+mouse.blah
+```
+
+And my doctests in `engine/mouse.py` changed to:
+
+```python
+>>> from engine import mouse
+>>> mouse.is_pressed(mouse.ButtonName.LEFT)
+False
+```
+
 ## Context as a Global Singleton Hub Class
 
 It feels a little cleaner to put all this in a class rather than have just this

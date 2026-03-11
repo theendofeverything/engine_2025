@@ -56,7 +56,6 @@ class OngoingAction:
     @classmethod
     def drag_player(cls) -> None:
         """Teleport player to mouse, like pulling on player and NPCs."""
-        # if game.input_mapper.ongoing_action.drag_player_is_active:
         if cls.drag_player_is_active:
             # Get mouse position in game coordinates
             mouse_p = Point2D.from_tuple(pygame.mouse.get_pos())
