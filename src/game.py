@@ -106,7 +106,6 @@ from engine.colors import Colors
 from engine.entity import Entity, EntityType
 from engine.panning import Panning
 from gamelibs.input_mapper import Action, InputMapper, KeyModifier
-# from gamelibs.input_mapper import Panning
 from gamelibs.ongoing_action import OngoingAction
 from gamelibs.debug_game import DebugGame, Mode
 from .context import Context, namespace

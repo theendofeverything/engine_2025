@@ -12,11 +12,8 @@ from engine.colors import Colors
 from engine.drawing_shapes import Line2D
 from engine.debug import Debug
 from engine.panning import Panning
-# from engine.mouse import Mouse, ButtonName
 from engine import mouse
 from src.context import Context
-# from .input_mapper import Mouse, ButtonName
-# from .input_mapper import Panning
 
 FILE = pathlib.Path(__file__).name
 

@@ -12,7 +12,6 @@ import sys
 import logging
 import pygame
 from src.context import namespace
-# from engine.mouse import Mouse, ButtonName, ButtonDirection
 from engine import mouse
 
 log = logging.getLogger(__name__)

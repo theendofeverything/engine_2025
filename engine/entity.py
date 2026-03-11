@@ -45,7 +45,6 @@ import pathlib
 import random
 from enum import Enum, auto
 from pygame import Color
-# from src.game import Game
 from gamelibs.debug_game import DebugGame
 from .geometry_types import Point2D, Vec2D, DirectedLineSeg2D
 from .drawing_shapes import Cross, Line2D
