@@ -1,6 +1,7 @@
-# Dependency Injection Project Structure
+Could `Game` depend on prototypes of its data structures and methods in another
+module that everyone imports from, including `Game` itself?
 
-Put everything in modules, even the main `Game` code.
+# Dependency Injection Project Structure
 
 Say we have a module named `engine` which contains submodules `art.py` and
 `colors.py`:
@@ -55,11 +56,34 @@ The class `Game` in `game.py` uses anything from modules `engine` and
 `gamelibs` with no problem. But submodules `engine` and `gamelibs` do not have
 access to `game`.
 
+There are two workarounds.
+
+First, we can make 'Game' responsible for instantiating Global Singletons of
+whatever is in `engine` and `gamelibs` and then as part of the
+`Game.__init__()` or `Game.__post_init__()` (depending on whether the Global
+Singletons require setup prior to instantiation), `Game` instantiates those
+classes and passes an instance of itself (`self`) to those classes as a first
+argument. Those Global Singletons now have a handle on the `Game` Global
+Singleton. This is one of way doing *Dependency Injection* in Python. This will
+work regardless of the project structure, so if you really like having `game`
+sit in the root folder, then this is a reasonable way to go.
+
+Second, we can alter the project structure by adding a `src` module
+that is a sibling with `engine` and `gamelibs`. If we put `game` inside `src`,
+we gives `engine` and `gamelibs` access to `game` via `from src.game import
+Game`. But we still will not be able to import `Game` into any of these modules
+because that will create circular dependencies. So 
+
+
+
 The workaround is called *Dependency Injection*. We make a Global Singleton of
 `Game` that is passed into the constructor of anything that needs access to
-`Game`. In fact, this circular import issue is the entire reason for making
+`Game`. In fact, this circular import issue is one of two reasons for making
 `Game` a class instead of just using the Python module `game.py` itself as the
-namespace for other modules that need access to `game` stuff.
+namespace for other modules that need access to `game` stuff. (The other
+reason, which we'll explore more in a later section, is that linters heavily
+discourage a style that exposes global mutable variables, unless those global
+mutables are dictionaries.)
 
 For example, the class `DebugGame` in submodule `gamelibs.debug_game` takes an
 instance of `Game` to have access to all of the `Game` data for debugging.
@@ -85,8 +109,8 @@ class Game:
         self.debug_game = DebugGame(game=self)
 ```
 
-This will result in a working program and many people consider this the best
-way to structure the project.
+This is Dependency Injection. It will result in a working program and it is
+considered by some to be the best way to structure the project.
 
 But we lose the ability to do proper type checking because we cannot
 `import Game` in submodule `debug_game.py` to use `Game` for type-checking.
@@ -94,7 +118,9 @@ But we lose the ability to do proper type checking because we cannot
 We also lose the ability to run any unit tests in `gamelibs` that require
 `Game`.
 
-# Singleton Hub Project Structure
+# Put Everything in a Module
+
+Put everything in modules, even the main `Game` code.
 
 Since `engine` and `gamelibs` have no problem importing from each other, what
 if we do the same with `game.py`: put this in a module named `src`.
@@ -165,7 +191,7 @@ The solution is subtle and not obvious. We add a submodule to `engine` named
 
 We can do this a few ways.
 
-## Module as Global Singleton Hub
+## Module as Namespace Class
 
 In Python, modules are already singletons. They are initialized once and cached
 in sys.modules. Instead of a complex class, you can put your global state in a
@@ -233,6 +259,162 @@ And my doctests in `engine/mouse.py` changed to:
 >>> mouse.is_pressed(mouse.ButtonName.LEFT)
 False
 ```
+
+So this all worked fine for `Mouse`, but it did not work for `Panning`. And not
+because of circular imports. The code runs, but the linter does not like it.
+
+```python
+import pygame
+from src.context import Context, namespace
+from .geometry_types import Vec2D, Point2D
+
+
+@namespace
+class Panning:
+    """Track mouse panning state.
+
+    Attributes:
+        is_active (bool):
+            Panning is in two states: either active (is_active=True) or inactive
+            (is_active=False).
+        begin (Point2D):
+            Position in the pixel coordinate system when panning transitioned to
+            the active state. While in the active state, 'begin' does not
+            change.
+        end (Point2D):
+            Latest mouse position in the pixel coordinate system while panning:
+            the game loads 'end' with the mouse position on every iteration of
+            the game loop.
+        vector (Vec2D):
+            Amount of mouse pan, obtained from end - begin.
+            The 'Panning.vector()' is picked up during rendering, as follows:
+                When the game loop renders drawing entities, it converts entity
+                coordinates from GCS to PCS:
+                    coord_sys.xfm(v:Vec2D, coord_sys.matrix.gcs_to_pcs)
+
+                That coordinate transform matrix is calculated using the origin
+                offset vector:
+                    coord_sys.translation
+
+                And coord_sys.translation is calculated using the
+                'Panning.vector()' (this attribute).
+
+    >>> mouse_pos = (123, 456)                          # Position when button 1 was pressed
+    >>> Panning.begin = Point2D.from_tuple(mouse_pos)   # Track panning begin position
+    >>> mouse_pos = (246, 456)                          # Position later while still panning
+    >>> Panning.end = Point2D.from_tuple(mouse_pos)     # Track latest panning position
+    >>> Panning.vector()                                # Report the latest panning vector
+    Vec2D(x=123, y=0)
+    """
+    begin:                  Point2D = Point2D(0, 0)     # Dummy initial value
+    end:                    Point2D = Point2D(0, 0)     # Zero-out the panning vector
+    is_active:              bool = False
+
+    @classmethod
+    def vector(cls) -> Vec2D:
+        """Return the panning vector: describes amount of mouse pan."""
+        return Vec2D.from_points(start=cls.begin, end=cls.end)
+
+    @classmethod
+    def start(cls, position: tuple[int | float, int | float]) -> None:
+        """User started panning."""
+        panning = cls
+        panning.is_active = True
+        panning.begin = Point2D.from_tuple(position)
+
+    @classmethod
+    def stop(cls) -> None:
+        """User stopped panning."""
+        panning = cls
+        panning.is_active = False
+        # game.coord_sys.pcs_origin = game.coord_sys.translation.as_point()  # Set new origin
+        # Set new origin
+        Context.game.coord_sys.pcs_origin = Context.game.coord_sys.translation.as_point()
+        panning.begin = panning.end  # Zero-out the panning vector
+
+    @classmethod
+    def update(cls) -> None:
+        """Update 'panning.end': the latest point the mouse has panned to.
+
+        Dependency chain depicting how panning manifests as translating the game
+        view on the screen:
+            renderer <-- coord_sys.matrix.gcs_to_pcs <-- coord_sys.translation <-- Panning.vector()
+
+            In the above dependency chain:
+                - read "<--" as "thing-on-left uses thing-on-right"
+                - Panning.vector() = Panning.end - Panning.begin
+        """
+        panning = cls
+        if panning.is_active:
+            mouse_pos = pygame.mouse.get_pos()
+            panning.end = Point2D.from_tuple(mouse_pos)
+
+```
+
+This is the module-level namespace class version of `Panning`:
+
+```python
+import pygame
+from src.context import Context
+from .geometry_types import Vec2D, Point2D
+
+
+begin:     Point2D = Point2D(0, 0)     # Dummy initial value
+end:       Point2D = Point2D(0, 0)     # Set equal to begin to zero-out the panning vector
+is_active: bool = False
+
+
+def vector() -> Vec2D:
+    """Return the panning vector: describes amount of mouse pan."""
+    return Vec2D.from_points(start=begin, end=end)
+
+
+def start(position: tuple[int | float, int | float]) -> None:
+    """User started panning."""
+    global is_active, begin
+    is_active = True
+    begin = Point2D.from_tuple(position)
+
+
+def stop() -> None:
+    """User stopped panning."""
+    global begin, is_active
+    is_active = False
+    # game.coord_sys.pcs_origin = game.coord_sys.translation.as_point()  # Set new origin
+    # Set new origin
+    Context.game.coord_sys.pcs_origin = Context.game.coord_sys.translation.as_point()
+    begin = end  # Zero-out the panning vector
+
+
+def update() -> None:
+    """Update 'panning.end': the latest point the mouse has panned to.
+
+    Dependency chain depicting how panning manifests as translating the game
+    view on the screen:
+        renderer <-- coord_sys.matrix.gcs_to_pcs <-- coord_sys.translation <-- Panning.vector()
+
+        In the above dependency chain:
+            - read "<--" as "thing-on-left uses thing-on-right"
+            - Panning.vector() = Panning.end - Panning.begin
+    """
+    global end
+    if is_active:
+        mouse_pos = pygame.mouse.get_pos()
+        end = Point2D.from_tuple(mouse_pos)
+
+```
+
+The keyword `global` is necessary to tell Python we are talking about the
+module-level variables, not local variables.
+
+The linter has two complaints with this code:
+
+- Constant name `is_active` doesn't conform to `UPPER_CASE` naming style (invalid-name)
+- Using the global statement (global-statement): *it flags every line that uses `global`*
+
+I'm not sure what the people who write the linter rules would consider the
+correct way to use a module. It is weird to me that `Mouse` avoids these issues
+but `Panning` does not. It is not clear to me what the difference is.
 
 ## Context as a Global Singleton Hub Class
 
@@ -357,6 +539,80 @@ from .context import Context, namespace
 class Game:
     ...
 ```
+
+Built-in function `settatr()` assigns an existing attribute or creates a new
+attribute. But if it is a new attribute, the linter will later complain that
+the attribute does not exist, even though the program will run just fine.
+
+Member `__init__` exists by default because `Game` is a class. The python
+linter will NOT throw an error that `__init__()` does not exist.
+
+But if we use this same method to add a new member, such as `state()`, the
+python linter will throw an error. We can avoid the linter error by adding a
+placeholder definition of `state` in any class that has this decorator. While
+strictly not necessary, this is a nice reminder that the method exists (and
+this prevents us from accidentally making a method with the same name, only to
+have it silently overwritten).
+
+Here are two new methods for our `@namespace` decorator to add:
+
+```python
+def namespace(cls: Type[T]) -> Type[T]:
+
+    ...
+
+    def state() -> str:
+        """Return pretty string of class public members and their values."""
+        public_members = {
+                k: v for k, v in cls.__dict__.items()
+                if not callable(getattr(cls, k))
+                and not k.startswith("_")
+                }
+        strings = [f"{k}={v}" for k, v in public_members.items()]
+        return f"State: {cls.__name__}({', '.join(strings)})"
+
+    def api() -> str:
+        """Return pretty string naming class public members and methods."""
+        public_members = [x for x in dir(cls)
+                          if not callable(getattr(cls, x))
+                          and not x.startswith("_")
+                          ]
+        public_methods = [fn for fn in dir(cls)
+                          if callable(getattr(cls, fn))
+                          and not fn.startswith("_")]
+        member_strings = [f"{x}" for x in public_members]
+        method_strings = [f"{fn}()" for fn in public_methods]
+        return f"API for {cls.__name__}: {', '.join(member_strings)}, {', '.join(method_strings)}"
+
+    ...
+    setattr(cls, "state", state)
+    setattr(cls, "api", api)
+```
+
+And here are the empty methods added to `Game` to avoid the linter error:
+
+```python
+@namespace
+class Game:
+    ...
+    @classmethod
+    def state(cls) -> None:
+        """Defined in namespace: string representation of public members and their values"""
+
+    @classmethod
+    def api(cls) -> None:
+        """Defined in namespace: string representation of public members and public methods"""
+```
+
+Now we can do this to inspect `Game`:
+
+```python
+    print(Game.state())
+    print(Game.api())
+```
+
+- `state()` is helpful for inspecting values
+- `api()` is helpful to remind us what the public API is (put this right into a docstring)
 
 Now that `Game` is a Namespace Class and not a Global Singleton, how does that
 affect registering it with `Context`? It doesn't, apart from naming variables slightly differently to make the intent clear:
