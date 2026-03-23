@@ -1,7 +1,7 @@
 """Debug messages in the HUD and debug artwork."""
 from dataclasses import dataclass, field
+import pygame
 from .drawing_shapes import Line2D
-# import pygame
 
 
 @dataclass
@@ -10,7 +10,7 @@ class FontSize:
     value: int
     minimum: int
     maximum: int
-    is_changed: bool = False
+    _is_changed: bool = False
 
     def increase(self) -> None:
         """Increase the font size. Clamp at maximum size."""
@@ -18,7 +18,7 @@ class FontSize:
         self.value += 1
         self.value = min(self.value, self.maximum)
         if self.value != old:
-            self.is_changed = True
+            self._is_changed = True
 
     def decrease(self) -> None:
         """Decrease the font size. Clamp at minimum size."""
@@ -26,7 +26,12 @@ class FontSize:
         self.value -= 1
         self.value = max(self.value, self.minimum)
         if self.value != old:
-            self.is_changed = True
+            self._is_changed = True
+
+    @property
+    def is_changed(self) -> bool:
+        """Return bool self._is_changed"""
+        return self._is_changed
 
 
 @dataclass
@@ -136,13 +141,21 @@ class DebugHud:
                 The renderer uses 'debug.hud.lines' to iterate over the lines of text in '_text'.
     """
     # Store HUD font to reload the font only when needed
+    font: pygame.font.Font = field(init=False)
     font_name: str = "fonts/ProggyClean.ttf"
-    # font: pygame.font.Font = field(init=False)
     # Track HUD font size
     font_size:  FontSize = field(default_factory=lambda: FontSize(value=16, minimum=6, maximum=30))
     is_visible: bool = True     # Control whether HUD should be visible or not.
     _text:      str = ""        # The text that is displayed in the Debug HUD.
     # Connect variables to user input from HUD
+
+    def __post_init__(self) -> None:
+        pygame.font.init()  # Initialize the font module in case pygame.init() not called yet
+        self.load_font()
+
+    def load_font(self) -> None:
+        """Reload the font"""
+        self.font = pygame.font.Font(self.font_name, self.font_size.value)
 
     @property
     def lines(self) -> list[str]:
@@ -158,6 +171,19 @@ class DebugHud:
         """Clear the text in the debug HUD."""
         self._text = ""
 
+    def font_size_increase(self) -> None:
+        """Increase the font size"""
+        self.font_size.increase()
+        if self.font_size.is_changed:
+            self.load_font()
+
+    def font_size_decrease(self) -> None:
+        """Decrease the font size"""
+        self.font_size.decrease()
+        if self.font_size.is_changed:
+            self.load_font()
+
+
 
 # @dataclass
 # pylint: disable=too-few-public-methods
@@ -165,7 +191,6 @@ class Debug:
     """Debug messages in the HUD and debug artwork."""
     hud:                    DebugHud = DebugHud()
     art:                    DebugArt = DebugArt()
-    # snapshots:              dict[str, str] = field(init=False)
     snapshots:              dict[str, str] = {}
 
     @classmethod

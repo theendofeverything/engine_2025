@@ -151,7 +151,6 @@ class Game:
         UI.subscribe(cls._subscriber_map_event_to_action)  # See _subscriber_map_event_to_action()
 
         pygame.init()  # Load pygame
-        pygame.font.init()  # Load font module
 
         cls._configure_game_window()  # Window renderer config
         # Set the GCS to fit the window size and center the GCS origin in the window.
@@ -415,11 +414,11 @@ class Game:
                 log.debug("User action: toggle debug art overlay.")
                 Debug.art.is_visible = not Debug.art.is_visible
             case Action.FONT_SIZE_INCREASE:
-                Debug.hud.font_size.increase()
+                Debug.hud.font_size_increase()
                 log.debug("User action: Increase debug HUD font size."
                           f"Font size: {Debug.hud.font_size.value}.")
             case Action.FONT_SIZE_DECREASE:
-                Debug.hud.font_size.decrease()
+                Debug.hud.font_size_decrease()
                 log.debug(f"User action: Decrease debug HUD font size."
                           f"Font size: {Debug.hud.font_size.value}.")
             # TEMPORARY CODE FOR WORKING ON NPC MOTION

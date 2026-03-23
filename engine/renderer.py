@@ -77,14 +77,7 @@ class Renderer:
 
     def render_debug_hud(self) -> None:
         """Display values in the Debug HUD."""
-        # game = Context.game
-        # TODO: don't reload the font every time! Only reload the font if it has changed.
-        # But you need to make font a member of something first. Maybe Debug.hud.
-        # if Debug.hud.font_size.is_changed:
-        #     font = pygame.font.Font(game.debug_font, Debug.hud.font_size.value)
-        #     Debug.hud.font_size.is_changed = False
-        # font = pygame.font.Font(game.debug_font, Debug.hud.font_size.value)
-        font = pygame.font.Font(Debug.hud.font_name, Debug.hud.font_size.value)
+        font = Debug.hud.font
         pos = (0, 0)
 
         # Iterate over lines of debug HUD text using debug.hud.lines.
