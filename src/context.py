@@ -38,7 +38,7 @@ def namespace(cls: Type[T]) -> Type[T]:
             and not isinstance(v, (classmethod, staticmethod))
         }
         items = [f"{k}={v!r}" for k, v in attrs.items()]
-        return f"{cls.__name__}({', '.join(items)})"
+        return f"""{cls.__name__}({", ".join(items)})"""
 
     setattr(cls, "__init__", no_init)
     setattr(cls, "state_str", state_str)
@@ -53,7 +53,7 @@ def namespace_class_str(cls: "Class") -> str:
             if not k.startswith("_")
             }
     items = [f"{k}={v!r}" for k, v in attrs.items()]
-    return f"{cls.__name__}({', '.join(items)})"
+    return f"""{cls.__name__}({", ".join(items)})"""
 
 
 @namespace

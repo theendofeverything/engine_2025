@@ -39,7 +39,7 @@ class DebugGame:
         debug_hud = f"Debug HUD ({FILE})"
         # Version values
         using_pygame_ce = getattr(pygame, "IS_CE", False)
-        pygame_version = f"pygame{'-ce' if using_pygame_ce else ''} {pygame.version.ver}"
+        pygame_version = f"""pygame{"-ce" if using_pygame_ce else ""} {pygame.version.ver}"""
         sdl_version = f"SDL {pygame.version.SDL}"
         # Debug values
         debug_hud_font_size = f"Debug.hud.font_size:      {Debug.hud.font_size.value}"
@@ -47,7 +47,7 @@ class DebugGame:
         Debug.hud.print(f"{debug_hud:<25}"
                         f"{pygame_version:<25}"
                         f"{debug_hud_font_size:<25}")
-        Debug.hud.print(f"{'---------':<25}"
+        Debug.hud.print(f"""{"---------":<25}"""
                         f"{sdl_version:<25}"
                         f"{debug_art_is_visible:<25}")
 
@@ -213,7 +213,7 @@ class DebugGame:
         Debug.hud.print(heading)
         # Video frame counters
         Debug.hud.print("|  +- frame_counters['video']")
-        Debug.hud.print(f"|     +- frame_count: {timing.frame_counters['video'].frame_count}")
+        Debug.hud.print(f"""|     +- frame_count: {timing.frame_counters["video"].frame_count}""")
         Debug.hud.print("|     +- clocked_events:")
         for clocked_event in timing.frame_counters["video"].clocked_events.values():
             Debug.hud.print(f"|        +- {clocked_event}")
@@ -223,7 +223,7 @@ class DebugGame:
         else:
             paused = "(<Space> to pause)"
         Debug.hud.print("|  +- frame_counters['game']")
-        Debug.hud.print(f"|     +- frame_count: {timing.frame_counters['game'].frame_count}"
+        Debug.hud.print(f"""|     +- frame_count: {timing.frame_counters["game"].frame_count}"""
                         f"{paused}")
         Debug.hud.print("|     +- clocked_events:")
         for clocked_event in timing.frame_counters["game"].clocked_events.values():

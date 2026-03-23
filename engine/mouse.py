@@ -8,15 +8,16 @@ API
 - mouse.ButtonName: IntEnum -- Name all the mouse buttons
 - mouse.is_pressed(btn: mouse.ButtonName) -- Return True/False if button is pressed or not
 - mouse.ButtonDirection: Enum -- UP/DOWN for mapping the button event to the appropriate action
-- mouse.update(event: pygame.event.Event) -- Keep the mouse button state up to date. Do this any time you handle a mouse event, for example:
+- mouse.update(event: pygame.event.Event) -- Keep the mouse button state up to date.
+                    Do this any time you handle a mouse event, for example:
 
-        match event.type:
-            case pygame.MOUSEBUTTONDOWN:
-                button_direction = mouse.ButtonDirection.DOWN
-                mouse.update(event)
-            case pygame.MOUSEBUTTONUP:
-                button_direction = mouse.ButtonDirection.UP
-                mouse.update(event)
+                        match event.type:
+                            case pygame.MOUSEBUTTONDOWN:
+                                button_direction = mouse.ButtonDirection.DOWN
+                                mouse.update(event)
+                            case pygame.MOUSEBUTTONUP:
+                                button_direction = mouse.ButtonDirection.UP
+                                mouse.update(event)
 
 'mouse.update(event)' updates the internal `_state` dict of button values. My intent is for the user
 to use `update()` instead of writing to `_state` directly.

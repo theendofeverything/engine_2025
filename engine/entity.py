@@ -570,8 +570,8 @@ class Entity:
                     hud.print(f"|     +- force.vec: {movement.force.vec.fmt(0.6)}")
                     hud.print(f"|     +- mass: {movement.mass}")
                     hud.print("|  +- Locals")
-                    hud.print(f"|     +- k:float = {controls['k']}")
-                    hud.print(f"|     +- b:float = {controls['b']}")
+                    hud.print(f"""|     +- k:float = {controls["k"]}""")
+                    hud.print(f"""|     +- b:float = {controls["b"]}""")
                     start = from_entity_to_me.start
                     end = from_entity_to_me.end
                     hud.print(f"|     +- d:Vec2D = {d.fmt(0.6)}: {start} to {end}")
