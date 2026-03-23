@@ -12,7 +12,7 @@ class Colors:
 
     Do not instantiate. Use as a name-spaced constant:
     >>> Colors.text
-    Color(255, 255, 255, 255)
+    (255, 255, 255)
     """
     background:     Color = (30, 60, 90)
     background_lines: Color = (60, 90, 120)

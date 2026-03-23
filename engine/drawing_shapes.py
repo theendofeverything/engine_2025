@@ -11,7 +11,7 @@ class Line2D:
 
     >>> line = Line2D(start=Point2D(0, 1), end=Point2D(2, 3))
     >>> line
-    Line2D(start=Point2D(x=0, y=1), end=Point2D(x=2, y=3), color=Color(...))
+    Line2D(start=Point2D(x=0, y=1), end=Point2D(x=2, y=3), color=(...))
     """
     start: Point2D
     end: Point2D
