@@ -1,8 +1,7 @@
 """Shape primitives.
 """
 from dataclasses import dataclass, field
-from pygame import Color
-from .colors import Colors
+from .colors import Colors, Color
 from .geometry_types import Point2D
 
 
@@ -22,10 +21,10 @@ class Line2D:
 @dataclass
 class Cross:
     """Describe a cross-hair."""
-    origin:     Point2D                                     # Origin in GCS
-    size:       float                                       # Span this width in GCS units
-    rotate45:   bool = False                                # Rotate cross-hair by 1/8th of a turn
-    color:      Color = Colors.line                         # Use default line color
+    origin:     Point2D                                 # Origin in GCS
+    size:       float                                   # Span this width in GCS units
+    rotate45:   bool = False                            # Rotate cross-hair by 1/8th of a turn
+    color:      Color = Colors.line      # Use default line color
 
     # Instance variables defined in __post_init__()
     lines:      list[Line2D] = field(default_factory=list)  # Two lines make up the cross

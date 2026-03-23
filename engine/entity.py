@@ -44,12 +44,11 @@ from dataclasses import dataclass, field
 import pathlib
 import random
 from enum import Enum, auto
-from pygame import Color
 from gamelibs.debug_game import DebugGame
 from .geometry_types import Point2D, Vec2D, DirectedLineSeg2D
 from .drawing_shapes import Cross, Line2D
 from .timing import Timing
-from .colors import Colors
+from .colors import Color, Colors
 from .art import Art
 from .debug import Debug
 

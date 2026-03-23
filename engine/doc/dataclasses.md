@@ -362,6 +362,141 @@ The `__post_init__` style setting `field(init=False)` prevents the caller from
 providing this argument. Reserve initializing members in `__post_init__` for
 the members that are calculated by the library.
 
+Python 3.10 did not catch all occurrences of mutable objects used as direct default values. For example, this `Color` code does not throw an error under Python 3.10:
+
+```python
+from dataclasses import dataclass
+from pygame.color import Color
+
+
+@dataclass
+class Colors:
+    """Color names
+
+    Do not instantiate. Use as a name-spaced constant:
+    >>> Colors.text
+    Color(255, 255, 255, 255)
+    """
+    background:     Color = Color(30, 60, 90)
+    background_lines: Color = Color(60, 90, 120)
+    line:           Color = Color(120, 150, 60)
+    line_player:    Color = Color(120, 150, 255)
+    line_debug:     Color = Color(200, 50, 50)
+    text:           Color = Color(255, 255, 255)
+    panning:        Color = Color(255, 200, 200)
+```
+
+But under Python 3.14, we get the error:
+
+```
+  File "/engine_2025/engine/drawing_shapes.py", line 5, in <module>
+    from .colors import Colors
+  File "/engine_2025/engine/colors.py", line 7, in <module>
+    @dataclass
+     ^^^^^^^^^
+  File "/usr/local/lib/python3.14/dataclasses.py", line 1442, in dataclass
+    return wrap(cls)
+  File "/usr/local/lib/python3.14/dataclasses.py", line 1432, in wrap
+    return _process_class(cls, init, repr, eq, order, unsafe_hash,
+                          frozen, match_args, kw_only, slots,
+                          weakref_slot)
+  File "/usr/local/lib/python3.14/dataclasses.py", line 1066, in _process_class
+    cls_fields.append(_get_field(cls, name, type, kw_only))
+                      ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.14/dataclasses.py", line 917, in _get_field
+    raise ValueError(f'mutable default {type(f.default)} for field '
+                     f'{f.name} is not allowed: use default_factory')
+ValueError: mutable default <class 'pygame.color.Color'> for field background is not allowed: use default_factory
+```
+
+But there is a bigger problem here. We can fix this bug as follows:
+
+```python
+from dataclasses import dataclass, field
+
+    ...
+
+    background:     Color = field(default_factory=lambda: Color(30, 60, 90))
+    background_lines: Color = field(default_factory=lambda: Color(60, 90, 120))
+    line:           Color = field(default_factory=lambda: Color(120, 150, 60))
+    line_player:    Color = field(default_factory=lambda: Color(120, 150, 255))
+    line_debug:     Color = field(default_factory=lambda: Color(200, 50, 50))
+    text:           Color = field(default_factory=lambda: Color(255, 255, 255))
+    panning:        Color = field(default_factory=lambda: Color(255, 200, 200))
+```
+
+But now we need to instantiate `Colors` to get access to these members. In the
+secretly-broken 3.10 version, we were accessing these as class members.
+
+What this is really telling me is that this should *not* be a `dataclass`. It should be a `namespace` class (a class we do not instantiate) or a module-level class (but the attributes right in the module, don't even make a class).
+
+Let's make it a namespace class. All we have to do is go back to the version without `default_factory=labmda` and get rid of the `@dataclass` decorator.
+
+We can also add our own `@namespace` decorator to prevent ourselves from accidentally instantiating this later.
+
+But other objects still cannot use a `Color` as a member. Let's just get rid of
+the `pygame.color.Color` dependency, make these `tuple[int, int, int]` and use
+a `Color: TypeAlias` so that our users still tag colors as `Color` and we can
+quickly hop to the place where we defined each `Color`.
+
+```python
+from typing import TypeAlias
+
+Color: TypeAlias = tuple[int, int, int]
+
+
+# pylint: disable=too-few-public-methods
+class Colors:
+    """Color names
+
+    Do not instantiate. Use as a name-spaced constant:
+    >>> Colors.text
+    Color(255, 255, 255, 255)
+    """
+    background:     Color = (30, 60, 90)
+    background_lines: Color = (60, 90, 120)
+    line:           Color = (120, 150, 60)
+    line_player:    Color = (120, 150, 255)
+    line_debug:     Color = (200, 50, 50)
+    text:           Color = (255, 255, 255)
+    panning:        Color = (255, 200, 200)
+```
+
+Users do `from engine.colors import Colors, Color`. The type is `Color` and the
+values are `Colors.whatever`.
+
+An example where we just use the type:
+
+```python
+from .colors import Color
+
+    ...
+    def draw_lines(cls, points: list[Point2D], color: Color) -> None:
+        ...
+        cls.lines.append(Line2D(points[-1], points[0], color))
+```
+
+An example where we also use the color names:
+
+```python
+from .colors import Colors, Color
+
+@dataclass
+class Line2D:
+    """Describe a line in GCS.
+
+    >>> line = Line2D(start=Point2D(0, 1), end=Point2D(2, 3))
+    >>> line
+    Line2D(start=Point2D(x=0, y=1), end=Point2D(x=2, y=3), color=Color(...))
+    """
+    start: Point2D
+    end: Point2D
+    color: Color = Colors.line
+```
+
+This is allowed now because `Color` is immutable. It is immutable because it is
+a tuple (`tuple[int, int, int]`) and Python tuples are immutable.
+
 ## Printing classes
 
 Use the `__str__()` method for custom printing. This is helpful for debugging.

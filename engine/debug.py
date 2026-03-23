@@ -5,20 +5,27 @@ from .drawing_shapes import Line2D
 
 @dataclass
 class FontSize:
-    """Font size of pgyame.font.Sysfont()."""
+    """Font size of pygame.font.Sysfont()."""
     value: int
     minimum: int
     maximum: int
+    is_changed: bool = False
 
     def increase(self) -> None:
         """Increase the font size. Clamp at maximum size."""
+        old = self.value
         self.value += 1
         self.value = min(self.value, self.maximum)
+        if self.value != old:
+            self.is_changed = True
 
     def decrease(self) -> None:
         """Decrease the font size. Clamp at minimum size."""
+        old = self.value
         self.value -= 1
         self.value = max(self.value, self.minimum)
+        if self.value != old:
+            self.is_changed = True
 
 
 @dataclass
@@ -127,7 +134,8 @@ class DebugHud:
                 At the top of the game loop, use 'debug.hud.reset()' to clear '_text'.
                 The renderer uses 'debug.hud.lines' to iterate over the lines of text in '_text'.
     """
-    font_size:  FontSize = FontSize(value=16, minimum=6, maximum=30)  # Track HUD font size
+    # Track HUD font size
+    font_size:  FontSize = field(default_factory=lambda: FontSize(value=16, minimum=6, maximum=30))
     is_visible: bool = True     # Control whether HUD should be visible or not.
     _text:      str = ""        # The text that is displayed in the Debug HUD.
     # Connect variables to user input from HUD

@@ -4,10 +4,10 @@ I define Art as a Namespace Class. Since there are no circular dependencies, I c
 rid of the class and use the module "art" as the namespace.
 """
 import random
-from pygame.color import Color
 from src.context import namespace
 from .drawing_shapes import Line2D
 from .geometry_types import Point2D
+from .colors import Color
 
 
 @namespace

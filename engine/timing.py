@@ -167,7 +167,8 @@ class Timing:
     clock:                  pygame.time.Clock = pygame.time.Clock()
     frame_counters:         dict[str, FrameCounter] = field(init=False)
     ms_per_frame:           int = 16                    # Initial value for debug HUD
-    _ms_per_frame_buffer:   BufferInt = BufferInt()     # Buffered value
+    # pylint: disable=unnecessary-lambda
+    _ms_per_frame_buffer:   BufferInt = field(default_factory=lambda: BufferInt())  # Buffered value
 
     def __post_init__(self) -> None:
         """Add the default frame counters for debug.
