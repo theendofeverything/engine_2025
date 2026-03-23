@@ -133,11 +133,10 @@ class Game:
     Game code is divided up as follows:
     >>> Game.setup()
     >>> print(Game.state_str())
-    Game(debug_font='fonts/ProggyClean.ttf',
-        entities={...},
+    Game(entities={...},
         coord_sys=CoordinateSystem(...))
     """
-    debug_font: str = "fonts/ProggyClean.ttf"
+    # debug_font: str = "fonts/ProggyClean.ttf"
     entities:   dict[str, Entity] = {}
     coord_sys:  CoordinateSystem
 

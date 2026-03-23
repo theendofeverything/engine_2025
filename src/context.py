@@ -71,8 +71,8 @@ class Context:
         timing=Timing(...))
 
     Modules access global context like this:
-    >>> Context.game.debug_font
-    'fonts/ProggyClean.ttf'
+    >>> Context.game.entities
+    {'player': Entity(entities={...}, entity_type=<EntityType.PLAYER: 1>, ...}
     """
     game: "Game" = None
     renderer: "Renderer" = None

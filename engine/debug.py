@@ -1,6 +1,7 @@
 """Debug messages in the HUD and debug artwork."""
 from dataclasses import dataclass, field
 from .drawing_shapes import Line2D
+# import pygame
 
 
 @dataclass
@@ -134,6 +135,9 @@ class DebugHud:
                 At the top of the game loop, use 'debug.hud.reset()' to clear '_text'.
                 The renderer uses 'debug.hud.lines' to iterate over the lines of text in '_text'.
     """
+    # Store HUD font to reload the font only when needed
+    font_name: str = "fonts/ProggyClean.ttf"
+    # font: pygame.font.Font = field(init=False)
     # Track HUD font size
     font_size:  FontSize = field(default_factory=lambda: FontSize(value=16, minimum=6, maximum=30))
     is_visible: bool = True     # Control whether HUD should be visible or not.
