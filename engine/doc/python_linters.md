@@ -6,6 +6,24 @@
 
 ## flake8
 
+### Version
+
+Make sure to `pip install flake8` if you switch to a Python venv that uses a
+newer version of Python so that when you run `flake8` it is using the syntax
+rules for the version of Python your venv is using. Check you flake8 version
+with `flake8 --version`. For example, in transitioning from Python 3.10 to
+Python 3.14, I noticed that the flake8 using Python 3.10 flagged this is a
+`SyntaxError`:
+
+```python
+type Point2D = tuple[float, float]
+```
+
+After I did `pip install flake8` (in the venv for my Python 3.14 installation),
+the same `flake8` command used my `Python 3.14` installation.
+
+### Disable warnings for an entire file
+
 You cannot turn off checks for code blocks with `flake8` like you can with `pylint`. But you can disable warnings for an entire file. At the top of the file:
 
 ```python
@@ -13,6 +31,8 @@ You cannot turn off checks for code blocks with `flake8` like you can with `pyli
 ```
 
 That particular error code is for `line-too-long`.
+
+### Global settings
 
 For global settings, create a `flake8` section in your `tox.ini`:
 
