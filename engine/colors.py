@@ -1,6 +1,7 @@
 """Name the colors used in the game.
 """
 
+# Would an Enum be a better way to implement this?
 from typing import TypeAlias
 
 Color: TypeAlias = tuple[int, int, int]

@@ -66,6 +66,8 @@ class KeyModifier(Enum):
     NO_MODIFIER         = pygame.KMOD_NONE
     SHIFT               = pygame.KMOD_SHIFT
     CTRL                = pygame.KMOD_CTRL
+    # TODO: Python 3.14 - list all modifiers or 'from_kmod' will throw an error
+    ALT                 = pygame.KMOD_ALT
     SHIFT_CTRL          = pygame.KMOD_SHIFT | pygame.KMOD_CTRL
     PANNING             = pygame.KMOD_CTRL
 
